@@ -68,6 +68,15 @@ def check_coverage_example() -> None:
     print(f"OK  BO4-12 example: last complete day {last_complete} follows from the coverage profile")
 
 
+def check_prompts() -> None:
+    from contracts.prompts import PROMPTS_DIR, all_prompts
+    if not PROMPTS_DIR.exists():
+        print("--  no prompts/ folder yet")
+        return
+    prompts = all_prompts()        # raises if a version or a variable is inconsistent
+    print(f"OK  {len(prompts)} prompt file(s): " + ", ".join(p.ref for p in prompts))
+
+
 def check_journal() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         journal = Path(tmp) / "journal.db"
@@ -109,5 +118,6 @@ if __name__ == "__main__":
     check_dag()
     check_examples()
     check_coverage_example()
+    check_prompts()
     check_journal()
     print("All contract checks passed.")

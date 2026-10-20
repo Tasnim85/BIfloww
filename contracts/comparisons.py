@@ -68,6 +68,9 @@ class UserDecision(str, Enum):
 
 class ComparisonReport(Artifact):
     has_comparison: bool               # False -> nothing checked, agent status SKIPPED
+    rules_version: str = ""            # e.g. "comparability-rules@1.0"
+    summary: str = ""                  # one paragraph for Sarra
+    summary_source: str = "template"   # "template" | "llm:<model>" (LLM text passed the fact check)
     checks: list[ComparisonCheck] = Field(default_factory=list)
     proposed_fix: ProposedFix | None = None          # the recommended adjustment
     alternatives: list[ProposedFix] = Field(default_factory=list)   # other valid adjustments

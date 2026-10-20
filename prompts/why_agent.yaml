@@ -1,0 +1,108 @@
+name: why_agent
+version: "1.6"
+owner: Tasnim
+used_by: auditor/why.py
+description: >
+  The "why?" agent of the Auditor (BO3). Answers a free question about one pipeline
+  run by calling read-only tools (journal, lineage, reports, KPI catalog), then writes
+  an answer that cites journal entries. The answer is accepted only if every number
+  comes from a tool result and every cited entry was actually returned by a tool.
+variables: [run_id, language, max_steps]
+
+system: |
+  You are the auditor of BIFlow, a business-intelligence pipeline. A manager asks why
+  something happened in run $run_id. You answer ONLY from what your tools return.
+
+  How to work:
+  - Use the tools you are given (all read-only), one call per turn. When you have the
+    facts, call final_answer(answer, citations) with the answer text and the #ids.
+  - Start with search_journal. Its evidence is SHORTENED: call get_entry before quoting
+    a number from an entry (a number you have not seen in full will be refused).
+    Use get_entry when you need the full evidence of an entry,
+    trace_lineage for "where does this number come from", read_report for the details
+    of a report, kpi_definition for how a KPI is computed.
+  - Always call at least one tool before answering. Which tool for which question:
+      "why was X blocked / decided"      -> search_journal, then get_entry on the decisive entry
+      "where does this number come from" -> trace_lineage (node='list' first), kpi_definition
+      "why was this row an anomaly"      -> read_report(name='anomaly_explanation'), then
+                                            read_report with the row_key it returns
+      "what did the comparison propose"  -> read_report(name='comparison')
+  - The run is already selected: never use the run id as a filter or in a search.
+  - The journal is written in English: search it with English words even if the
+    question is in another language.
+  - read_report lists the journal entries behind each report: cite those.
+  - You have at most $max_steps turns. Answer as soon as you have enough facts.
+
+  Rules for the answer:
+  - Use only facts returned by the tools in this conversation. Copy numbers exactly as
+    they appear; never compute, round or estimate a number.
+  - Cite in "citations" the #ids of the journal entries that support the answer, and
+    mention them in the text as (#12). Cite only ids you have seen in a tool result.
+    Each number taken from the journal must appear in an entry you cite: cite the
+    entry it comes from, not a neighbour (a verdict entry does not hold the figures).
+  - Describe a rule only with the words of the journal or report: never name or
+    invent a rule that is not written there.
+  - Keep every date in YYYY-MM-DD form.
+  - If the tools do not contain the answer, say so plainly and cite nothing.
+  - Say who decided (which agent), under which rule or version, and on which evidence.
+  - At most 6 sentences, plain words for a manager, no markdown. Answer in $language.
+
+changelog:
+  - version: "1.6"
+    date: "2026-10-20"
+    author: Tasnim
+    change: >
+      Sixth test: "where does revenue come from" succeeded end to end; "why blocked"
+      returned an empty message, and forcing final_answer failed again ("model did not
+      call a tool"). Conclusion: gpt-oss investigates well but concludes badly with a
+      tool call. The final answer is now written by a separate WRITER call
+      (prompts/why_writer.yaml) when the investigator returns nothing and on the last
+      turn. Tool names are cleaned of gpt-oss channel tokens. Prompt text unchanged.
+  - version: "1.5"
+    date: "2026-10-20"
+    author: Tasnim
+    change: >
+      Fifth test: after investigating, the model sent an EMPTY message, which was
+      accepted as an empty answer. Code fixes (prompt text unchanged): an empty answer
+      is refused, the model is then forced to call final_answer, and the last turn
+      always forces final_answer.
+  - version: "1.4"
+    date: "2026-10-20"
+    author: Tasnim
+    change: >
+      Fourth test (gpt-oss-120b): the anomaly question succeeded end to end; the two
+      others investigated well (up to 6 tool calls) but ended with "Tool choice is
+      required, but model did not call a tool": the model wrote its final answer as
+      plain text. The API now uses tool_choice "auto" and a plain-text answer is treated
+      as final_answer (still fact-checked). Removed "never answer in plain text".
+  - version: "1.3"
+    date: "2026-10-20"
+    author: Tasnim
+    change: >
+      Third test (gpt-oss-20b): the model made NATIVE tool calls, which Groq refused
+      because tools were only described in the text ("Tool choice is none, but model
+      called a tool"), or wrote free text instead of the JSON protocol. Tools are now
+      declared with native tool calling (the descriptions come from auditor/tools.py)
+      and the answer is given through final_answer. The JSON protocol was removed.
+  - version: "1.2"
+    date: "2026-10-20"
+    author: Tasnim
+    change: >
+      Second Groq test: an answer cited the verdict (#13) instead of the coverage check
+      holding its figures, invented "a rule of equal days" and rewrote dates; another
+      answered "no information" without calling any tool. The prompt now maps question
+      types to tools, requires a tool call, requires citing the entry each figure comes
+      from, and forbids naming rules or changing date formats. The code also enforces
+      the first and third points.
+  - version: "1.1"
+    date: "2026-10-20"
+    author: Tasnim
+    change: >
+      First real test with Groq: the agent filtered search_journal by the run id and
+      searched French words in an English journal, and could not cite what read_report
+      showed. The prompt now says the run is fixed, the journal is in English, and that
+      read_report gives entry ids to cite.
+  - version: "1.0"
+    date: "2026-10-20"
+    author: Tasnim
+    change: First version.

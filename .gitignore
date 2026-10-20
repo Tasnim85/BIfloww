@@ -1,1 +1,7 @@
-runs/, *.db, *.duckdb, .venv/, __pycache__/
+*.db
+*.duckdb
+.venv/
+__pycache__/
+data/olist/
+runs/
+.env

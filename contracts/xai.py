@@ -58,3 +58,15 @@ class DriftReport(Artifact):
     metric_checks: list[MetricDriftCheck] = Field(default_factory=list)
     flagged_agents: list[str] = Field(default_factory=list)
     narrative: str                     # "a diagnosis, not a proof: a human decides"
+
+
+class WhyAnswer(Artifact):
+    """Answer of the "why?" agent (auditor/why.py). Read by the API / app."""
+    run_id: str
+    question: str
+    answer: str
+    citations: list[int] = Field(default_factory=list)     # journal entry ids backing the answer
+    source: str                        # "llm:<model>" (verified) | "template" (fallback)
+    verified: bool                     # True = numbers and citations checked against the tools' output
+    tool_calls: list[dict] = Field(default_factory=list)   # [{"tool", "args", "chars"}] in order
+    rejected: list[str] = Field(default_factory=list)      # why earlier drafts were refused

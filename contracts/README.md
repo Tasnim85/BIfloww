@@ -1,7 +1,7 @@
 # BIFlow : les contrats
 
 > À lire par toute l'équipe avant d'écrire une ligne de code d'agent.
-> Version des contrats : **1.1** (20 octobre 2026). Voir l'historique à la section 10.
+> Version des contrats : **1.4** (20 octobre 2026). Voir l'historique à la section 10.
 
 ## 1. C'est quoi un contrat, en une phrase
 
@@ -28,6 +28,9 @@ Chaque contrat est une **classe Pydantic**. Si un fichier n'a pas la bonne forme
 | `comparisons.py` | Contrôle des comparaisons trompeuses (6, BO4-12) | Tasnim |
 | `dashboard.py` | Description du dashboard (6) | Samar |
 | `xai.py` | Explications SHAP et rapport de drift (7) | Tasnim |
+| `llm.py` | Le client LLM commun (Groq par défaut, gratuit ; Gemini, OpenRouter ou Ollama au choix) : sortie JSON validée, appels journalisés | Tasnim |
+| `prompts.py` | Le registre des prompts : chaque prompt est un fichier `prompts/<nom>.yaml` avec sa version et son historique (voir `prompts/README.md`) | Tasnim |
+| `factcheck.py` | La vérification qu'un texte écrit par un LLM ne contient aucun chiffre inventé | Tasnim |
 | `registry.py` | Quelle classe correspond à quel fichier, et `read_output()` | toute l'équipe |
 | `check_contracts.py` | Le test à lancer avant toute modification | toute l'équipe |
 | `examples/` | Un **run complet fictif** sur Olist + catalogue, glossaire et playbook d'exemple | toute l'équipe |
@@ -204,7 +207,7 @@ La règle utilisée dans l'exemple : *les derniers jours d'une période sont inc
 2. **Avant chaque pull request** sur `contracts/`, lance `python -m contracts.check_contracts` et `python -m contracts.examples.build_examples` (ce dernier régénère les exemples).
 3. **Ajouter un champ optionnel** (avec une valeur par défaut) ne casse personne. **Renommer ou supprimer** un champ casse quelqu'un : dans ce cas, il faut augmenter `CONTRACTS_VERSION` dans `common.py`.
 4. **Un agent n'importe jamais le code d'un autre agent.** Il importe seulement `contracts`.
-5. Les fichiers qui ne vont pas dans Git (à mettre dans `.gitignore`) : `runs/`, `*.db`, `*.duckdb`, `.venv/`, `__pycache__/`, et les CSV Olist complets (on ne versionne que `data/sample/`).
+5. Les fichiers qui ne vont pas dans Git (à mettre dans `.gitignore`) : `.env` (les clés API), `runs/`, `*.db`, `*.duckdb`, `.venv/`, `__pycache__/`, et les CSV Olist complets (on ne versionne que `data/sample/`).
 
 ## 9. À valider ensemble à la première réunion
 
@@ -234,6 +237,9 @@ Ces choix ont été faits pour pouvoir démarrer. Chacun relit **la partie qui l
 
 ## 10. Historique des versions
 
+- **1.4** (20 octobre 2026) : `WhyAnswer` dans `xai.py` (la réponse de l'agent « pourquoi ? »), `factcheck.py` (la vérification des chiffres d'un texte LLM, commune à tous les agents) et le paramètre `history` de `chat_json` pour les agents qui appellent des outils sur plusieurs tours.
+- **1.3** (20 octobre 2026) : `prompts.py` et le dossier `prompts/`. **Règle d'équipe :** aucun prompt n'est écrit dans le code ; on modifie le fichier YAML, on augmente sa version et on ajoute une ligne en haut de son `changelog`.
+- **1.2** (20 octobre 2026) : `llm.py`, le client LLM commun. Le fournisseur se choisit avec `BIFLOW_LLM_PROVIDER` (groq par défaut, gemini, openrouter ou ollama), et la clé va dans un fichier `.env` qui n'est **jamais** versionné. Chaque appel est inscrit au journal avec le modèle, la version du prompt et les empreintes de l'entrée et de la sortie. Les appels sont faits à température 0 avec une graine fixe, et la sortie est du JSON validé par Pydantic. `ComparisonReport` reçoit `rules_version`, `summary` et `summary_source`. **Règle d'équipe :** le LLM ne calcule aucun chiffre et ne prend aucune décision.
 - **1.1** (20 octobre 2026), adaptations à la définition officielle de BO4-12. Ce ne sont que des ajouts :
   - `CoverageProfile` écrit par le profiling et lu par comparisons ;
   - le contrôle `scale` ;
