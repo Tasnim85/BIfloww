@@ -1,6 +1,7 @@
 """Step 2: profiling + anomalies (Ahmed) and cleaning (Ikbel).
 
 ProfileReport   Ahmed -> Ikbel (what to clean), app
+CoverageProfile Ahmed -> Tasnim (BO4-12: "DQ measures completeness")
 AnomalyReport   Ahmed -> Tasnim (Auditor explains the anomalies with SHAP)
 CleaningRule    the shape of ONE rule, in a playbook or proposed by the LLM (2b)
 Playbook        a versioned set of rules, YAML in cleaning/playbooks/<name>@<version>.yaml
@@ -35,6 +36,28 @@ class TableProfile(Contract):
 
 class ProfileReport(Artifact):
     tables: list[TableProfile]
+
+
+# ---- Coverage (completeness over time) ------------------------------------------
+class DayCoverage(Contract):
+    date: str                          # ISO date
+    rows: int                          # rows whose date column falls on that day
+    by_status: dict[str, int] = Field(default_factory=dict)      # e.g. {"delivered": 11, "shipped": 3}
+    completeness: dict[str, float] = Field(default_factory=dict)  # column -> share filled, [0, 1]
+
+
+class TableCoverage(Contract):
+    """Measures only. Deciding whether a day is 'complete' is the comparison step's job."""
+    table: str                         # e.g. "orders"
+    date_column: str                   # e.g. "order_purchase_timestamp"
+    status_column: str | None = None   # e.g. "order_status"
+    first_day: str
+    last_day: str
+    days: list[DayCoverage]            # one entry per calendar day, days without rows included
+
+
+class CoverageProfile(Artifact):
+    tables: list[TableCoverage]
 
 
 # ---- Anomalies -------------------------------------------------------------------

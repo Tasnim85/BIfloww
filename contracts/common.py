@@ -8,7 +8,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
-CONTRACTS_VERSION = "1.0"
+CONTRACTS_VERSION = "1.1"   # 1.1: coverage profile, BO4-12 scale check + justified fixes
 
 
 class Contract(BaseModel):
