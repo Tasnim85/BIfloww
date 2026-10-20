@@ -1,0 +1,36 @@
+Dataset/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+test-work/
+runs/
+*.db
+*.duckdb
+*.duckdb.wal
+*.joblib
+.env
+.env.*
+!.env.example
+data/
+tests/
+README_BO2.md
+README_LOCAL_STACK.md
+convertir_parquet_csv.py
+lancer_pii.cmd
+README_CLEANING.md
+README_PII_GENERIC.md
+README_STREAMLIT_PII.md
+pytest.ini
+.streamlit/
+# Journaux et rapports de tests
+*.log
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Fichiers temporaires Windows
+Thumbs.db
+Desktop.ini
