@@ -50,8 +50,8 @@ class Toolbox:
         "read_report": ("name, row_key?",
                         "Summary of a report of this run, with the #ids of the journal entries "
                         "behind it (cite those). name = comparison | analysis | cleaning | pii | "
-                        "anomaly_explanation (without row_key: the most anomalous rows; with "
-                        "row_key: the explanation of that row)."),
+                        "drift | anomaly_explanation (without row_key: the most anomalous rows; "
+                        "with row_key: the explanation of that row)."),
     }
 
     def describe(self) -> str:
@@ -66,7 +66,7 @@ class Toolbox:
             "trace_lineage": {"properties": {"node": s}, "required": ["node"]},
             "kpi_definition": {"properties": {"name": s}, "required": ["name"]},
             "read_report": {"properties": {"name": {"type": "string", "enum": [
-                "comparison", "analysis", "cleaning", "pii", "anomaly_explanation"]}, "row_key": s},
+                "comparison", "analysis", "cleaning", "pii", "drift", "anomaly_explanation"]}, "row_key": s},
                 "required": ["name"]},
         }
         specs = [{"name": n, "description": d, "parameters": {"type": "object", **params[n]}}
@@ -164,10 +164,12 @@ class Toolbox:
 
     def _t_read_report(self, name: str, row_key: str = None) -> str:
         text = self._report(name, row_key)
-        agent = {"comparison": "comparisons", "analysis": "analysis", "cleaning": "cleaning",
-                 "pii": "pii", "anomaly_explanation": "auditor"}.get(name)
+        agent, steps = {"comparison": ("comparisons", ()), "analysis": ("analysis", ()),
+                        "cleaning": ("cleaning", ()), "pii": ("pii", ()),
+                        "drift": ("auditor", ("D1_data_drift", "D2_decision_drift", "D3_diagnosis")),
+                        "anomaly_explanation": ("auditor", ("explain_anomalies",))}.get(name, (None, ()))
         if agent and not text.startswith("ERROR"):
-            text += self._related(agent, ("explain_anomalies",) if agent == "auditor" else ())
+            text += self._related(agent, steps)
         return text
 
     def _report(self, name: str, row_key: str = None) -> str:
@@ -200,6 +202,15 @@ class Toolbox:
             return "\n".join([f"policy: {r.policy_version}"]
                              + [f"{c.table}.{c.column}: {c.pii_kind.value} -> {c.action.value} ({c.method})"
                                 for c in r.columns])
+        if name == "drift":
+            r = load(CONTRACT_OF["auditor.drift"], path("auditor", "drift"))
+            out = [c for c in r.metric_checks if c.out_of_control]
+            return "\n".join([f"status: {r.status} | reference runs: {', '.join(r.reference_runs) or 'none'}",
+                              f"diagnosis: {r.narrative}"]
+                             + [f"input {c.agent}.{c.name}: PSI {c.psi:.3f}" + (" (DRIFT)" if c.flagged else "")
+                                for c in r.input_checks]
+                             + [f"out of limits: {c.agent}.{c.name} = {c.value} (limits {c.lower} to {c.upper})"
+                                for c in out])
         if name == "anomaly_explanation":
             r = load(CONTRACT_OF["auditor.explanations"], path("auditor", "explanations"))
             if not row_key:
@@ -210,4 +221,5 @@ class Toolbox:
                 return f"ERROR: row '{row_key}' was not explained in this run."
             return (f"{e.row_key}: anomaly={e.is_anomaly}, score {e.anomaly_score:.3f}. {e.narrative}\n"
                     + "\n".join(f"  {c.feature} = {c.value} -> shap {c.shap_value:+.3f}" for c in e.contributions))
-        return f"ERROR: unknown report '{name}'. Use comparison | analysis | cleaning | pii | anomaly_explanation."
+        return (f"ERROR: unknown report '{name}'. "
+                f"Use comparison | analysis | cleaning | pii | drift | anomaly_explanation.")
