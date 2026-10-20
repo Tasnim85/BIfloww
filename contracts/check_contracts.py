@@ -47,6 +47,27 @@ def check_examples() -> None:
     print(f"OK  {n} example JSON files + 3 YAML files are valid")
 
 
+def check_coverage_example() -> None:
+    """The BO4-12 example must follow from the coverage profile, not be typed by hand."""
+    from statistics import median
+
+    from contracts.comparisons import ComparisonReport
+    from contracts.quality import CoverageProfile
+    cov = load(CoverageProfile, EXAMPLES / "run_001/profiling/coverage_profile.json").tables[0]
+    july = [d.rows for d in cov.days if d.date.startswith("2018-07")]
+    august = [d for d in cov.days if d.date.startswith("2018-08")]
+    threshold = 0.6 * median(july)
+    last_complete = august[-1].date
+    for d in reversed(august):                 # walk back over the trailing low days
+        if d.rows >= threshold:
+            last_complete = d.date
+            break
+    report = load(ComparisonReport, EXAMPLES / "run_001/comparisons/comparison_report.json")
+    assert report.checks[0].evidence["last_complete_day"] == last_complete == "2018-08-23"
+    assert report.proposed_fix.period.end == last_complete
+    print(f"OK  BO4-12 example: last complete day {last_complete} follows from the coverage profile")
+
+
 def check_journal() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         journal = Path(tmp) / "journal.db"
@@ -87,5 +108,6 @@ def check_journal() -> None:
 if __name__ == "__main__":
     check_dag()
     check_examples()
+    check_coverage_example()
     check_journal()
     print("All contract checks passed.")

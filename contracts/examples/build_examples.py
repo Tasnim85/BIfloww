@@ -23,14 +23,14 @@ from contracts.audit import AuditEvent, IntegrityReport
 from contracts.analysis import AnalysisResult, Insight, ValidationCheck
 from contracts.common import Period, SemanticType, save
 from contracts.comparisons import (CheckKind, CheckStatus, ComparisonCheck,
-                                   ComparisonReport, ProposedFix)
+                                   ComparisonReport, FixMethod, ProposedFix)
 from contracts.dashboard import ChartSpec, ChartType, DashboardSpec
 from contracts.intake import ColumnType, ColumnTypesReport, DatasetMatch, SimilarityReport, Upload
 from contracts.pipeline import STEPS
 from contracts.privacy import PiiAction, PiiColumn, PiiKind, PiiReport
 from contracts.quality import (AnomalyReport, CleaningAction, CleaningReport, CleaningRule,
-                               ColumnProfile, Playbook, ProfileReport, RuleApplication,
-                               TableProfile)
+                               ColumnProfile, CoverageProfile, DayCoverage, Playbook,
+                               ProfileReport, RuleApplication, TableCoverage, TableProfile)
 from contracts.semantic import (AnalysisRequest, Dimension, Glossary, GlossaryTerm,
                                 KpiCatalog, KpiDefinition)
 from contracts.warehouse import (LineageEdge, LineageGraph, LineageNode, NodeKind, TableKind,
@@ -80,6 +80,7 @@ CATALOG = KpiCatalog(
             expression="SUM(payment_value)", table="fact_payments", grain="payment",
             date_column="order_purchase_date", unit="BRL",
             filters=["order_status = 'delivered'"],
+            population="Payments of orders already delivered to the customer.",
             allowed_dimensions=["customer_state", "payment_type", "order_month"]),
         KpiDefinition(
             name="Orders", version="1.0",
@@ -87,6 +88,7 @@ CATALOG = KpiCatalog(
             expression="COUNT(DISTINCT order_id)", table="fact_order_items", grain="order_item",
             date_column="order_purchase_date", unit="orders",
             filters=["order_status = 'delivered'"],
+            population="Orders already delivered to the customer.",
             allowed_dimensions=["customer_state", "product_category", "seller_state", "order_month"]),
     ],
     dimensions=[
@@ -194,6 +196,30 @@ def build() -> None:
                           missing=0, missing_pct=0.0, distinct=29077, min=0.0, max=13664.08),
         ]),
     ]))
+    # Real daily counts of Olist orders, 1 July -> 31 August 2018 (the real profile covers
+    # every day of the table; the example keeps the two months of the scenario).
+    rows = [161, 195, 216, 256, 195, 121, 91, 122, 148, 134, 127, 124, 168, 148, 152, 245, 221,
+            307, 253, 250, 187, 215, 307, 271, 268, 247, 189, 176, 188, 288, 322,
+            311, 302, 314, 245, 276, 372, 370, 316, 289, 256, 188, 197, 292, 316, 288, 320, 257,
+            198, 204, 256, 243, 187, 144, 99, 69, 73, 67, 44, 14, 4, 1]
+    delivered = [159, 193, 214, 251, 193, 120, 89, 118, 146, 129, 123, 117, 167, 142, 148, 238,
+                 216, 302, 249, 247, 184, 213, 298, 264, 264, 244, 186, 172, 182, 278, 313,
+                 306, 292, 308, 236, 269, 363, 353, 310, 280, 249, 185, 191, 284, 311, 282, 316,
+                 249, 193, 204, 251, 238, 185, 142, 96, 69, 73, 66, 39, 11, 0, 0]
+    filled = [0.969, 0.99, 0.991, 0.98, 0.99, 0.992, 0.978, 0.967, 0.986, 0.963, 0.969, 0.944,
+              0.994, 0.959, 0.974, 0.971, 0.977, 0.984, 0.984, 0.988, 0.984, 0.991, 0.971, 0.974,
+              0.985, 0.988, 0.984, 0.977, 0.968, 0.965, 0.972, 0.984, 0.967, 0.981, 0.963, 0.975,
+              0.976, 0.954, 0.981, 0.969, 0.973, 0.984, 0.97, 0.973, 0.984, 0.979, 0.988, 0.969,
+              0.975, 1.0, 0.98, 0.979, 0.989, 0.986, 0.97, 1.0, 1.0, 0.985, 0.886, 0.786, 0.0, 0.0]
+    days = [f"2018-07-{d:02d}" for d in range(1, 32)] + [f"2018-08-{d:02d}" for d in range(1, 32)]
+    out("profiling", "coverage", CoverageProfile(tables=[TableCoverage(
+        table="orders", date_column="order_purchase_timestamp", status_column="order_status",
+        first_day=days[0], last_day=days[-1],
+        days=[DayCoverage(date=day, rows=r,
+                          by_status={"delivered": dl, "other": r - dl},
+                          completeness={"order_delivered_customer_date": f})
+              for day, r, dl, f in zip(days, rows, delivered, filled)])]))
+
     out("profiling", "anomalies", AnomalyReport(
         table="order_payments", row_key="order_id", model="IsolationForest",
         model_version="iforest@1.0",
@@ -307,40 +333,68 @@ def build() -> None:
     out("analysis", "result", result)
 
     # ---- 6. comparisons (Tasnim) ----------------------------------------------------------------
+    # Rule used here (a parameter to tune, not a law): the TRAILING days of a period are
+    # incomplete when their volume is < 60% of the median daily volume of the other
+    # period. July median = 195 orders/day -> threshold 117. August drops below it from
+    # the 24th (99, 69, 73, 67, 44, 14, 4, 1 orders) and has 0 delivered orders on the 30-31st.
+    # (A single low day inside a period, like Saturday 7 July with 91, is not trailing: ignored.)
     out("comparisons", "report", ComparisonReport(
         has_comparison=True,
         checks=[
             ComparisonCheck(
                 kind=CheckKind.COVERAGE, status=CheckStatus.BLOCKING,
-                message=("August has data only up to the 29th (29 of 31 days), July is complete. "
-                         "The full-month comparison shows a 4.1% drop that is caused by missing days."),
-                evidence={"current_last_day": "2018-08-29", "current_days": 29,
-                          "previous_days": 31, "warehouse_date_max": "2018-08-29"}),
-            ComparisonCheck(kind=CheckKind.UNIT, status=CheckStatus.OK,
-                            message="Both periods are in BRL."),
-            ComparisonCheck(kind=CheckKind.GRAIN, status=CheckStatus.OK,
-                            message="Both periods use fact_payments (one row = one payment)."),
+                message=("August is complete only up to the 23rd. From 24 August the number of "
+                         "orders falls to between 1 and 99 per day, against about 195 on a normal day, "
+                         "and no order of 30-31 August is delivered yet. The full-month comparison "
+                         "(-4.1%) compares 23 complete days with 31."),
+                evidence={"rule": "trailing days with volume < 60% of the other period's median",
+                          "threshold_rows": 117, "reference_median_rows": 195,
+                          "last_complete_day": "2018-08-23",
+                          "incomplete_days": {"2018-08-24": 99, "2018-08-25": 69, "2018-08-26": 73,
+                                              "2018-08-27": 67, "2018-08-28": 44, "2018-08-29": 14,
+                                              "2018-08-30": 4, "2018-08-31": 1},
+                          "delivered_30_31_aug": 0, "source": "profiling/coverage_profile.json"}),
             ComparisonCheck(kind=CheckKind.POPULATION, status=CheckStatus.OK,
-                            message="Same filter (delivered orders) on both periods."),
+                            message=("Same population on both sides: customers' delivered orders "
+                                     "(Revenue@2.0 filter order_status = 'delivered').")),
+            ComparisonCheck(kind=CheckKind.UNIT, status=CheckStatus.OK,
+                            message="Both values are in BRL."),
+            ComparisonCheck(kind=CheckKind.SCALE, status=CheckStatus.OK,
+                            message="Both periods are calendar months of 31 days, both values are totals.",
+                            evidence={"days_current": 31, "days_previous": 31}),
+            ComparisonCheck(kind=CheckKind.GRAIN, status=CheckStatus.OK,
+                            message="Both values come from fact_payments (one row = one payment)."),
         ],
         proposed_fix=ProposedFix(
-            description="Compare 1-29 August 2018 with 1-29 July 2018.",
-            period=Period(start="2018-08-01", end="2018-08-29"),
-            compare_to=Period(start="2018-07-01", end="2018-07-29"),
-            value_current=985414.28, value_previous=930969.67, change_pct=0.0585)))         # real
+            method=FixMethod.SAME_DAYS,
+            description="Compare 1-23 August 2018 with 1-23 July 2018.",
+            justification=("23 is the last complete day of August. Using the same 23 days in July "
+                           "compares equal amounts of time."),
+            period=Period(start="2018-08-01", end="2018-08-23"),
+            compare_to=Period(start="2018-07-01", end="2018-07-23"), unit="BRL",
+            value_current=941291.36, value_previous=699238.79, change_pct=0.3462),         # real
+        alternatives=[ProposedFix(
+            method=FixMethod.PER_DAY_AVERAGE,
+            description="Compare revenue per day: 1-23 August against the whole of July.",
+            justification=("July's orders are concentrated at the end of the month (1,949 of its "
+                           "6,292 orders after the 23rd), so the first 23 days undervalue July. "
+                           "A daily average uses every complete day of both months."),
+            period=Period(start="2018-08-01", end="2018-08-23"), compare_to=JULY, unit="BRL/day",
+            value_current=40925.71, value_previous=33158.19, change_pct=0.2343)]))           # real
 
     # ---- 6. dashboard (Samar) -------------------------------------------------------------------
     out("dashboard", "spec", DashboardSpec(
         title="Revenue by state: August vs July 2018", question=question, kpi="Revenue@2.0",
         charts=[
-            ChartSpec(chart_id="c1", chart_type=ChartType.KPI_CARD, title="Revenue, 1-29 August",
+            ChartSpec(chart_id="c1", chart_type=ChartType.KPI_CARD, title="Revenue, 1-23 August",
                       data_file="analysis/result.parquet", y="value",
                       reason="One headline number with its change."),
             ChartSpec(chart_id="c2", chart_type=ChartType.BAR, title="Revenue by state",
                       data_file="analysis/result.parquet", x="customer_state", y="value",
                       color="period", reason="27 categories compared across 2 periods."),
         ],
-        warnings=["August is incomplete (29 of 31 days). Showing 1-29 August vs 1-29 July."]))
+        warnings=["August is complete only up to the 23rd. Showing 1-23 August vs 1-23 July "
+                  "(accepted by the user)."]))
 
     # ---- 7. auditor (Tasnim) --------------------------------------------------------------------
     contribs = [FeatureContribution(feature="payment_value", value=13664.08, shap_value=4.1),
@@ -389,9 +443,11 @@ def build() -> None:
                    decision="PASSED", inputs=["etl/receipts.json"], rule_version="kpi:Revenue@2.0",
                    evidence={"expected_rows": 100756, "actual_rows": 100756}),
         AuditEvent(run_id="run_001", agent="comparisons", step="coverage_check", timestamp=T0,
-                   decision="BLOCKING: fix proposed (1-29 Aug vs 1-29 Jul)",
-                   inputs=["request/analysis_request.json", "etl/warehouse_manifest.json"],
-                   evidence={"current_days": 29, "previous_days": 31}),
+                   decision="BLOCKING: fix proposed (1-23 Aug vs 1-23 Jul)",
+                   inputs=["request/analysis_request.json", "profiling/coverage_profile.json"],
+                   rule_version="comparability-rules@1.0",
+                   evidence={"last_complete_day": "2018-08-23", "threshold_rows": 117,
+                             "reference_median_rows": 195}),
     ]
     (HERE / "audit_events.json").write_text(
         TypeAdapter(list[AuditEvent]).dump_json(events, indent=2).decode(), encoding="utf-8")

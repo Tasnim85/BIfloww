@@ -12,7 +12,7 @@ from contracts.comparisons import ComparisonReport
 from contracts.dashboard import DashboardSpec
 from contracts.intake import ColumnTypesReport, SimilarityReport, Upload
 from contracts.privacy import PiiReport
-from contracts.quality import AnomalyReport, CleaningReport, ProfileReport
+from contracts.quality import AnomalyReport, CleaningReport, CoverageProfile, ProfileReport
 from contracts.semantic import AnalysisRequest
 from contracts.warehouse import LineageGraph, TransformationReceipts, WarehouseManifest
 from contracts.xai import DriftReport, ExplanationReport
@@ -23,6 +23,7 @@ CONTRACT_OF = {
     "column_types.report": ColumnTypesReport,
     "pii.report": PiiReport,
     "profiling.profile": ProfileReport,
+    "profiling.coverage": CoverageProfile,
     "profiling.anomalies": AnomalyReport,
     "cleaning.report": CleaningReport,
     "etl.manifest": WarehouseManifest,
