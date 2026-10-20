@@ -1,5 +1,5 @@
 name: why_writer
-version: "1.0"
+version: "1.2"
 owner: Tasnim
 used_by: auditor/why.py
 description: >
@@ -16,6 +16,11 @@ system: |
   Rules:
   - Use ONLY facts written in the TOOL RESULTS. Copy numbers exactly as they appear;
     never compute, round or estimate a number. Keep dates in YYYY-MM-DD form.
+  - Keep the number format of the results even in French: write "2,647.76" and
+    "+34.6%", never "2 647,76" or "34,6 %" (other formats are refused by the check).
+  - Entries marked "(full entry)" hold the complete evidence of a decision: prefer
+    them, and cite the entry that actually holds each fact (for example the check
+    that blocked, rather than the verdict that only repeats it).
   - Journal entries appear as #12. Put in "citations" the ids of the entries that hold
     the facts you use, and mention them in the text as (#12). Each number taken from
     the journal must appear in an entry you cite.
@@ -26,6 +31,23 @@ system: |
   - At most 6 sentences, plain words for a manager, no markdown. Answer in $language.
 
 changelog:
+  - version: "1.2"
+    date: "2026-10-20"
+    author: Tasnim
+    change: >
+      Eighth test: the investigator's search never surfaced the coverage check (#6), so
+      the writer could not cite it. Code change (prompt text unchanged): the writer now
+      also receives, in full, the notable decisions (blocking, warning, fixes, user
+      decision) of every agent the investigator met, most severe first.
+  - version: "1.1"
+    date: "2026-10-20"
+    author: Tasnim
+    change: >
+      Seventh test: all three questions verified. Two weaknesses fixed: a draft wrote
+      "2 647,76" (French format) and was refused, so the number format is now stated;
+      a short investigation made the writer cite the verdict (#13) instead of the
+      coverage check (#6). The code now opens in full the entries the investigator
+      only saw in search results, and the prompt asks to cite the entry holding each fact.
   - version: "1.0"
     date: "2026-10-20"
     author: Tasnim

@@ -36,6 +36,7 @@ from contracts.xai import WhyAnswer
 PROMPT_NAME = "why_agent"
 WRITER_PROMPT = "why_writer"
 MAX_STEPS = 8
+MAX_EXPAND = 8          # journal entries opened in full for the writer
 _ENTRY_REF = re.compile(r"#(\d+)|\"entry_id\":\s*(\d+)")
 
 class AgentStep(BaseModel):
@@ -62,7 +63,7 @@ def _entry_ids(text: str) -> set[int]:
     return {int(a or b) for a, b in _ENTRY_REF.findall(text)}
 
 
-JOURNAL_TOOLS = {"search_journal", "get_entry"}
+JOURNAL_TOOLS = {"search_journal", "get_entry", "expanded_entry"}
 
 
 def verify(step: AgentStep, question: str, outputs: list[tuple[str, str]], entry_text) -> list[str]:
@@ -143,7 +144,36 @@ class WhyAgent:
         self.runs_root, self.repo_root = runs_root, repo_root
         self.config, self.llm, self.writer = config or LLMConfig(), llm, writer
 
-    def _write(self, question: str, outputs: list[tuple[str, str]], ctx, feedback: str | None) -> AgentStep:
+    @staticmethod
+    def _expand(tools: Toolbox, outputs: list[tuple[str, str]]) -> None:
+        """Before the writer runs, open in full (at most MAX_EXPAND entries):
+          1. the entries the investigator only SAW in shortened search results;
+          2. the NOTABLE decisions (blocking, warning, fix, user decision...) of every
+             agent the investigator met: a verdict is explained by the checks behind it,
+             even when the search did not surface them.
+        Most severe first. Added to `outputs`, so the fact check accepts what the
+        writer reads there."""
+        corpus = "\n".join(text for _, text in outputs)
+        opened = {e for name, text in outputs if name in ("get_entry", "expanded_entry")
+                  for e in _entry_ids(text)}
+        events = {e.entry_id: e for e in tools._events()}
+        seen = {i for i in _entry_ids(corpus) if i in events}
+        agents = {events[i].agent for i in seen}
+        related = {i for i, e in events.items() if e.agent in agents and e.decision not in ROUTINE}
+
+        def severity(i: int) -> tuple:
+            d = events[i].decision.upper()
+            rank = 0 if d.startswith(("BLOCKING", "FAILED", "TAMPERED")) else 1 if d.startswith("WARNING") \
+                else 2 if i in related else 3
+            return rank, i
+
+        for i in sorted((seen | related) - opened, key=severity)[:MAX_EXPAND]:
+            outputs.append(("expanded_entry", f"#{i} (full entry):\n{tools.entry_text(i)}"))
+
+    def _write(self, question: str, outputs: list[tuple[str, str]], ctx, feedback: str | None,
+               tools: Toolbox | None = None) -> AgentStep:
+        if tools is not None:
+            self._expand(tools, outputs)
         prompt = load_prompt(WRITER_PROMPT)
         results = "\n\n".join(f"RESULT of {name}:\n{text}" for name, text in outputs) or "(no tool result)"
         user = f"QUESTION: {question}\n\nTOOL RESULTS:\n{results}"
@@ -170,7 +200,7 @@ class WhyAgent:
             call = None
             try:
                 if use_writer or turn == self.max_steps - 1:
-                    step = self._write(question, outputs, ctx, feedback)
+                    step = self._write(question, outputs, ctx, feedback, tools)
                 else:
                     call, assistant = self.llm(messages, tools.schemas(), prompt_version=prompt.ref,
                                                ctx=ctx, step="why_agent", config=self.config)

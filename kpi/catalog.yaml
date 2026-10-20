@@ -1,0 +1,54 @@
+version: '1.0'
+kpis:
+- name: Revenue
+  version: '2.0'
+  description: Money paid by customers for delivered orders.
+  expression: SUM(payment_value)
+  table: fact_payments
+  grain: payment
+  date_column: order_purchase_date
+  unit: BRL
+  filters:
+  - order_status = 'delivered'
+  population: Payments of orders already delivered to the customer.
+  allowed_dimensions:
+  - customer_state
+  - payment_type
+  - order_month
+- name: Orders
+  version: '1.0'
+  description: Number of distinct delivered orders.
+  expression: COUNT(DISTINCT order_id)
+  table: fact_order_items
+  grain: order_item
+  date_column: order_purchase_date
+  unit: orders
+  filters:
+  - order_status = 'delivered'
+  population: Orders already delivered to the customer.
+  allowed_dimensions:
+  - customer_state
+  - product_category
+  - seller_state
+  - order_month
+dimensions:
+- name: customer_state
+  table: dim_customer
+  column: customer_state
+  description: Brazilian state of the customer (2 letters).
+- name: product_category
+  table: dim_product
+  column: product_category_name_english
+  description: Product category in English.
+- name: seller_state
+  table: dim_seller
+  column: seller_state
+  description: Brazilian state of the seller.
+- name: payment_type
+  table: fact_payments
+  column: payment_type
+  description: credit_card, boleto, voucher, debit_card.
+- name: order_month
+  table: dim_date
+  column: year_month
+  description: Month of purchase, 'YYYY-MM'.

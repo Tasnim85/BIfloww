@@ -271,3 +271,29 @@ def test_last_turn_is_always_the_writer(journal):
 def test_empty_answer_never_accepted():
     from auditor.why import AgentStep
     assert "empty" in verify(AgentStep(action="answer", answer="  "), "q", [("x", "y")], lambda i: "")[0]
+
+
+def test_writer_sees_in_full_the_entries_the_investigator_only_glimpsed(journal):
+    """Seventh test: the investigator opened only the verdict; the writer must see the check."""
+    cov, verdict = entry_id(journal, "check_coverage"), entry_id(journal, "comparison_verdict")
+    llm = ScriptedLLM({"action": "search_journal", "args": {"agent": "comparisons"}},
+                      {"action": "get_entry", "args": {"entry_id": verdict}},
+                      {"action": "answer", "answer": ""})
+    # 195 is cut from the search line: only the expanded entry #cov shows it
+    writer = ScriptedWriter((f"Bloqué (#{cov}) : au-delà du 2018-08-23, moins de 195 commandes par jour.", [cov]))
+    a = agent(journal, llm, writer).ask(Q)
+    assert a.source.startswith("llm:"), a.rejected
+    assert f"#{cov} (full entry)" in writer.seen[0]
+    assert "expanded_entry" not in [c["tool"] for c in a.tool_calls]     # not a tool the LLM called
+
+
+def test_writer_gets_the_checks_behind_a_verdict_the_search_never_showed(journal):
+    """Eighth test: only the verdict was found; the blocking check must reach the writer."""
+    cov, verdict = entry_id(journal, "check_coverage"), entry_id(journal, "comparison_verdict")
+    llm = ScriptedLLM({"action": "get_entry", "args": {"entry_id": verdict}},
+                      {"action": "answer", "answer": ""})
+    writer = ScriptedWriter((f"Bloqué par le contrôle de couverture (#{cov}) : complet jusqu'au 2018-08-23.", [cov]))
+    a = agent(journal, llm, writer).ask(Q)
+    assert a.source.startswith("llm:") and a.citations == [cov], a.rejected
+    seen = writer.seen[0]
+    assert seen.index(f"#{cov} (full entry)") < seen.index("check_unit") if "check_unit" in seen else True
