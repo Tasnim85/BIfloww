@@ -27,6 +27,7 @@ from auditor.drift import stats
 from auditor.drift.observe import Observation, observe_run
 from contracts.audit import DEFAULT_JOURNAL, AuditEvent, log_event
 from contracts.common import save
+from contracts.i18n import Msg, render
 from contracts.pipeline import RUNS_ROOT, output_path
 from contracts.xai import DriftReport, InputDriftCheck, MetricDriftCheck
 
@@ -69,36 +70,34 @@ class DriftMonitor:
         reasoning = [c for c in out if c.name.startswith("shap_share_")]
         decisions = [c for c in out if not c.name.startswith("shap_share_")]
         agents = sorted({c.agent for c in out})
-        d_txt = ", ".join(f"{c.agent}.{c.name} (PSI {c.psi:.2f})" for c in data)
-        o_txt = ", ".join(f"{c.agent}.{c.name} = {c.value:.4f} (limits {c.lower:.4f} to {c.upper:.4f})"
-                          for c in out)
+        d_msgs = [Msg(key="drift.input", params={"agent": c.agent, "name": c.name, "psi": c.psi}) for c in data]
+        o_msgs = [Msg(key="drift.output", params={"agent": c.agent, "name": c.name, "value": c.value,
+                                                  "lower": c.lower, "upper": c.upper}) for c in out]
+        ins, outs = [m.model_dump() for m in d_msgs], [m.model_dump() for m in o_msgs]
 
         if data and out:
             status = "data_drift"
-            text = (f"{run_id}: the input data changed ({d_txt}) and the outputs changed too ({o_txt}). "
-                    f"The decisions most likely follow the data. Check that this change is legitimate.")
+            parts = [Msg(key="drift.data_drift", params={"run": run_id, "inputs": ins, "outputs": outs})]
         elif data:
             status = "data_drift_only"
-            text = (f"{run_id}: the input data changed ({d_txt}) but no output left its limits. "
-                    f"The models may no longer fit the data: keep watching.")
+            parts = [Msg(key="drift.data_drift_only", params={"run": run_id, "inputs": ins})]
         elif decisions and not reasoning:
             status = "agent_changed"
             explained = sorted({c.agent for c in metrics if c.name.startswith("shap_share_")} & set(agents))
-            why = (f" The explanations of {', '.join(explained)} show the same reasoning as usual, so a "
-                   f"SETTING changed (for example a threshold), not the model itself." if explained else
-                   " A setting, a filter or a processing step probably changed.")
-            text = (f"{run_id}: the input data is stable, yet the behaviour of {', '.join(agents)} "
-                    f"changed ({o_txt}).{why}")
+            parts = [Msg(key="drift.agent_changed", params={"run": run_id, "agents": ", ".join(agents),
+                                                             "outputs": outs}),
+                     Msg(key="drift.why_setting", params={"explained": ", ".join(explained)}) if explained
+                     else Msg(key="drift.why_unknown")]
         elif out:
             status = "agent_changed"
-            text = (f"{run_id}: the input data is stable, yet the model weighs its features differently "
-                    f"({o_txt}). The model itself was probably changed or retrained.")
+            parts = [Msg(key="drift.model_changed", params={"run": run_id, "outputs": outs})]
         else:
             status = "stable"
-            text = f"{run_id}: inputs and outputs are within the reference limits."
+            parts = [Msg(key="drift.stable", params={"run": run_id})]
+        parts.append(Msg(key="drift.caution"))
         return DriftReport(reference_runs=self.reference_runs, current_run=run_id, status=status,
                            input_checks=inputs, metric_checks=metrics, flagged_agents=agents,
-                           narrative=text + " This is a diagnosis, not a proof: a human decides.")
+                           narrative=render(parts), narrative_parts=parts)
 
 
 def journal_alerts(report: DriftReport, journal: Path) -> None:

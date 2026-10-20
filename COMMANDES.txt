@@ -1,0 +1,168 @@
+﻿==========================================================================================
+  BIFLOW - PARTIE DE TASNIM (BO3 Auditor + BO4-12 Comparaisons)
+  Toutes les commandes, dans l'ordre. Terminal : cmd (pas PowerShell).
+  Toujours depuis le dossier du projet :  D:\5ds3\pi\BIFLOW
+==========================================================================================
+
+
+------------------------------------------------------------------------------------------
+ 0. A CHAQUE FOIS QUE J'OUVRE UN TERMINAL
+------------------------------------------------------------------------------------------
+
+cd /d D:\5ds3\pi\BIFLOW
+.venv\Scripts\activate.bat
+
+   -> (.venv) doit apparaitre au debut de la ligne.
+   -> NE PAS utiliser Activate.ps1 (ca ouvre le fichier au lieu de l'executer).
+
+
+------------------------------------------------------------------------------------------
+ 1. INSTALLATION (une seule fois, ou sur un nouveau PC)
+------------------------------------------------------------------------------------------
+
+python -m venv .venv
+.venv\Scripts\activate.bat
+python -m pip install --upgrade pip
+pip install pandas numpy scipy pyarrow duckdb scikit-learn shap joblib matplotlib pydantic pyyaml streamlit pytest fastapi "uvicorn[standard]" httpx
+
+   Si un telechargement echoue (hash mismatch / connexion lente) :
+pip cache purge
+pip install --timeout 120 --retries 10 <le paquet>
+
+   Les donnees Olist (CSV Kaggle) vont dans :  data\olist\
+
+   La cle Groq va dans le fichier .env a la racine (JAMAIS sur GitHub) :
+      GROQ_API_KEY=gsk_...
+      BIFLOW_LLM_MODEL=openai/gpt-oss-120b
+
+
+------------------------------------------------------------------------------------------
+ 2. PREPARER LES DONNEES (dans cet ordre, apres une installation ou un "git pull")
+------------------------------------------------------------------------------------------
+
+python -m contracts.examples.install          & REM fichiers exemples des autres agents (catalogue, glossaire...)
+python -m auditor.dev.make_fake_inputs         & REM entrees Olist reelles : couverture, anomalies, entrepot
+python -m auditor.dev.seed_demo_journal        & REM run_001 + journal de demo (ajouter --llm pour un resume Groq)
+python -m auditor.dev.make_clinics_demo        & REM 2e jeu de donnees : cliniques en Tunisie (run clinic_001)
+python -m auditor.dev.simulate_runs            & REM runs mensuels pour le drift (long : quelques minutes)
+python -m auditor.drift.monitor                & REM diagnostic de drift sur les runs mensuels
+
+   Pour TOUT remettre a zero : supprimer le dossier runs\ puis relancer les 6 commandes.
+
+
+------------------------------------------------------------------------------------------
+ 3. VERIFIER QUE TOUT MARCHE
+------------------------------------------------------------------------------------------
+
+python -m contracts.check_contracts            & REM contrats, DAG, prompts, langues fr/en, journal
+python -m pytest tests -q                      & REM tous les tests  -> attendu : 140 passed
+
+   Un seul fichier de tests :
+python -m pytest tests\test_api.py -v
+python -m pytest tests\test_i18n.py -v
+python -m pytest tests\test_generalization.py -v
+
+
+------------------------------------------------------------------------------------------
+ 4. STREAMLIT (ma demo)
+------------------------------------------------------------------------------------------
+
+streamlit run auditor\ui\app.py
+
+   -> s'ouvre sur http://localhost:8501
+   -> "Resultat d'un run" : choisir run_001 ou clinic_001 dans la barre de gauche
+   -> Langue : l'application s'ouvre en ANGLAIS (langue de la demo).
+      Changer : selecteur en haut de la barre de gauche (English / Francais).
+      Ouvrir directement en francais :   set BIFLOW_UI_LANG=fr   puis streamlit run auditor\ui\app.py
+   -> Arreter : Ctrl+C dans le terminal
+
+
+------------------------------------------------------------------------------------------
+ 5. API FASTAPI (pour Next.js)
+------------------------------------------------------------------------------------------
+
+uvicorn api.main:app --reload --port 8000
+
+   -> Documentation + tests des routes : http://localhost:8000/docs
+   -> Exemples :
+        http://localhost:8000/health
+        http://localhost:8000/api/runs/run_001
+        http://localhost:8000/api/runs/run_001/comparison?lang=en
+        http://localhost:8000/api/runs/clinic_001/dashboard
+   -> Arreter : Ctrl+C
+
+   Cacher les journaux de demo (comme en production) :
+set BIFLOW_JOURNALS=real,ui
+uvicorn api.main:app --port 8000
+
+   Regenerer la description de l'API pour Next.js (apres un changement de route ou de contrat) :
+python -m api.export_openapi
+
+
+------------------------------------------------------------------------------------------
+ 6. LANCER MES AGENTS A LA MAIN (sans interface)
+------------------------------------------------------------------------------------------
+
+   BO4-12 Comparaisons :
+python -m comparisons.checker --run run_001                    & REM avec resume LLM (Groq)
+python -m comparisons.checker --run run_001 --no-llm           & REM sans LLM (gabarit)
+python -m comparisons.checker --run run_001 --language en      & REM resume en anglais
+python -m comparisons.checker --run run_001 --accept same_days & REM l'utilisateur accepte la correction
+python -m comparisons.checker --run run_001 --reject           & REM l'utilisateur garde la comparaison demandee
+
+   BO3 Auditor (SHAP + integrite du journal + drift) :
+python -m auditor.agent --run run_001 --journal runs\demo_journal.db
+python -m auditor.xai.explain --run run_001
+
+   Agent "pourquoi ?" (repond dans la langue de la question) :
+python -m auditor.why "Pourquoi la comparaison aout/juillet a-t-elle ete bloquee ?" --run run_001 --journal runs\demo_journal.db
+python -m auditor.why "D'ou vient le chiffre d'affaires ?" --run run_001 --journal runs\demo_journal.db
+python -m auditor.why "Pourquoi le paiement le plus anormal a-t-il ete signale ?" --run run_001 --journal runs\demo_journal.db
+python -m auditor.why "Why was the comparison blocked?" --run run_001 --journal runs\demo_journal.db
+
+
+------------------------------------------------------------------------------------------
+ 7. LLM ET PROMPTS
+------------------------------------------------------------------------------------------
+
+python -m contracts.llm                        & REM teste la connexion au LLM (Groq)
+python -m contracts.llm --models               & REM liste les modeles disponibles
+python -m contracts.prompts                    & REM liste les prompts et leurs versions
+
+   Modifier un prompt : prompts\<nom>.yaml -> changer "version" ET ajouter une ligne dans "changelog".
+   Modifier un texte affiche (agents OU interface Streamlit, section "ui") :
+   i18n\en.yaml ET i18n\fr.yaml (memes cles), puis python -m contracts.check_contracts
+
+
+------------------------------------------------------------------------------------------
+ 8. GIT (commit + push sur MA branche)
+------------------------------------------------------------------------------------------
+
+git status                                     & REM .env, runs\, data\olist\, *.db NE doivent PAS apparaitre
+git checkout feature/tasnim
+git add .
+git status                                     & REM re-verifier avant de commiter
+git commit -m "message clair"
+git push origin feature/tasnim
+
+   Recuperer le travail des autres :
+git pull origin main
+
+   Annuler une modification non commitee d'un fichier :
+git restore <fichier>
+
+
+------------------------------------------------------------------------------------------
+ 9. PROBLEMES DEJA RENCONTRES
+------------------------------------------------------------------------------------------
+
+ "No module named ..."             -> le venv n'est pas active (etape 0)
+ "Windows fatal exception" pytest  -> verifier que tests\conftest.py existe (backend Agg)
+ "no tests ran"                    -> le dossier tests\ a ete remplace : "Extraire tout" (fusion), pas glisser-deposer
+ Groq 429 (trop de requetes)       -> attendre une minute, ou lancer avec --no-llm
+ Groq "model not found"            -> python -m contracts.llm --models, puis changer BIFLOW_LLM_MODEL dans .env
+ Page Streamlit vide / "Manquant"  -> relancer les commandes de l'etape 2
+ Rapports en anglais seulement     -> rapports anciens : relancer les commandes de l'etape 2
+ Port 8000 ou 8501 deja pris       -> fermer l'autre terminal, ou --port 8001 / --server.port 8502
+
+==========================================================================================

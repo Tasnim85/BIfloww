@@ -2,27 +2,21 @@
 import streamlit as st
 
 from auditor.ui.components import why_box
-from auditor.ui.data import pick_journal, runs_in
+from auditor.ui.data import pick_journal, runs_in, t, ui_lang
 
-SUGGESTIONS = {
-    "run_001": ["Pourquoi la comparaison août/juillet a-t-elle été bloquée ?",
-                "D'où vient le chiffre d'affaires ?",
-                "Pourquoi le paiement le plus anormal a-t-il été signalé ?"],
-    "drift": ["Pourquoi ce run a-t-il été signalé ?",
-              "Les données d'entrée ont-elles changé dans ce run ?"],
-}
+SUGGESTIONS = {"run_001": ["q_aug_jul", "q_revenue", "q_anomaly"],   # keys of i18n "ui.why.*"
+               "other": ["q_flagged", "q_inputs"]}
 
 
 def render() -> None:
-    st.title("Demander « pourquoi ? »")
-    st.caption("Question → l'enquêteur appelle des outils en lecture seule → le rédacteur répond → "
-               "le contrôle vérifie chaque chiffre et chaque citation")
+    st.title(t("whyp.title"))
+    st.caption(t("whyp.caption"))
     c1, c2 = st.columns(2)
     with c1:
-        journal = pick_journal(key="why_journal", prefer="Démo run_001")
+        journal = pick_journal(key="why_journal", prefer="demo")
     if journal is None:
         return
     with c2:
-        run_id = st.selectbox("Run", runs_in(journal), key="why_run")
-    why_box(run_id, journal, SUGGESTIONS["run_001"] if run_id == "run_001" else SUGGESTIONS["drift"],
-            key=f"whypage_{run_id}")
+        run_id = st.selectbox(t("common.run"), runs_in(journal), key="why_run")
+    keys = SUGGESTIONS["run_001"] if run_id == "run_001" else SUGGESTIONS["other"]
+    why_box(run_id, journal, [t(f"why.{k}") for k in keys], key=f"whypage_{run_id}_{ui_lang()}")

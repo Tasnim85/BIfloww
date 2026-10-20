@@ -18,6 +18,7 @@ from enum import Enum
 from pydantic import Field
 
 from contracts.common import Artifact, Contract, Period
+from contracts.i18n import Msg
 
 
 class CheckKind(str, Enum):
@@ -37,8 +38,9 @@ class CheckStatus(str, Enum):
 class ComparisonCheck(Contract):
     kind: CheckKind
     status: CheckStatus
-    message: str                       # plain sentence for Sarra
+    message: str                       # plain sentence for Sarra (English, canonical)
     evidence: dict = Field(default_factory=dict)   # the numbers behind the message
+    message_parts: list[Msg] = Field(default_factory=list)   # same sentence, any language (contracts/i18n.py)
 
 
 class FixMethod(str, Enum):
@@ -58,6 +60,9 @@ class ProposedFix(Contract):
     value_current: float | None = None   # recomputed with the fix
     value_previous: float | None = None
     change_pct: float | None = None
+    description_parts: list[Msg] = Field(default_factory=list)     # any language (contracts/i18n.py)
+    justification_parts: list[Msg] = Field(default_factory=list)
+    unit_parts: list[Msg] = Field(default_factory=list)            # "BRL/day" -> "BRL/jour"
 
 
 class UserDecision(str, Enum):
@@ -71,6 +76,8 @@ class ComparisonReport(Artifact):
     rules_version: str = ""            # e.g. "comparability-rules@1.0"
     summary: str = ""                  # one paragraph for Sarra
     summary_source: str = "template"   # "template" | "llm:<model>" (LLM text passed the fact check)
+    summary_parts: list[Msg] = Field(default_factory=list)   # the TEMPLATE summary, any language
+    summary_lang: str | None = None    # language of an LLM summary ("fr"); None = template
     checks: list[ComparisonCheck] = Field(default_factory=list)
     proposed_fix: ProposedFix | None = None          # the recommended adjustment
     alternatives: list[ProposedFix] = Field(default_factory=list)   # other valid adjustments

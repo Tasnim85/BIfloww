@@ -1,7 +1,7 @@
 # BIFlow : les contrats
 
 > À lire par toute l'équipe avant d'écrire une ligne de code d'agent.
-> Version des contrats : **1.5** (20 octobre 2026). Voir l'historique à la section 10.
+> Version des contrats : **1.6** (20 octobre 2026). Voir l'historique à la section 10.
 
 ## 1. C'est quoi un contrat, en une phrase
 
@@ -237,6 +237,7 @@ Ces choix ont été faits pour pouvoir démarrer. Chacun relit **la partie qui l
 
 ## 10. Historique des versions
 
+- **1.6** (20 octobre 2026) : textes **multilingues** (français / anglais), voir `i18n/README.md`. Les contrats qui portent un texte pour l'utilisateur reçoivent un champ optionnel `<champ>_parts` : la même phrase sous forme de messages (clé du catalogue + valeurs), rendue dans n'importe quelle langue par `contracts.i18n.localize()`. Champs ajoutés : `ComparisonCheck.message_parts`, `ProposedFix.description_parts` / `justification_parts` / `unit_parts`, `ComparisonReport.summary_parts` / `summary_lang`, `AnomalyExplanation.narrative_parts`, `DriftReport.narrative_parts`, `WhyAnswer.lang`. Les champs texte existants restent en **anglais**, comme le journal. Rien n'est cassé : un fichier sans `_parts` s'affiche simplement en anglais.
 - **1.5** (20 octobre 2026) : `AnomalyReport` reçoit deux champs optionnels, `feature_labels` et `feature_units`. Le profiling peut y donner des noms lisibles et des unités (« Consultation fee », « TND »), ce qui permet aux explications de s'adapter à n'importe quelles données. **Point à valider avec Ahmed :** son reçu de transformation doit renseigner `column_sources` pour la colonne de date du KPI. C'est ce qui permet à BO4-12 de retrouver la bonne table dans le profil de couverture. Enfin, une référence `static:` (par exemple le catalogue) peut être surchargée par run : si `runs/<run_id>/static/<chemin>` existe, c'est cette copie qui est lue. Cela permet d'avoir un 2e jeu de données, avec son propre catalogue, dans le même dépôt.
 - **1.4** (20 octobre 2026) : `WhyAnswer` dans `xai.py` (la réponse de l'agent « pourquoi ? »), `factcheck.py` (la vérification des chiffres d'un texte LLM, commune à tous les agents) et le paramètre `history` de `chat_json` pour les agents qui appellent des outils sur plusieurs tours.
 - **1.3** (20 octobre 2026) : `prompts.py` et le dossier `prompts/`. **Règle d'équipe :** aucun prompt n'est écrit dans le code ; on modifie le fichier YAML, on augmente sa version et on ajoute une ligne en haut de son `changelog`.

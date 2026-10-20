@@ -8,6 +8,7 @@ from comparisons.checks import EdgeCoverage
 from comparisons.data import Inputs, days_of
 from contracts.common import Period
 from contracts.comparisons import CheckStatus, ComparisonCheck, FixMethod, ProposedFix
+from contracts.i18n import Msg, render
 
 
 def _shift(p: Period, lo: int, hi: int) -> Period:
@@ -25,26 +26,28 @@ def _change(cur: float, prev: float) -> float | None:
     return round(cur / prev - 1, 4) if prev else None
 
 
-def same_days(inp: Inputs, cur: Period, prev: Period, lo: int, hi: int, why: str) -> ProposedFix:
+def _fix(method: FixMethod, unit: Msg, what: Msg, why: Msg, **values) -> ProposedFix:
+    """Texts in English (journal) and as messages (any language)."""
+    return ProposedFix(method=method, unit=render(unit), description=render(what), justification=render(why),
+                       unit_parts=[unit], description_parts=[what], justification_parts=[why], **values)
+
+
+def same_days(inp: Inputs, cur: Period, prev: Period, lo: int, hi: int, why: Msg) -> ProposedFix:
     a, b = _shift(cur, lo, hi), _shift(prev, lo, hi)
     va, vb = inp.kpi_value(a), inp.kpi_value(b)
-    return ProposedFix(
-        method=FixMethod.SAME_DAYS, unit=inp.kpi.unit,
-        description=f"Compare days {lo + 1} to {hi + 1} of both periods: {a.start}..{a.end} "
-                    f"with {b.start}..{b.end}.",
-        justification=why, period=a, compare_to=b,
-        value_current=va, value_previous=vb, change_pct=_change(va, vb))
+    what = Msg(key="fix.same_days", params={"first": lo + 1, "last": hi + 1, "a_start": a.start,
+                                            "a_end": a.end, "b_start": b.start, "b_end": b.end})
+    return _fix(FixMethod.SAME_DAYS, Msg(key="fix.unit", params={"unit": inp.kpi.unit}), what, why,
+                period=a, compare_to=b, value_current=va, value_previous=vb, change_pct=_change(va, vb))
 
 
-def per_day(inp: Inputs, a: Period, b: Period, why: str) -> ProposedFix:
+def per_day(inp: Inputs, a: Period, b: Period, why: Msg) -> ProposedFix:
     na, nb = len(days_of(a)), len(days_of(b))
     va, vb = round(inp.kpi_value(a) / na, 2), round(inp.kpi_value(b) / nb, 2)
-    return ProposedFix(
-        method=FixMethod.PER_DAY_AVERAGE, unit=f"{inp.kpi.unit}/day",
-        description=f"Compare {inp.kpi.name} per day: {a.start}..{a.end} ({na} days) "
-                    f"with {b.start}..{b.end} ({nb} days).",
-        justification=why, period=a, compare_to=b,
-        value_current=va, value_previous=vb, change_pct=_change(va, vb))
+    what = Msg(key="fix.per_day", params={"kpi": inp.kpi.name, "a_start": a.start, "a_end": a.end, "na": na,
+                                          "b_start": b.start, "b_end": b.end, "nb": nb})
+    return _fix(FixMethod.PER_DAY_AVERAGE, Msg(key="fix.unit_per_day", params={"unit": inp.kpi.unit}), what, why,
+                period=a, compare_to=b, value_current=va, value_previous=vb, change_pct=_change(va, vb))
 
 
 def propose_fixes(inp: Inputs, coverage: ComparisonCheck, edges: tuple[EdgeCoverage, EdgeCoverage],
@@ -62,26 +65,20 @@ def propose_fixes(inp: Inputs, coverage: ComparisonCheck, edges: tuple[EdgeCover
             return None, []
         n = hi - lo + 1
         rec = same_days(inp, req.period, req.compare_to, lo, hi,
-                        f"Days {lo + 1} to {hi + 1} are complete in both periods ({n} days). "
-                        f"Using the same days compares equal amounts of time.")
+                        Msg(key="fix.why_same_days", params={"first": lo + 1, "last": hi + 1, "n": n}))
         alts = []
         if inp.additive:
             full_prev = inp.kpi_value(prev.complete)
             outside = 1 - (rec.value_previous / full_prev) if full_prev else 0.0
-            alts.append(per_day(inp, cur.complete, prev.complete,
-                                f"Uses every complete day of both periods "
-                                f"({len(days_of(cur.complete))} and {len(days_of(prev.complete))} days). "
-                                f"In the previous period, {outside:.1%} of the value falls on days "
-                                f"the same-days comparison leaves out."))
+            alts.append(per_day(inp, cur.complete, prev.complete, Msg(key="fix.why_per_day", params={
+                "na": len(days_of(cur.complete)), "nb": len(days_of(prev.complete)), "outside": outside})))
         return rec, alts
 
     if scale.status in (CheckStatus.BLOCKING, CheckStatus.WARNING):
         n = min(len(days_of(req.period)), len(days_of(req.compare_to)))
-        rec = per_day(inp, req.period, req.compare_to,
-                      f"The periods have different lengths ({scale.evidence['days_current']} and "
-                      f"{scale.evidence['days_previous']} days). A daily average removes the length effect.")
-        alt = same_days(inp, req.period, req.compare_to, 0, n - 1,
-                        f"Keeps totals but uses only the first {n} days of each period.")
+        rec = per_day(inp, req.period, req.compare_to, Msg(key="fix.why_lengths", params={
+            "n_cur": scale.evidence["days_current"], "n_prev": scale.evidence["days_previous"]}))
+        alt = same_days(inp, req.period, req.compare_to, 0, n - 1, Msg(key="fix.why_first_days", params={"n": n}))
         return rec, [alt]
 
     return None, []

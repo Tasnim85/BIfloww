@@ -16,12 +16,12 @@ matplotlib.use("Agg")
 from auditor.ui import (comparisons_page, drift_page, explanations_page, home,  # noqa: E402
                         journal_page, run_view, why_page)
 
-PAGES = [  # (render function, title, icon, url path)
-    (run_view.render, "Résultat d'un run", "🧾", "run_result"),
-    (home.render, "Accueil Auditor", "🏠", "auditor_home"),
-    (comparisons_page.render, "Comparaisons (BO4-12)", "⚖️", "comparisons"),
-    (explanations_page.render, "Expliquer une anomalie", "🔍", "explanations"),
-    (why_page.render, "Demander pourquoi ?", "💬", "why"),
-    (journal_page.render, "Journal d'audit", "📜", "journal"),
-    (drift_page.render, "Drift", "📈", "drift"),
+PAGES = [  # (render function, title key in i18n "ui.pages.*", icon, url path)
+    (run_view.render, "run", "🧾", "run_result"),
+    (home.render, "home", "🏠", "auditor_home"),
+    (comparisons_page.render, "comparisons", "⚖️", "comparisons"),
+    (explanations_page.render, "explanations", "🔍", "explanations"),
+    (why_page.render, "why", "💬", "why"),
+    (journal_page.render, "journal", "📜", "journal"),
+    (drift_page.render, "drift", "📈", "drift"),
 ]

@@ -28,6 +28,7 @@ from auditor.tools import Toolbox
 from contracts.agent import RunContext
 from contracts.audit import DEFAULT_JOURNAL, AuditEvent, log_event
 from contracts.factcheck import allowed_numbers, unsupported_numbers
+from contracts.i18n import Msg, detect_language, lang_code, language_name, render
 from contracts.llm import LLMConfig, LLMUnavailable, ToolCall, chat_json, chat_tools, tool_message
 from contracts.pipeline import REPO_ROOT, RUNS_ROOT
 from contracts.prompts import load_prompt
@@ -108,7 +109,7 @@ def verify(step: AgentStep, question: str, outputs: list[tuple[str, str]], entry
 ROUTINE = {"OK", "PASSED", "computed in SQL"}
 
 
-def fallback_answer(tools: Toolbox, question: str, reason: str) -> tuple[str, list[int]]:
+def fallback_answer(tools: Toolbox, question: str, reason: str, lang: str = "en") -> tuple[str, list[int]]:
     """Deterministic answer: the journal entries matching the question's words, or else
     the run's notable decisions (anything that is not a routine OK/PASSED)."""
     words = " ".join(w for w in re.findall(r"\w+", question.lower()) if len(w) > 3)
@@ -116,10 +117,11 @@ def fallback_answer(tools: Toolbox, question: str, reason: str) -> tuple[str, li
     if found.startswith("No matching"):
         notable = [e for e in tools._events() if e.decision not in ROUTINE][:12]
         found = "\n".join(f"#{e.entry_id} {e.agent}.{e.step}: {e.decision}" for e in notable)
-        intro = "No entry matches the question's words; notable decisions of the run"
+        intro = "why.no_match"
     else:
-        intro = "Decisions recorded for this run that match the question"
-    return (f"Automatic answer ({reason[:160]}). {intro}:\n{found}"), sorted(_entry_ids(found))
+        intro = "why.matches"
+    head = render(Msg(key="why.fallback", params={"reason": reason[:160], "intro": intro}), lang)
+    return f"{head}\n{found}", sorted(_entry_ids(found))      # journal lines stay in English
 
 
 class FinalAnswer(BaseModel):
@@ -139,8 +141,10 @@ class WhyAgent:
 
     def __init__(self, run_id: str, journal: Path = DEFAULT_JOURNAL, runs_root: Path = RUNS_ROOT,
                  repo_root: Path = REPO_ROOT, config: LLMConfig | None = None,
-                 language: str = "French", max_steps: int = MAX_STEPS, llm=chat_tools, writer=chat_json):
+                 language: str | None = None, max_steps: int = MAX_STEPS, llm=chat_tools, writer=chat_json):
+        """language: 'fr' / 'en' (or 'French'...). None = detected from each question."""
         self.run_id, self.journal, self.language, self.max_steps = run_id, Path(journal), language, max_steps
+        self.lang = lang_code(language) if language else None
         self.runs_root, self.repo_root = runs_root, repo_root
         self.config, self.llm, self.writer = config or LLMConfig(), llm, writer
 
@@ -179,18 +183,20 @@ class WhyAgent:
         user = f"QUESTION: {question}\n\nTOOL RESULTS:\n{results}"
         if feedback:
             user += f"\n\nA previous draft was REFUSED by the fact check: {feedback}"
-        out = self.writer(prompt.render(language=self.language), user, FinalAnswer,
+        out = self.writer(prompt.render(language=language_name(self.lang)), user, FinalAnswer,
                           prompt_version=prompt.ref, ctx=ctx, step="why_writer", config=self.config)
         return AgentStep(action="answer", answer=out.answer,
                          citations=out.citations or sorted(_entry_ids(out.answer)))
 
     def ask(self, question: str) -> WhyAnswer:
+        if self.language is None:                               # answer in the question's language
+            self.lang = detect_language(question)
         tools = Toolbox(self.run_id, self.journal, self.runs_root, self.repo_root)
         ctx = RunContext(run_id=self.run_id, agent="auditor", inputs={}, output_dir=Path("."),
                          journal=self.journal)                  # only used to journal LLM calls
         prompt = load_prompt(PROMPT_NAME)
         messages = [{"role": "system", "content": prompt.render(
-                        run_id=self.run_id, language=self.language, max_steps=str(self.max_steps))},
+                        run_id=self.run_id, language=language_name(self.lang), max_steps=str(self.max_steps))},
                     {"role": "user", "content": f"QUESTION: {question}"}]
         outputs: list[tuple[str, str]] = []
         rejected: list[str] = []
@@ -239,12 +245,12 @@ class WhyAgent:
         if result:
             answer = WhyAnswer(run_id=self.run_id, question=question, answer=result[0],
                                citations=result[1], source=f"llm:{self.config.model}", verified=True,
-                               tool_calls=tools.calls, rejected=rejected)
+                               tool_calls=tools.calls, rejected=rejected, lang=self.lang)
         else:
-            text, cites = fallback_answer(tools, question, rejected[-1] if rejected else "no answer")
+            text, cites = fallback_answer(tools, question, rejected[-1] if rejected else "no answer", self.lang)
             answer = WhyAnswer(run_id=self.run_id, question=question, answer=text, citations=cites,
                                source="template", verified=True, tool_calls=tools.calls,
-                               rejected=rejected)
+                               rejected=rejected, lang=self.lang)
         log_event(AuditEvent(run_id=self.run_id, agent="auditor", step="why_answer",
                              decision=f"answered ({answer.source})", rule_version=prompt.ref,
                              evidence={"question": question, "citations": answer.citations,
@@ -259,7 +265,7 @@ def main() -> None:
     p.add_argument("question")
     p.add_argument("--run", default="run_001")
     p.add_argument("--journal", type=Path, default=DEFAULT_JOURNAL)
-    p.add_argument("--language", default="French")
+    p.add_argument("--language", default=None, help="fr or en (default: the question's language)")
     args = p.parse_args()
 
     a = WhyAgent(args.run, journal=args.journal, language=args.language).ask(args.question)

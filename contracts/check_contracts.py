@@ -68,6 +68,14 @@ def check_coverage_example() -> None:
     print(f"OK  BO4-12 example: last complete day {last_complete} follows from the coverage profile")
 
 
+def check_i18n() -> None:
+    from contracts.i18n import LANGS, catalog, check_catalogs
+    problems = check_catalogs()
+    if problems:
+        raise SystemExit("i18n catalogs inconsistent:\n  " + "\n  ".join(problems))
+    print(f"OK  i18n: {len(catalog('en'))} messages in {', '.join(LANGS)}, same keys and placeholders")
+
+
 def check_prompts() -> None:
     from contracts.prompts import PROMPTS_DIR, all_prompts
     if not PROMPTS_DIR.exists():
@@ -119,5 +127,6 @@ if __name__ == "__main__":
     check_examples()
     check_coverage_example()
     check_prompts()
+    check_i18n()
     check_journal()
     print("All contract checks passed.")

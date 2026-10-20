@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from contracts.factcheck import NUMBER as _NUMBER, allowed_numbers, unsupported_numbers  # noqa: F401
 from contracts.comparisons import CheckStatus, ComparisonCheck, ProposedFix
+from contracts.i18n import Msg, language_name, render
 from contracts.llm import LLMConfig, LLMUnavailable, chat_json
 from contracts.prompts import load_prompt
 from contracts.semantic import AnalysisRequest
@@ -31,32 +32,37 @@ def _chg(x: float | None) -> str:
     return "n/a" if x is None else f"{x:+.1%}"
 
 
-def template_summary(req: AnalysisRequest, checks: list[ComparisonCheck], as_asked: tuple[float, float],
-                     unit: str, rec: ProposedFix | None, alts: list[ProposedFix]) -> str:
+def template_parts(req: AnalysisRequest, checks: list[ComparisonCheck], as_asked: tuple[float, float],
+                   unit: str, rec: ProposedFix | None, alts: list[ProposedFix]) -> list[Msg]:
+    """The template summary as messages: rendered in any language (contracts/i18n.py)."""
     v_cur, v_prev = as_asked
-    change = _chg(v_cur / v_prev - 1 if v_prev else None)
-    asked = (f"{req.metric} {req.period.start}..{req.period.end} = {_money(v_cur, unit)} against "
-             f"{req.compare_to.start}..{req.compare_to.end} = {_money(v_prev, unit)} ({change})")
+    asked = Msg(key="summary.asked", params={
+        "metric": req.metric, "p_start": req.period.start, "p_end": req.period.end, "v_cur": v_cur,
+        "c_start": req.compare_to.start, "c_end": req.compare_to.end, "v_prev": v_prev, "unit": unit,
+        "chg": v_cur / v_prev - 1 if v_prev else None})
     problems = [c for c in checks if c.status != CheckStatus.OK]
     if not problems:
-        return f"The comparison is valid: {asked}. " + " ".join(c.message for c in checks)
+        return [Msg(key="summary.valid", params={"asked": asked})] + [m for c in checks for m in c.message_parts]
 
     blocking = any(c.status == CheckStatus.BLOCKING for c in checks)
-    lines = [f"{'Careful: this comparison is misleading as asked' if blocking else 'Note'}: {asked}."]
-    lines += [c.message for c in problems]
-    if rec:
-        lines.append(f"Recommended: {rec.description} Result: {_money(rec.value_current, rec.unit)} "
-                     f"against {_money(rec.value_previous, rec.unit)} ({_chg(rec.change_pct)}). "
-                     f"Why: {rec.justification}")
-    for a in alts:
-        lines.append(f"Alternative: {a.description} Result: {_money(a.value_current, a.unit)} "
-                     f"against {_money(a.value_previous, a.unit)} ({_chg(a.change_pct)}). "
-                     f"Why: {a.justification}")
+    parts = [Msg(key="summary.misleading" if blocking else "summary.note", params={"asked": asked})]
+    parts += [m for c in problems for m in c.message_parts]
+    for role, fixes in (("recommended", [rec] if rec else []), ("alternative", alts)):
+        for f in fixes:
+            parts.append(Msg(key=f"summary.{role}", params={
+                "what": f.description_parts, "why": f.justification_parts, "unit": f.unit_parts,
+                "v_cur": f.value_current, "v_prev": f.value_previous, "chg": f.change_pct}))
     if blocking and not rec:
-        lines.append("No honest adjustment exists with this data: the comparison should not be shown.")
+        parts.append(Msg(key="summary.no_fix"))
     if rec or alts:
-        lines.append("Nothing is changed until you choose.")
-    return " ".join(lines)
+        parts.append(Msg(key="summary.wait"))
+    return parts
+
+
+def template_summary(req: AnalysisRequest, checks: list[ComparisonCheck], as_asked: tuple[float, float],
+                     unit: str, rec: ProposedFix | None, alts: list[ProposedFix]) -> str:
+    """The template summary in English (canonical: journal, LLM facts)."""
+    return render(template_parts(req, checks, as_asked, unit, rec, alts))
 
 
 # ---- LLM rewrite + fact check -------------------------------------------------------
@@ -95,7 +101,7 @@ def summarize(template: str, checks: list[ComparisonCheck], fixes: list[Proposed
     prompt = load_prompt(PROMPT_NAME)
     facts = llm_facts(template, checks, fixes)
     try:
-        out = llm(prompt.render(language=language), f"FACTS:\n{facts}", SummaryOut,
+        out = llm(prompt.render(language=language_name(language)), f"FACTS:\n{facts}", SummaryOut,
                   prompt_version=prompt.ref, ctx=ctx, step="comparison_summary", config=config)
     except LLMUnavailable as e:
         if ctx is not None:

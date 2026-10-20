@@ -8,7 +8,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
-CONTRACTS_VERSION = "1.5"   # 1.5: AnomalyReport feature_labels/feature_units (dataset-agnostic texts)
+CONTRACTS_VERSION = "1.6"   # 1.6: *_parts fields (texts in any language, contracts/i18n.py)
 
 
 class Contract(BaseModel):

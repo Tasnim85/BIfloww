@@ -12,7 +12,12 @@ if str(ROOT) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from auditor.ui import PAGES  # noqa: E402
+from auditor.ui.data import UI_DEFAULT_LANG, t  # noqa: E402
 
 st.set_page_config(page_title="BIFlow · Auditor", page_icon="🛡️", layout="wide")
-st.navigation([st.Page(fn, title=title, icon=icon, url_path=path)
+if "lang" not in st.session_state:
+    st.session_state["lang"] = UI_DEFAULT_LANG
+st.sidebar.radio(t("lang_label"), ["en", "fr"], key="lang", horizontal=True,
+                 format_func={"en": "🇬🇧 English", "fr": "🇫🇷 Français"}.get, help=t("lang_help"))
+st.navigation([st.Page(fn, title=t(f"pages.{title}"), icon=icon, url_path=path)
                for fn, title, icon, path in PAGES]).run()

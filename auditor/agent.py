@@ -15,6 +15,7 @@ from auditor.xai.explain import build_report
 from contracts.agent import AgentResult, AgentStatus, RunContext
 from contracts.audit import last_hash, verify_journal
 from contracts.common import save
+from contracts.i18n import Msg, render
 from contracts.xai import DriftReport
 
 
@@ -49,9 +50,9 @@ def run(ctx: RunContext) -> AgentResult:
         drift = monitor_runs(reference, [ctx.run_id], runs_root=runs_root, write=False)[ctx.run_id]
         journal_alerts(drift, ctx.journal)
     else:
+        why = [Msg(key="drift.not_available")]
         drift = DriftReport(reference_runs=list(reference), current_run=ctx.run_id, status="not_available",
-                            narrative="Drift monitoring needs at least 3 reference runs "
-                                      "(params['drift_reference']); not computed.")
+                            narrative=render(why), narrative_parts=why)
     outputs["drift"] = save(drift, ctx.output("drift"))
 
     if not integrity.ok:

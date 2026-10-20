@@ -15,11 +15,12 @@ import argparse
 from comparisons.checks import check_coverage, check_grain, check_population, check_scale, check_unit
 from comparisons.data import load_inputs
 from comparisons.fix import propose_fixes
-from comparisons.narrate import summarize, template_summary
+from comparisons.narrate import summarize, template_parts
 from comparisons.rules import RULES_VERSION, Rules
 from contracts.agent import AgentResult, AgentStatus, RunContext
 from contracts.common import load, save
 from contracts.comparisons import CheckStatus, ComparisonReport, FixMethod, UserDecision
+from contracts.i18n import Msg, lang_code, render
 from contracts.llm import LLMConfig
 from contracts.pipeline import context_for
 
@@ -30,8 +31,9 @@ def run(ctx: RunContext) -> AgentResult:
     out_path = ctx.output("report")
 
     if req.compare_to is None:
+        none = [Msg(key="summary.none")]
         report = ComparisonReport(has_comparison=False, rules_version=RULES_VERSION,
-                                  summary="No comparison was requested: nothing to check.")
+                                  summary=render(none), summary_parts=none)
         save(report, out_path)
         ctx.log("comparison_detected", "SKIPPED: no compare_to in the request",
                 inputs=[str(ctx.inputs["request"])], outputs=[str(out_path)])
@@ -57,15 +59,16 @@ def run(ctx: RunContext) -> AgentResult:
         ctx.log("propose_fix", f"{f.method.value}: {f.description}", rule_version=RULES_VERSION,
                 evidence=f.model_dump(mode="json"))
 
-    template = template_summary(req, checks, as_asked, inp.kpi.unit, rec, alts)
-    summary, source = summarize(template, checks, ([rec] if rec else []) + alts, ctx=ctx,
-                                use_llm=ctx.params.get("llm", True),
-                                language=ctx.params.get("language", "French"),
+    parts = template_parts(req, checks, as_asked, inp.kpi.unit, rec, alts)
+    lang = lang_code(ctx.params.get("language", "fr"))          # language of the LLM summary
+    summary, source = summarize(render(parts), checks, ([rec] if rec else []) + alts, ctx=ctx,
+                                use_llm=ctx.params.get("llm", True), language=lang,
                                 config=LLMConfig(**ctx.params.get("llm_config", {})))
 
     report = ComparisonReport(has_comparison=True, rules_version=RULES_VERSION, checks=checks,
                               proposed_fix=rec, alternatives=alts, summary=summary,
-                              summary_source=source)
+                              summary_source=source, summary_parts=parts,
+                              summary_lang=lang if source.startswith("llm:") else None)
     save(report, out_path)
 
     blocking = [c.kind.value for c in checks if c.status == CheckStatus.BLOCKING]
@@ -105,7 +108,7 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--run", default="run_001")
     p.add_argument("--no-llm", action="store_true")
-    p.add_argument("--language", default="French")
+    p.add_argument("--language", default="fr", help="fr or en")
     p.add_argument("--accept", choices=[m.value for m in FixMethod])
     p.add_argument("--reject", action="store_true")
     args = p.parse_args()

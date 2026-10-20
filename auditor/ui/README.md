@@ -66,3 +66,8 @@ python -m auditor.dev.simulate_runs
 python -m auditor.dev.make_clinics_demo     # 2e jeu de données (cliniques, TND) : run clinic_001
 python -m auditor.drift.monitor
 ```
+
+
+## API (étape 6)
+
+Les mêmes fonctions sont exposées en HTTP pour Next.js : voir `api/README.md`. La règle « quelles périodes pour le dashboard » (`comparisons/values.py`) et la recherche du journal d'un run (`auditor/journals.py`) sont partagées entre Streamlit et l'API.

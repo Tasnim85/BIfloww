@@ -7,6 +7,7 @@ DriftReport        is this run still behaving like the reference runs?
 from pydantic import Field
 
 from contracts.common import Artifact, Contract
+from contracts.i18n import Msg
 
 
 class FeatureContribution(Contract):
@@ -23,6 +24,7 @@ class AnomalyExplanation(Contract):
     model_output: float                # base_value + sum of shap values
     contributions: list[FeatureContribution]   # sorted by |shap_value|
     narrative: str                     # template sentence, every word traceable to a number
+    narrative_parts: list[Msg] = Field(default_factory=list)   # same sentence, any language
 
 
 class ExplanationReport(Artifact):
@@ -58,6 +60,7 @@ class DriftReport(Artifact):
     metric_checks: list[MetricDriftCheck] = Field(default_factory=list)
     flagged_agents: list[str] = Field(default_factory=list)
     narrative: str                     # "a diagnosis, not a proof: a human decides"
+    narrative_parts: list[Msg] = Field(default_factory=list)   # same text, any language
 
 
 class WhyAnswer(Artifact):
@@ -70,3 +73,4 @@ class WhyAnswer(Artifact):
     verified: bool                     # True = numbers and citations checked against the tools' output
     tool_calls: list[dict] = Field(default_factory=list)   # [{"tool", "args", "chars"}] in order
     rejected: list[str] = Field(default_factory=list)      # why earlier drafts were refused
+    lang: str = "fr"                   # language of the answer (asked, or detected from the question)

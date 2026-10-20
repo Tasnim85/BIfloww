@@ -16,12 +16,15 @@ from comparisons.data import Inputs, days_of
 from comparisons.rules import Rules
 from contracts.common import Period
 from contracts.comparisons import CheckKind, CheckStatus, ComparisonCheck
+from contracts.i18n import Msg, render
 
 OK, WARNING, BLOCKING = CheckStatus.OK, CheckStatus.WARNING, CheckStatus.BLOCKING
 
 
-def pct(x: float) -> str:
-    return f"{x:+.1%}"
+def check(kind: CheckKind, status: CheckStatus, parts: list[Msg], evidence: dict) -> ComparisonCheck:
+    """A check with its sentence in English (journal) and as messages (any language)."""
+    return ComparisonCheck(kind=kind, status=status, message=render(parts), message_parts=parts,
+                           evidence=evidence)
 
 
 # ---- 1. Coverage ------------------------------------------------------------------
@@ -85,21 +88,17 @@ def edge_coverage(inp: Inputs, p: Period, other: Period, rules: Rules) -> EdgeCo
     return EdgeCoverage(p, Period(start=days[i].date, end=days[j].date), threshold, baseline, edges)
 
 
-def _describe(name: str, ec: EdgeCoverage, what: str) -> str:
+def _describe(which: str, ec: EdgeCoverage, what: str) -> Msg:
     p = ec.period
+    base = {"which": f"word.{which}", "start": p.start, "end": p.end, "what": what,
+            "median": ec.baseline_median}
     if ec.complete is None:
-        return (f"The {name} period ({p.start} to {p.end}) has no complete day: at most "
-                f"{max(ec.incomplete_days.values(), default=0)} {what} per day, against a usual "
-                f"{ec.baseline_median:.0f}.")
-    low = [v for v in ec.incomplete_days.values()]
-    where = []
-    if ec.complete.start != p.start:
-        where.append(f"before {ec.complete.start}")
-    if ec.complete.end != p.end:
-        where.append(f"after {ec.complete.end}")
-    return (f"The {name} period ({p.start} to {p.end}) is complete only from {ec.complete.start} "
-            f"to {ec.complete.end}: {' and '.join(where)} the volume falls to between "
-            f"{min(low)} and {max(low)} {what} per day, against a usual {ec.baseline_median:.0f}.")
+        return Msg(key="cmp.coverage.none", params=base | {"max_rows": max(ec.incomplete_days.values(), default=0)})
+    low = list(ec.incomplete_days.values())
+    before, after = ec.complete.start != p.start, ec.complete.end != p.end
+    key = "cmp.coverage." + ("both" if before and after else "before" if before else "after")
+    return Msg(key=key, params=base | {"cstart": ec.complete.start, "cend": ec.complete.end,
+                                       "lo": min(low), "hi": max(low)})
 
 
 def check_coverage(inp: Inputs, rules: Rules, as_asked: tuple[float, float]):
@@ -126,8 +125,7 @@ def check_coverage(inp: Inputs, rules: Rules, as_asked: tuple[float, float]):
     if cur.complete:          # kept for the example and the dashboard
         evidence["last_complete_day"] = cur.complete.end
     if cur.is_complete and prev.is_complete:
-        return ComparisonCheck(kind=CheckKind.COVERAGE, status=OK, evidence=evidence,
-                               message="Both periods have complete data on every day."), (cur, prev)
+        return check(CheckKind.COVERAGE, OK, [Msg(key="cmp.coverage.ok")], evidence), (cur, prev)
 
     what = inp.coverage_table().table
     parts = [_describe(n, ec, what) for n, ec in (("current", cur), ("previous", prev)) if not ec.is_complete]
@@ -135,10 +133,9 @@ def check_coverage(inp: Inputs, rules: Rules, as_asked: tuple[float, float]):
     if v_prev:
         n_cur = len(days_of(cur.complete)) if cur.complete else 0
         n_prev = len(days_of(prev.complete)) if prev.complete else 0
-        parts.append(f"The comparison as asked ({pct(v_cur / v_prev - 1)}) compares {n_cur} "
-                     f"complete days with {n_prev}.")
-    return ComparisonCheck(kind=CheckKind.COVERAGE, status=BLOCKING, message=" ".join(parts),
-                           evidence=evidence), (cur, prev)
+        parts.append(Msg(key="cmp.coverage.as_asked",
+                         params={"chg": v_cur / v_prev - 1, "n_cur": n_cur, "n_prev": n_prev}))
+    return check(CheckKind.COVERAGE, BLOCKING, parts, evidence), (cur, prev)
 
 
 # ---- 2. Population ---------------------------------------------------------------
@@ -158,9 +155,8 @@ def check_population(inp: Inputs, rules: Rules) -> ComparisonCheck:
         evidence["status_share"] = {k: round(v, 4) for k, v in shares.items()}
         gap = abs(shares["current"] - shares["previous"])
         if gap > rules.status_share_gap:
-            issues.append(f"{shares['current']:.1%} of the current period's rows are "
-                          f"'{status[1]}', against {shares['previous']:.1%} in the previous one: "
-                          f"the KPI keeps a different share of each period.")
+            issues.append(Msg(key="cmp.population.status_share",
+                              params={"cur": shares["current"], "prev": shares["previous"], "status": status[1]}))
 
     for dim in req.dimensions:
         a = inp.dimension_values(dim, req.period)
@@ -169,18 +165,15 @@ def check_population(inp: Inputs, rules: Rules) -> ComparisonCheck:
         evidence[f"{dim}_only_current"] = only_cur
         evidence[f"{dim}_only_previous"] = only_prev
         if only_cur or only_prev:
-            label = dim.replace("_", " ")
-            where = [f"only in the current period: {', '.join(only_cur)}" if only_cur else "",
-                     f"only in the previous period: {', '.join(only_prev)}" if only_prev else ""]
-            issues.append(f"Some {label} values appear in one period only "
-                          f"({'; '.join(w for w in where if w)}).")
+            key = "only_both" if only_cur and only_prev else "only_current" if only_cur else "only_previous"
+            issues.append(Msg(key=f"cmp.population.{key}", params={
+                "label": dim.replace("_", " "), "only_cur": only_cur, "only_prev": only_prev}))
 
     if issues:
-        return ComparisonCheck(kind=CheckKind.POPULATION, status=WARNING,
-                               message=" ".join(issues), evidence=evidence)
+        return check(CheckKind.POPULATION, WARNING, issues, evidence)
     scope = inp.kpi.population or "the same filters"
-    return ComparisonCheck(kind=CheckKind.POPULATION, status=OK, evidence=evidence,
-                           message=f"Same population on both sides: {scope.rstrip('.')}.")
+    return check(CheckKind.POPULATION, OK, [Msg(key="cmp.population.ok", params={"scope": scope.rstrip(".")})],
+                 evidence)
 
 
 # ---- 3. Unit ------------------------------------------------------------------------
@@ -189,15 +182,13 @@ def check_unit(inp: Inputs) -> ComparisonCheck:
     if inp.result is not None:
         evidence.update(result_unit=inp.result.unit, result_kpi=inp.result.kpi)
         if inp.result.unit != inp.kpi.unit:
-            return ComparisonCheck(kind=CheckKind.UNIT, status=BLOCKING, evidence=evidence,
-                                   message=(f"The analysis is in {inp.result.unit} but "
-                                            f"{inp.kpi.ref} is defined in {inp.kpi.unit}."))
+            return check(CheckKind.UNIT, BLOCKING, [Msg(key="cmp.unit.blocking", params={
+                "result_unit": inp.result.unit, "kpi_ref": inp.kpi.ref, "kpi_unit": inp.kpi.unit})], evidence)
         if inp.result.kpi != inp.kpi.ref:
-            return ComparisonCheck(kind=CheckKind.UNIT, status=WARNING, evidence=evidence,
-                                   message=(f"The analysis used {inp.result.kpi} but the catalog "
-                                            f"now defines {inp.kpi.ref}."))
-    return ComparisonCheck(kind=CheckKind.UNIT, status=OK, evidence=evidence,
-                           message=f"Both values are in {inp.kpi.unit} ({inp.kpi.ref}).")
+            return check(CheckKind.UNIT, WARNING, [Msg(key="cmp.unit.warning", params={
+                "result_kpi": inp.result.kpi, "kpi_ref": inp.kpi.ref})], evidence)
+    return check(CheckKind.UNIT, OK, [Msg(key="cmp.unit.ok", params={"unit": inp.kpi.unit, "kpi_ref": inp.kpi.ref})],
+                 evidence)
 
 
 # ---- 4. Scale -----------------------------------------------------------------------
@@ -206,20 +197,17 @@ def check_scale(inp: Inputs, rules: Rules) -> ComparisonCheck:
     gap = abs(n_cur - n_prev) / max(n_cur, n_prev)
     evidence = {"days_current": n_cur, "days_previous": n_prev, "length_gap": round(gap, 4),
                 "additive_kpi": inp.additive, "expression": inp.kpi.expression}
+    days = {"n_cur": n_cur, "n_prev": n_prev}
     if not inp.additive:
-        return ComparisonCheck(kind=CheckKind.SCALE, status=OK, evidence=evidence,
-                               message=f"{inp.kpi.name} is not a total, so period length does not bias it.")
+        return check(CheckKind.SCALE, OK, [Msg(key="cmp.scale.not_total", params={"kpi": inp.kpi.name})], evidence)
     if gap > rules.length_blocking:
         status = BLOCKING
     elif gap > rules.length_warning:
         status = WARNING
     else:
-        return ComparisonCheck(kind=CheckKind.SCALE, status=OK, evidence=evidence,
-                               message=f"Periods of {n_cur} and {n_prev} days: lengths are comparable.")
-    return ComparisonCheck(kind=CheckKind.SCALE, status=status, evidence=evidence,
-                           message=(f"{inp.kpi.name} is a total and the periods last {n_cur} and "
-                                    f"{n_prev} days ({gap:.0%} difference): the longer period "
-                                    f"wins partly because it is longer."))
+        return check(CheckKind.SCALE, OK, [Msg(key="cmp.scale.ok", params=days)], evidence)
+    return check(CheckKind.SCALE, status, [Msg(key="cmp.scale.different",
+                                               params=days | {"kpi": inp.kpi.name, "gap": gap})], evidence)
 
 
 # ---- 5. Grain ------------------------------------------------------------------------
@@ -228,22 +216,22 @@ def check_grain(inp: Inputs) -> ComparisonCheck:
     evidence: dict = {"kpi_grain": inp.kpi.grain, "table": fact.name, "table_grain": fact.grain}
     problems = []
     if inp.kpi.grain != fact.grain:
-        problems.append(f"{inp.kpi.ref} expects one row per {inp.kpi.grain} but "
-                        f"{fact.name} has one row per {fact.grain}.")
+        problems.append(Msg(key="cmp.grain.mismatch", params={
+            "kpi_ref": inp.kpi.ref, "kpi_grain": inp.kpi.grain, "table": fact.name, "table_grain": fact.grain}))
     receipt = next((r for r in inp.receipts.receipts if r.output_table == fact.name), None)
     if receipt:
         evidence.update(rows_before=receipt.rows_before, rows_after=receipt.rows_after,
                         join_keys=receipt.join_keys)
         if receipt.rows_after > receipt.rows_before:
-            problems.append(f"Building {fact.name} turned {receipt.rows_before} rows into "
-                            f"{receipt.rows_after}: the join on {receipt.join_keys} duplicated rows.")
+            problems.append(Msg(key="cmp.grain.join_duplicates", params={
+                "table": fact.name, "before": receipt.rows_before, "after": receipt.rows_after,
+                "keys": receipt.join_keys}))
     dups = inp.duplicate_keys()
     evidence["duplicate_primary_keys"] = dups
     if dups:
-        problems.append(f"{dups} rows of {fact.name} share a primary key {fact.primary_key}.")
+        problems.append(Msg(key="cmp.grain.duplicate_keys",
+                            params={"dups": dups, "table": fact.name, "pk": fact.primary_key}))
     if problems:
-        return ComparisonCheck(kind=CheckKind.GRAIN, status=BLOCKING, evidence=evidence,
-                               message=" ".join(problems))
-    return ComparisonCheck(kind=CheckKind.GRAIN, status=OK, evidence=evidence,
-                           message=f"Both values come from {fact.name} (one row = one {fact.grain}), "
-                                   f"with no duplicated rows.")
+        return check(CheckKind.GRAIN, BLOCKING, problems, evidence)
+    return check(CheckKind.GRAIN, OK, [Msg(key="cmp.grain.ok", params={"table": fact.name, "grain": fact.grain})],
+                 evidence)
