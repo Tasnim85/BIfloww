@@ -1,0 +1,33 @@
+{
+  "contract_version": "1.0",
+  "table": "order_payments",
+  "model_version": "iforest@1.0",
+  "explainer": "shap.TreeExplainer",
+  "explanations": [
+    {
+      "row_key": "03caa2c082116e1d31e67e9ae3700499",
+      "is_anomaly": true,
+      "anomaly_score": 0.78,
+      "base_value": -11.6,
+      "model_output": -7.4,
+      "contributions": [
+        {
+          "feature": "payment_value",
+          "value": 13664.08,
+          "shap_value": 4.1
+        },
+        {
+          "feature": "payment_installments",
+          "value": 1.0,
+          "shap_value": 0.3
+        },
+        {
+          "feature": "payment_sequential",
+          "value": 1.0,
+          "shap_value": -0.2
+        }
+      ],
+      "narrative": "Flagged as anomalous because Payment Value (13,664.08, far above the typical 100.00) accounted for 93% of the push toward anomaly. The model isolated this payment in 7.4 splits, versus 11.6 for a typical row."
+    }
+  ]
+}

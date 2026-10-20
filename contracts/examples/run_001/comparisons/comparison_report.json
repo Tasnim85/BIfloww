@@ -1,0 +1,50 @@
+{
+  "contract_version": "1.0",
+  "has_comparison": true,
+  "checks": [
+    {
+      "kind": "coverage",
+      "status": "blocking",
+      "message": "August has data only up to the 29th (29 of 31 days), July is complete. The full-month comparison shows a 4.1% drop that is caused by missing days.",
+      "evidence": {
+        "current_last_day": "2018-08-29",
+        "current_days": 29,
+        "previous_days": 31,
+        "warehouse_date_max": "2018-08-29"
+      }
+    },
+    {
+      "kind": "unit",
+      "status": "ok",
+      "message": "Both periods are in BRL.",
+      "evidence": {}
+    },
+    {
+      "kind": "grain",
+      "status": "ok",
+      "message": "Both periods use fact_payments (one row = one payment).",
+      "evidence": {}
+    },
+    {
+      "kind": "population",
+      "status": "ok",
+      "message": "Same filter (delivered orders) on both periods.",
+      "evidence": {}
+    }
+  ],
+  "proposed_fix": {
+    "description": "Compare 1-29 August 2018 with 1-29 July 2018.",
+    "period": {
+      "start": "2018-08-01",
+      "end": "2018-08-29"
+    },
+    "compare_to": {
+      "start": "2018-07-01",
+      "end": "2018-07-29"
+    },
+    "value_current": 985414.28,
+    "value_previous": 930969.67,
+    "change_pct": 0.0585
+  },
+  "user_decision": "pending"
+}
