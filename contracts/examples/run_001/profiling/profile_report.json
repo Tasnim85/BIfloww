@@ -1,0 +1,49 @@
+{
+  "contract_version": "1.0",
+  "tables": [
+    {
+      "table": "orders",
+      "rows": 99441,
+      "duplicate_rows": 0,
+      "columns": [
+        {
+          "name": "order_approved_at",
+          "dtype": "object",
+          "semantic_type": "DATETIME",
+          "missing": 160,
+          "missing_pct": 0.0016,
+          "distinct": 90733,
+          "min": null,
+          "max": null
+        },
+        {
+          "name": "order_delivered_customer_date",
+          "dtype": "object",
+          "semantic_type": "DATETIME",
+          "missing": 2965,
+          "missing_pct": 0.0298,
+          "distinct": 95664,
+          "min": null,
+          "max": null
+        }
+      ]
+    },
+    {
+      "table": "order_payments",
+      "rows": 103886,
+      "duplicate_rows": 0,
+      "columns": [
+        {
+          "name": "payment_value",
+          "dtype": "float64",
+          "semantic_type": "AMOUNT",
+          "missing": 0,
+          "missing_pct": 0.0,
+          "distinct": 29077,
+          "min": 0.0,
+          "max": 13664.08
+        }
+      ]
+    }
+  ]
+}

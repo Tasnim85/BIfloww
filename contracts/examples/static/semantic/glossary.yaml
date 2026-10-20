@@ -1,0 +1,32 @@
+version: '1.0'
+terms:
+- term: Revenue
+  kind: metric
+  synonyms:
+  - sales
+  - turnover
+  - chiffre d'affaires
+  - CA
+  - ventes
+  definition: Money paid by customers for delivered orders.
+- term: Orders
+  kind: metric
+  synonyms:
+  - number of orders
+  - commandes
+  - nombre de commandes
+  definition: Distinct delivered orders.
+- term: customer_state
+  kind: dimension
+  synonyms:
+  - state
+  - region
+  - région
+  - état
+  definition: State where the customer lives.
+- term: last month
+  kind: time
+  synonyms:
+  - previous month
+  - mois dernier
+  definition: The calendar month before the current one.

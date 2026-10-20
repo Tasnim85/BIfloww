@@ -1,0 +1,31 @@
+{
+  "contract_version": "1.0",
+  "title": "Revenue by state: August vs July 2018",
+  "question": "Revenue by state in August 2018 compared with July 2018",
+  "kpi": "Revenue@2.0",
+  "charts": [
+    {
+      "chart_id": "c1",
+      "chart_type": "kpi_card",
+      "title": "Revenue, 1-29 August",
+      "data_file": "analysis/result.parquet",
+      "x": null,
+      "y": "value",
+      "color": null,
+      "reason": "One headline number with its change."
+    },
+    {
+      "chart_id": "c2",
+      "chart_type": "bar",
+      "title": "Revenue by state",
+      "data_file": "analysis/result.parquet",
+      "x": "customer_state",
+      "y": "value",
+      "color": "period",
+      "reason": "27 categories compared across 2 periods."
+    }
+  ],
+  "warnings": [
+    "August is incomplete (29 of 31 days). Showing 1-29 August vs 1-29 July."
+  ]
+}

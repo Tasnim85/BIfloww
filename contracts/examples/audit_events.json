@@ -1,0 +1,90 @@
+[
+  {
+    "run_id": "run_001",
+    "agent": "pii",
+    "step": "pseudonymize",
+    "decision": "pseudonymized customers.customer_unique_id",
+    "timestamp": "2026-10-20T10:00:00Z",
+    "inputs": [
+      "upload/tables/olist_customers_dataset.csv"
+    ],
+    "outputs": [
+      "pii/tables/customers.parquet"
+    ],
+    "rule_version": "pii-policy@1.0",
+    "evidence": {
+      "rows_affected": 99441,
+      "method": "sha256 + secret salt"
+    }
+  },
+  {
+    "run_id": "run_001",
+    "agent": "cleaning",
+    "step": "R4_fill_median_weight",
+    "decision": "filled 2 missing product_weight_g with the median 700",
+    "timestamp": "2026-10-20T10:00:00Z",
+    "inputs": [
+      "pii/tables/products.parquet"
+    ],
+    "outputs": [
+      "cleaning/tables/products.parquet"
+    ],
+    "rule_version": "playbook:olist@1.3",
+    "evidence": {
+      "rows_affected": 2,
+      "median": 700
+    }
+  },
+  {
+    "run_id": "run_001",
+    "agent": "etl",
+    "step": "build_fact_payments",
+    "decision": "PASSED",
+    "timestamp": "2026-10-20T10:00:00Z",
+    "inputs": [
+      "order_payments",
+      "orders"
+    ],
+    "outputs": [
+      "fact_payments"
+    ],
+    "rule_version": null,
+    "evidence": {
+      "rows_before": 103886,
+      "rows_after": 100756
+    }
+  },
+  {
+    "run_id": "run_001",
+    "agent": "analysis",
+    "step": "join_multiplicity",
+    "decision": "PASSED",
+    "timestamp": "2026-10-20T10:00:00Z",
+    "inputs": [
+      "etl/receipts.json"
+    ],
+    "outputs": [],
+    "rule_version": "kpi:Revenue@2.0",
+    "evidence": {
+      "expected_rows": 100756,
+      "actual_rows": 100756
+    }
+  },
+  {
+    "run_id": "run_001",
+    "agent": "comparisons",
+    "step": "coverage_check",
+    "decision": "BLOCKING: fix proposed (1-29 Aug vs 1-29 Jul)",
+    "timestamp": "2026-10-20T10:00:00Z",
+    "inputs": [
+      "request/analysis_request.json",
+      "etl/warehouse_manifest.json"
+    ],
+    "outputs": [],
+    "rule_version": null,
+    "evidence": {
+      "current_days": 29,
+      "previous_days": 31
+    }
+  }
+]

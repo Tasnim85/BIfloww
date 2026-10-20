@@ -1,0 +1,39 @@
+{
+  "contract_version": "1.0",
+  "playbook": "olist@1.3",
+  "applied": [
+    {
+      "rule_id": "R2_cast_purchase_ts",
+      "table": "orders",
+      "column": "order_purchase_timestamp",
+      "rows_affected": 99441
+    },
+    {
+      "rule_id": "R4_fill_median_weight",
+      "table": "products",
+      "column": "product_weight_g",
+      "rows_affected": 2
+    }
+  ],
+  "proposed_rules": [],
+  "rows_before": {
+    "orders": 99441,
+    "order_payments": 103886,
+    "products": 32951
+  },
+  "rows_after": {
+    "orders": 99441,
+    "order_payments": 103886,
+    "products": 32951
+  },
+  "tables": {
+    "orders": "orders.parquet",
+    "order_items": "order_items.parquet",
+    "order_payments": "order_payments.parquet",
+    "customers": "customers.parquet",
+    "products": "products.parquet",
+    "sellers": "sellers.parquet",
+    "order_reviews": "order_reviews.parquet",
+    "category_translation": "category_translation.parquet"
+  }
+}
