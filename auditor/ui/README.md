@@ -63,5 +63,6 @@ python -m contracts.examples.install
 python -m auditor.dev.make_fake_inputs
 python -m auditor.dev.seed_demo_journal
 python -m auditor.dev.simulate_runs
+python -m auditor.dev.make_clinics_demo     # 2e jeu de données (cliniques, TND) : run clinic_001
 python -m auditor.drift.monitor
 ```

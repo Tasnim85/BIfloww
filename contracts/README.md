@@ -1,7 +1,7 @@
 # BIFlow : les contrats
 
 > À lire par toute l'équipe avant d'écrire une ligne de code d'agent.
-> Version des contrats : **1.4** (20 octobre 2026). Voir l'historique à la section 10.
+> Version des contrats : **1.5** (20 octobre 2026). Voir l'historique à la section 10.
 
 ## 1. C'est quoi un contrat, en une phrase
 
@@ -237,6 +237,7 @@ Ces choix ont été faits pour pouvoir démarrer. Chacun relit **la partie qui l
 
 ## 10. Historique des versions
 
+- **1.5** (20 octobre 2026) : `AnomalyReport` reçoit deux champs optionnels, `feature_labels` et `feature_units`. Le profiling peut y donner des noms lisibles et des unités (« Consultation fee », « TND »), ce qui permet aux explications de s'adapter à n'importe quelles données. **Point à valider avec Ahmed :** son reçu de transformation doit renseigner `column_sources` pour la colonne de date du KPI. C'est ce qui permet à BO4-12 de retrouver la bonne table dans le profil de couverture. Enfin, une référence `static:` (par exemple le catalogue) peut être surchargée par run : si `runs/<run_id>/static/<chemin>` existe, c'est cette copie qui est lue. Cela permet d'avoir un 2e jeu de données, avec son propre catalogue, dans le même dépôt.
 - **1.4** (20 octobre 2026) : `WhyAnswer` dans `xai.py` (la réponse de l'agent « pourquoi ? »), `factcheck.py` (la vérification des chiffres d'un texte LLM, commune à tous les agents) et le paramètre `history` de `chat_json` pour les agents qui appellent des outils sur plusieurs tours.
 - **1.3** (20 octobre 2026) : `prompts.py` et le dossier `prompts/`. **Règle d'équipe :** aucun prompt n'est écrit dans le code ; on modifie le fichier YAML, on augmente sa version et on ajoute une ligne en haut de son `changelog`.
 - **1.2** (20 octobre 2026) : `llm.py`, le client LLM commun. Le fournisseur se choisit avec `BIFLOW_LLM_PROVIDER` (groq par défaut, gemini, openrouter ou ollama), et la clé va dans un fichier `.env` qui n'est **jamais** versionné. Chaque appel est inscrit au journal avec le modèle, la version du prompt et les empreintes de l'entrée et de la sortie. Les appels sont faits à température 0 avec une graine fixe, et la sortie est du JSON validé par Pydantic. `ComparisonReport` reçoit `rules_version`, `summary` et `summary_source`. **Règle d'équipe :** le LLM ne calcule aucun chiffre et ne prend aucune décision.

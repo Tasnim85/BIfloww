@@ -149,8 +149,10 @@ class Toolbox:
         return "\n".join(lines) or f"{labels[node]} has no upstream node."
 
     def _t_kpi_definition(self, name: str) -> str:
+        from contracts.pipeline import resolve
         from contracts.semantic import KpiCatalog, load_yaml
-        catalog = load_yaml(KpiCatalog, Path(self.repo_root) / "kpi" / "catalog.yaml")
+        catalog = load_yaml(KpiCatalog, resolve("static:kpi/catalog.yaml", self.run_id,
+                                                self.runs_root, self.repo_root))
         kpi = next((k for k in catalog.kpis if k.name.lower() == name.lower()), None)
         if kpi is None:
             return f"ERROR: no KPI '{name}'. Known: {', '.join(k.name for k in catalog.kpis)}"

@@ -46,7 +46,8 @@ def build_report(anomalies: Path, model: Path, scores: Path,
             contributions=[FeatureContribution(feature=r.feature, value=float(r.value),
                                                shap_value=round(float(r.shap_value), 6))
                            for r in exp.sorted_contributions().itertuples()],
-            narrative=narrate(exp, decision, medians)))
+            narrative=narrate(exp, decision, medians, labels=prof.report.feature_labels,
+                              units=prof.report.feature_units)))
 
     # Guarantee: SHAP explains EXACTLY the score that took the decision
     rebuilt = np.array([path_length_to_score(e.model_output, prof.model.max_samples_)

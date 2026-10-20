@@ -8,7 +8,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
-CONTRACTS_VERSION = "1.4"   # 1.4: WhyAnswer, shared fact checks, multi-turn LLM calls
+CONTRACTS_VERSION = "1.5"   # 1.5: AnomalyReport feature_labels/feature_units (dataset-agnostic texts)
 
 
 class Contract(BaseModel):

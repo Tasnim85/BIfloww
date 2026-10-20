@@ -12,11 +12,13 @@ from contracts.registry import CONTRACT_OF
 DEMO_JOURNAL = RUNS_ROOT / "demo_journal.db"
 DRIFT_JOURNAL = RUNS_ROOT / "drift_journal.db"
 UI_JOURNAL = RUNS_ROOT / "ui_journal.db"          # actions done from the UI on custom requests
+CLINICS_JOURNAL = RUNS_ROOT / "clinics_journal.db"  # 2nd dataset (python -m auditor.dev.make_clinics_demo)
 TAMPER_COPY = RUNS_ROOT / "tamper_demo.db"        # the ONLY journal the tampering demo touches
 
 JOURNALS = {
     "Démo run_001": DEMO_JOURNAL,
     "Drift mensuel": DRIFT_JOURNAL,
+    "Cliniques (2e jeu de données)": CLINICS_JOURNAL,
     "Essais depuis l'interface": UI_JOURNAL,
     "Journal réel": DEFAULT_JOURNAL,
 }
@@ -34,6 +36,20 @@ def pick_journal(label: str = "Journal", key: str = "journal", prefer: str | Non
     names = list(options)
     index = names.index(prefer) if prefer in names else 0
     return options[st.selectbox(label, names, index=index, key=key)]
+
+
+def journal_for(run_id: str) -> Path:
+    """The journal that holds this run's decisions (first one found), else the demo journal."""
+    for path in existing_journals().values():
+        if read_events(path, run_id=run_id):
+            return path
+    return DEMO_JOURNAL
+
+
+def base_run(run_id: str) -> str:
+    """Runs created from the UI reuse the data of another run (written in base_run.txt)."""
+    marker = RUNS_ROOT / run_id / "base_run.txt"
+    return marker.read_text(encoding="utf-8").strip() if marker.exists() else run_id
 
 
 def runs_in(journal: Path) -> list[str]:

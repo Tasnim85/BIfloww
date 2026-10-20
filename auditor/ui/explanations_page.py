@@ -55,7 +55,9 @@ def render() -> None:
     st.write(e.narrative)
 
     st.subheader("Preuve : contributions SHAP")
-    df = pd.DataFrame([{"Variable": label(c.feature), "Valeur": c.value, "SHAP (coupes)": c.shap_value}
+    labels = (read(run_id, "profiling.anomalies") or None)
+    labels = labels.feature_labels if labels else {}
+    df = pd.DataFrame([{"Variable": label(c.feature, labels), "Valeur": c.value, "SHAP (coupes)": c.shap_value}
                        for c in e.contributions])
     left, right = st.columns([3, 2])
     with left:

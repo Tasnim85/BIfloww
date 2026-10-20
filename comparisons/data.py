@@ -41,8 +41,23 @@ class Inputs:
         return next(t for t in self.manifest.tables if t.name == self.kpi.table)
 
     def coverage_table(self) -> TableCoverage:
-        """The profiled table that holds the KPI's dates (orders for Olist)."""
-        return self.coverage.tables[0]
+        """The profiled table the KPI's DATES come from, found through the ETL receipt:
+        column_sources[kpi.date_column] = "<raw table>.<column>". Falls back on a profiled
+        table among the fact's sources, then on the only table profiled."""
+        tables = {t.table: t for t in self.coverage.tables}
+        receipt = next((r for r in self.receipts.receipts if r.output_table == self.kpi.table), None)
+        if receipt:
+            origin = receipt.column_sources.get(self.kpi.date_column, "")
+            if origin.split(".")[0] in tables:
+                return tables[origin.split(".")[0]]
+            for src in receipt.source_tables:
+                if src in tables:
+                    return tables[src]
+        if len(tables) == 1:
+            return self.coverage.tables[0]
+        raise ValueError(f"cannot tell which profiled table holds the dates of {self.kpi.ref}: "
+                         f"the ETL receipt of {self.kpi.table} should map {self.kpi.date_column} "
+                         f"in column_sources")
 
     def coverage_days(self, p: Period) -> list[DayCoverage]:
         """One entry per day of the period; days absent from the profile count as 0 rows."""

@@ -111,6 +111,7 @@ def check_coverage(inp: Inputs, rules: Rules, as_asked: tuple[float, float]):
                  f"volume < {rules.min_volume_share:.0%} of the other period's median, or "
                  f"< {rules.min_status_share:.0%} of rows with the KPI status"),
         "source": "profiling/coverage_profile.json",
+        "table": inp.coverage_table().table,
         "current": {"period": req.period.model_dump(),
                     "complete": cur.complete.model_dump() if cur.complete else None,
                     "reference_median_rows": cur.baseline_median,
@@ -157,7 +158,7 @@ def check_population(inp: Inputs, rules: Rules) -> ComparisonCheck:
         evidence["status_share"] = {k: round(v, 4) for k, v in shares.items()}
         gap = abs(shares["current"] - shares["previous"])
         if gap > rules.status_share_gap:
-            issues.append(f"{shares['current']:.1%} of the current period's orders are "
+            issues.append(f"{shares['current']:.1%} of the current period's rows are "
                           f"'{status[1]}', against {shares['previous']:.1%} in the previous one: "
                           f"the KPI keeps a different share of each period.")
 

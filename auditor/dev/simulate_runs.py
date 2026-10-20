@@ -87,6 +87,7 @@ def simulate(data_dir: Path = Path("data/olist"), runs_root: Path = RUNS_ROOT) -
         save(AnomalyReport(table="order_payments", row_key="payment_id", model="IsolationForest",
                            model_version="iforest@1.0-monthly",
                            params=params | {"contamination": contamination}, features=FEATURES,
+                           feature_units={"payment_value": "BRL"},
                            n_rows=len(scores), n_anomalies=int(scores["is_anomaly"].sum())),
              output_path(run, "profiling", "anomalies", runs_root))
 

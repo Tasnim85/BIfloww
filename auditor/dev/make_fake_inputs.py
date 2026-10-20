@@ -89,6 +89,9 @@ def build_anomalies(payments: pd.DataFrame, run: str) -> AnomalyReport:
     return AnomalyReport(
         table="order_payments", row_key="payment_id", model="IsolationForest",
         model_version="iforest@1.0-fake", params=MODEL_PARAMS, features=FEATURES,
+        feature_labels={"payment_value": "Payment value", "payment_installments": "Number of installments",
+                        "payment_sequential": "Payment sequence number"},
+        feature_units={"payment_value": "BRL"},
         n_rows=len(scores), n_anomalies=int(scores["is_anomaly"].sum()))
 
 

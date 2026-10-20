@@ -1,30 +1,31 @@
 """BO4-12 page: is this comparison honest? Display + user decision. No business logic."""
-from datetime import date
+from datetime import date, timedelta
 
 import matplotlib.pyplot as plt
 import streamlit as st
 
-from auditor.ui.data import DEMO_JOURNAL, UI_JOURNAL, read, source_badge
+from auditor.ui.data import UI_JOURNAL, base_run, journal_for, read, runs_with, source_badge
 from comparisons.checker import record_decision, run as run_checker
 from contracts.agent import RunContext
 from contracts.common import Period, load, save
 from contracts.comparisons import CheckStatus, ComparisonReport
 from contracts.pipeline import RUNS_ROOT, context_for, output_path
-from contracts.semantic import AnalysisRequest
+from contracts.semantic import AnalysisRequest, KpiCatalog, load_yaml
 
 ICON = {CheckStatus.OK: "✅", CheckStatus.WARNING: "⚠️", CheckStatus.BLOCKING: "⛔"}
 CUSTOM_RUN = "ui_custom"
 
 
-def _run_custom(cur: tuple[date, date], prev: tuple[date, date], use_llm: bool) -> None:
-    """Run the real BO4-12 agent on a request typed in the UI (data of run_001)."""
-    req = AnalysisRequest(question="Comparaison saisie dans l'interface", metric="Revenue",
-                          dimensions=["customer_state"],
+def _run_custom(base: str, metric: str, dims: list[str], cur: tuple[date, date],
+                prev: tuple[date, date], use_llm: bool) -> None:
+    """Run the real BO4-12 agent on a request typed in the UI, on the data of run `base`."""
+    req = AnalysisRequest(question="Comparaison saisie dans l'interface", metric=metric, dimensions=dims,
                           period=Period(start=cur[0].isoformat(), end=cur[1].isoformat()),
                           compare_to=Period(start=prev[0].isoformat(), end=prev[1].isoformat()))
-    inputs = dict(context_for("comparisons", "run_001").inputs)
+    inputs = dict(context_for("comparisons", base).inputs)
     inputs["request"] = save(req, output_path(CUSTOM_RUN, "request", "request"))
     inputs["result"] = output_path(CUSTOM_RUN, "analysis", "result")         # none: values recomputed
+    (RUNS_ROOT / CUSTOM_RUN / "base_run.txt").write_text(base, encoding="utf-8")
     ctx = RunContext(run_id=CUSTOM_RUN, agent="comparisons", inputs=inputs,
                      output_dir=RUNS_ROOT / CUSTOM_RUN / "comparisons",
                      params={"llm": use_llm}, journal=UI_JOURNAL)
@@ -32,13 +33,15 @@ def _run_custom(cur: tuple[date, date], prev: tuple[date, date], use_llm: bool) 
 
 
 def _coverage_chart(run_id: str, report: ComparisonReport, request: AnalysisRequest):
-    cov = read(run_id if run_id != CUSTOM_RUN else "run_001", "profiling.coverage")
+    cov = read(base_run(run_id), "profiling.coverage")
     check = next((c for c in report.checks if c.kind.value == "coverage"), None)
     if cov is None or check is None:
         return None
     lo = min(request.period.start, request.compare_to.start)
     hi = max(request.period.end, request.compare_to.end)
-    days = [d for d in cov.tables[0].days if lo <= d.date <= hi]
+    table = check.evidence.get("table")
+    cov_table = next((t for t in cov.tables if t.table == table), cov.tables[0])
+    days = [d for d in cov_table.days if lo <= d.date <= hi]
     bad = set(check.evidence.get("current", {}).get("incomplete_days", {})) | \
         set(check.evidence.get("previous", {}).get("incomplete_days", {}))
     fig, ax = plt.subplots(figsize=(9, 2.8))
@@ -50,9 +53,43 @@ def _coverage_chart(run_id: str, report: ComparisonReport, request: AnalysisRequ
         ax.legend(loc="upper left", fontsize=8)
     step = max(1, len(days) // 12)
     ax.set_xticks(range(0, len(days), step), [days[i].date[5:] for i in range(0, len(days), step)], fontsize=8)
-    ax.set_ylabel("commandes / jour")
+    ax.set_ylabel(f"{cov_table.table} / jour")
     fig.tight_layout()
     return fig
+
+
+def _default_periods(base: str) -> tuple[tuple[date, date], tuple[date, date]]:
+    """Last month of the data compared with the month before (whatever the dataset)."""
+    cov = read(base, "profiling.coverage")
+    last = date.fromisoformat(cov.tables[0].last_day) if cov else date.today()
+    cur_start = last.replace(day=1)
+    prev_end = cur_start - timedelta(days=1)
+    return (cur_start, last), (prev_end.replace(day=1), prev_end)
+
+
+def _custom_form() -> None:
+    bases = [r for r in runs_with("profiling", "coverage") if output_path(r, "etl", "warehouse").exists()]
+    if not bases:
+        st.info("Aucun run avec un profil de couverture et un entrepôt.")
+        return
+    base = st.selectbox("Données du run", bases, index=bases.index("run_001") if "run_001" in bases else 0)
+    catalog = load_yaml(KpiCatalog, context_for("comparisons", base).inputs["catalog"])
+    k1, k2 = st.columns(2)
+    metric = k1.selectbox("KPI", [k.name for k in catalog.kpis])
+    dims = k2.multiselect("Dimensions", catalog.kpi(metric).allowed_dimensions)
+    cur_default, prev_default = _default_periods(base)
+    with st.form("custom"):
+        c1, c2 = st.columns(2)
+        cur = c1.date_input("Période étudiée", cur_default)
+        prev = c2.date_input("Comparée à", prev_default)
+        use_llm = st.checkbox("Résumé rédigé par le LLM (vérifié)", value=False)
+        go = st.form_submit_button("Lancer l'agent BO4-12", type="primary")
+    st.caption("Par défaut : le dernier mois des données contre le mois précédent. Sur Olist, essaie "
+               "aussi février vs janvier 2018 (échelle) ou 1-7 mai vs avril 2018.")
+    if go and len(cur) == 2 and len(prev) == 2:
+        with st.spinner("L'agent vérifie la comparaison..."):
+            _run_custom(base, metric, dims, cur, prev, use_llm)
+        st.session_state["cmp_run"] = CUSTOM_RUN
 
 
 def render() -> None:
@@ -61,30 +98,18 @@ def render() -> None:
                "décision de l'utilisateur → journal")
 
     with st.expander("Essayer une autre comparaison", expanded=False):
-        with st.form("custom"):
-            c1, c2 = st.columns(2)
-            cur = c1.date_input("Période étudiée", (date(2018, 2, 1), date(2018, 2, 28)))
-            prev = c2.date_input("Comparée à", (date(2018, 1, 1), date(2018, 1, 31)))
-            use_llm = st.checkbox("Résumé rédigé par le LLM (vérifié)", value=False)
-            go = st.form_submit_button("Lancer l'agent BO4-12", type="primary")
-        st.caption("Idées : février vs janvier 2018 (échelle), 1-7 mai vs avril 2018 (échelle), "
-                   "septembre vs août 2018 (couverture), juin vs mai 2018 (valide).")
-        if go and len(cur) == 2 and len(prev) == 2:
-            with st.spinner("L'agent vérifie la comparaison..."):
-                _run_custom(cur, prev, use_llm)
-            st.session_state["cmp_run"] = CUSTOM_RUN
+        _custom_form()
 
-    choices = [r for r in ("run_001", CUSTOM_RUN) if output_path(r, "comparisons", "report").exists()]
+    choices = runs_with("comparisons", "report")
     if not choices:
         st.error("Aucun rapport de comparaison. Lance `python -m auditor.dev.seed_demo_journal`.")
         return
     default = st.session_state.get("cmp_run", choices[0])
     run_id = st.radio("Rapport affiché", choices, index=choices.index(default) if default in choices else 0,
-                      horizontal=True, format_func=lambda r: "Scénario août/juillet (run_001)"
-                      if r == "run_001" else "Ma comparaison")
+                      horizontal=True, format_func=lambda r: "Ma comparaison" if r == CUSTOM_RUN else r)
     report = load(ComparisonReport, output_path(run_id, "comparisons", "report"))
     request = load(AnalysisRequest, output_path(run_id, "request", "request"))
-    journal = DEMO_JOURNAL if run_id == "run_001" else UI_JOURNAL
+    journal = journal_for(run_id)
 
     st.subheader("La question")
     st.write(f"**{request.metric}** du {request.period.start} au {request.period.end}, "
@@ -106,7 +131,8 @@ def render() -> None:
 
     fig = _coverage_chart(run_id, report, request)
     if fig is not None:
-        st.subheader("Couverture : commandes par jour")
+        table = next(c.evidence.get("table", "") for c in report.checks if c.kind.value == "coverage")
+        st.subheader(f"Couverture : lignes de « {table} » par jour")
         st.pyplot(fig)
         plt.close(fig)
         st.caption("Rouge = jours incomplets en bord de données (règle versionnée "
