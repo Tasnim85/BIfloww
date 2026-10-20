@@ -1,0 +1,32 @@
+{
+  "contract_version": "1.0",
+  "reference_runs": [
+    "run_2018_05",
+    "run_2018_06",
+    "run_2018_07"
+  ],
+  "current_run": "run_001",
+  "status": "stable",
+  "input_checks": [
+    {
+      "agent": "profiling",
+      "name": "payment_value",
+      "psi": 0.04,
+      "ks_pvalue": 0.21,
+      "flagged": false
+    }
+  ],
+  "metric_checks": [
+    {
+      "agent": "profiling",
+      "name": "anomaly_rate",
+      "value": 0.0101,
+      "center": 0.01,
+      "lower": 0.0091,
+      "upper": 0.0109,
+      "out_of_control": false
+    }
+  ],
+  "flagged_agents": [],
+  "narrative": "Inputs and outputs are within the reference limits. This is a diagnosis, not a proof: a human decides."
+}
