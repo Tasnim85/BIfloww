@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.0",
+  "contract_version": "1.1",
   "title": "Revenue by state: August vs July 2018",
   "question": "Revenue by state in August 2018 compared with July 2018",
   "kpi": "Revenue@2.0",
@@ -7,7 +7,7 @@
     {
       "chart_id": "c1",
       "chart_type": "kpi_card",
-      "title": "Revenue, 1-29 August",
+      "title": "Revenue, 1-23 August",
       "data_file": "analysis/result.parquet",
       "x": null,
       "y": "value",
@@ -26,6 +26,6 @@
     }
   ],
   "warnings": [
-    "August is incomplete (29 of 31 days). Showing 1-29 August vs 1-29 July."
+    "August is complete only up to the 23rd. Showing 1-23 August vs 1-23 July (accepted by the user)."
   ]
 }

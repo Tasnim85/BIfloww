@@ -54,7 +54,8 @@ _STEPS = [
 
     Step(name=AgentName.PROFILING, owner="Ahmed", entrypoint="profiling.profiler:run",
          inputs={"tables": "pii.tables", "column_types": "column_types.report"},
-         outputs={"profile": "profile_report.json", "anomalies": "anomaly_report.json",
+         outputs={"profile": "profile_report.json", "coverage": "coverage_profile.json",
+                  "anomalies": "anomaly_report.json",
                   "model": "anomaly_model.joblib", "scores": "anomaly_scores.parquet"}),
 
     Step(name=AgentName.CLEANING, owner="Ikbel", entrypoint="cleaning.cleaner:run",
@@ -81,6 +82,7 @@ _STEPS = [
 
     Step(name=AgentName.COMPARISONS, owner="Tasnim", entrypoint="comparisons.checker:run",
          inputs={"request": "request.request", "result": "analysis.result",
+                 "coverage": "profiling.coverage",
                  "warehouse": "etl.warehouse", "manifest": "etl.manifest",
                  "receipts": "etl.receipts", "catalog": "static:kpi/catalog.yaml"},
          outputs={"report": "comparison_report.json"}),

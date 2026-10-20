@@ -1,0 +1,696 @@
+{
+  "contract_version": "1.1",
+  "tables": [
+    {
+      "table": "orders",
+      "date_column": "order_purchase_timestamp",
+      "status_column": "order_status",
+      "first_day": "2018-07-01",
+      "last_day": "2018-08-31",
+      "days": [
+        {
+          "date": "2018-07-01",
+          "rows": 161,
+          "by_status": {
+            "delivered": 159,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.969
+          }
+        },
+        {
+          "date": "2018-07-02",
+          "rows": 195,
+          "by_status": {
+            "delivered": 193,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.99
+          }
+        },
+        {
+          "date": "2018-07-03",
+          "rows": 216,
+          "by_status": {
+            "delivered": 214,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.991
+          }
+        },
+        {
+          "date": "2018-07-04",
+          "rows": 256,
+          "by_status": {
+            "delivered": 251,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.98
+          }
+        },
+        {
+          "date": "2018-07-05",
+          "rows": 195,
+          "by_status": {
+            "delivered": 193,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.99
+          }
+        },
+        {
+          "date": "2018-07-06",
+          "rows": 121,
+          "by_status": {
+            "delivered": 120,
+            "other": 1
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.992
+          }
+        },
+        {
+          "date": "2018-07-07",
+          "rows": 91,
+          "by_status": {
+            "delivered": 89,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.978
+          }
+        },
+        {
+          "date": "2018-07-08",
+          "rows": 122,
+          "by_status": {
+            "delivered": 118,
+            "other": 4
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.967
+          }
+        },
+        {
+          "date": "2018-07-09",
+          "rows": 148,
+          "by_status": {
+            "delivered": 146,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.986
+          }
+        },
+        {
+          "date": "2018-07-10",
+          "rows": 134,
+          "by_status": {
+            "delivered": 129,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.963
+          }
+        },
+        {
+          "date": "2018-07-11",
+          "rows": 127,
+          "by_status": {
+            "delivered": 123,
+            "other": 4
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.969
+          }
+        },
+        {
+          "date": "2018-07-12",
+          "rows": 124,
+          "by_status": {
+            "delivered": 117,
+            "other": 7
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.944
+          }
+        },
+        {
+          "date": "2018-07-13",
+          "rows": 168,
+          "by_status": {
+            "delivered": 167,
+            "other": 1
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.994
+          }
+        },
+        {
+          "date": "2018-07-14",
+          "rows": 148,
+          "by_status": {
+            "delivered": 142,
+            "other": 6
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.959
+          }
+        },
+        {
+          "date": "2018-07-15",
+          "rows": 152,
+          "by_status": {
+            "delivered": 148,
+            "other": 4
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.974
+          }
+        },
+        {
+          "date": "2018-07-16",
+          "rows": 245,
+          "by_status": {
+            "delivered": 238,
+            "other": 7
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.971
+          }
+        },
+        {
+          "date": "2018-07-17",
+          "rows": 221,
+          "by_status": {
+            "delivered": 216,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.977
+          }
+        },
+        {
+          "date": "2018-07-18",
+          "rows": 307,
+          "by_status": {
+            "delivered": 302,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.984
+          }
+        },
+        {
+          "date": "2018-07-19",
+          "rows": 253,
+          "by_status": {
+            "delivered": 249,
+            "other": 4
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.984
+          }
+        },
+        {
+          "date": "2018-07-20",
+          "rows": 250,
+          "by_status": {
+            "delivered": 247,
+            "other": 3
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.988
+          }
+        },
+        {
+          "date": "2018-07-21",
+          "rows": 187,
+          "by_status": {
+            "delivered": 184,
+            "other": 3
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.984
+          }
+        },
+        {
+          "date": "2018-07-22",
+          "rows": 215,
+          "by_status": {
+            "delivered": 213,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.991
+          }
+        },
+        {
+          "date": "2018-07-23",
+          "rows": 307,
+          "by_status": {
+            "delivered": 298,
+            "other": 9
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.971
+          }
+        },
+        {
+          "date": "2018-07-24",
+          "rows": 271,
+          "by_status": {
+            "delivered": 264,
+            "other": 7
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.974
+          }
+        },
+        {
+          "date": "2018-07-25",
+          "rows": 268,
+          "by_status": {
+            "delivered": 264,
+            "other": 4
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.985
+          }
+        },
+        {
+          "date": "2018-07-26",
+          "rows": 247,
+          "by_status": {
+            "delivered": 244,
+            "other": 3
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.988
+          }
+        },
+        {
+          "date": "2018-07-27",
+          "rows": 189,
+          "by_status": {
+            "delivered": 186,
+            "other": 3
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.984
+          }
+        },
+        {
+          "date": "2018-07-28",
+          "rows": 176,
+          "by_status": {
+            "delivered": 172,
+            "other": 4
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.977
+          }
+        },
+        {
+          "date": "2018-07-29",
+          "rows": 188,
+          "by_status": {
+            "delivered": 182,
+            "other": 6
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.968
+          }
+        },
+        {
+          "date": "2018-07-30",
+          "rows": 288,
+          "by_status": {
+            "delivered": 278,
+            "other": 10
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.965
+          }
+        },
+        {
+          "date": "2018-07-31",
+          "rows": 322,
+          "by_status": {
+            "delivered": 313,
+            "other": 9
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.972
+          }
+        },
+        {
+          "date": "2018-08-01",
+          "rows": 311,
+          "by_status": {
+            "delivered": 306,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.984
+          }
+        },
+        {
+          "date": "2018-08-02",
+          "rows": 302,
+          "by_status": {
+            "delivered": 292,
+            "other": 10
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.967
+          }
+        },
+        {
+          "date": "2018-08-03",
+          "rows": 314,
+          "by_status": {
+            "delivered": 308,
+            "other": 6
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.981
+          }
+        },
+        {
+          "date": "2018-08-04",
+          "rows": 245,
+          "by_status": {
+            "delivered": 236,
+            "other": 9
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.963
+          }
+        },
+        {
+          "date": "2018-08-05",
+          "rows": 276,
+          "by_status": {
+            "delivered": 269,
+            "other": 7
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.975
+          }
+        },
+        {
+          "date": "2018-08-06",
+          "rows": 372,
+          "by_status": {
+            "delivered": 363,
+            "other": 9
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.976
+          }
+        },
+        {
+          "date": "2018-08-07",
+          "rows": 370,
+          "by_status": {
+            "delivered": 353,
+            "other": 17
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.954
+          }
+        },
+        {
+          "date": "2018-08-08",
+          "rows": 316,
+          "by_status": {
+            "delivered": 310,
+            "other": 6
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.981
+          }
+        },
+        {
+          "date": "2018-08-09",
+          "rows": 289,
+          "by_status": {
+            "delivered": 280,
+            "other": 9
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.969
+          }
+        },
+        {
+          "date": "2018-08-10",
+          "rows": 256,
+          "by_status": {
+            "delivered": 249,
+            "other": 7
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.973
+          }
+        },
+        {
+          "date": "2018-08-11",
+          "rows": 188,
+          "by_status": {
+            "delivered": 185,
+            "other": 3
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.984
+          }
+        },
+        {
+          "date": "2018-08-12",
+          "rows": 197,
+          "by_status": {
+            "delivered": 191,
+            "other": 6
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.97
+          }
+        },
+        {
+          "date": "2018-08-13",
+          "rows": 292,
+          "by_status": {
+            "delivered": 284,
+            "other": 8
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.973
+          }
+        },
+        {
+          "date": "2018-08-14",
+          "rows": 316,
+          "by_status": {
+            "delivered": 311,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.984
+          }
+        },
+        {
+          "date": "2018-08-15",
+          "rows": 288,
+          "by_status": {
+            "delivered": 282,
+            "other": 6
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.979
+          }
+        },
+        {
+          "date": "2018-08-16",
+          "rows": 320,
+          "by_status": {
+            "delivered": 316,
+            "other": 4
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.988
+          }
+        },
+        {
+          "date": "2018-08-17",
+          "rows": 257,
+          "by_status": {
+            "delivered": 249,
+            "other": 8
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.969
+          }
+        },
+        {
+          "date": "2018-08-18",
+          "rows": 198,
+          "by_status": {
+            "delivered": 193,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.975
+          }
+        },
+        {
+          "date": "2018-08-19",
+          "rows": 204,
+          "by_status": {
+            "delivered": 204,
+            "other": 0
+          },
+          "completeness": {
+            "order_delivered_customer_date": 1.0
+          }
+        },
+        {
+          "date": "2018-08-20",
+          "rows": 256,
+          "by_status": {
+            "delivered": 251,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.98
+          }
+        },
+        {
+          "date": "2018-08-21",
+          "rows": 243,
+          "by_status": {
+            "delivered": 238,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.979
+          }
+        },
+        {
+          "date": "2018-08-22",
+          "rows": 187,
+          "by_status": {
+            "delivered": 185,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.989
+          }
+        },
+        {
+          "date": "2018-08-23",
+          "rows": 144,
+          "by_status": {
+            "delivered": 142,
+            "other": 2
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.986
+          }
+        },
+        {
+          "date": "2018-08-24",
+          "rows": 99,
+          "by_status": {
+            "delivered": 96,
+            "other": 3
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.97
+          }
+        },
+        {
+          "date": "2018-08-25",
+          "rows": 69,
+          "by_status": {
+            "delivered": 69,
+            "other": 0
+          },
+          "completeness": {
+            "order_delivered_customer_date": 1.0
+          }
+        },
+        {
+          "date": "2018-08-26",
+          "rows": 73,
+          "by_status": {
+            "delivered": 73,
+            "other": 0
+          },
+          "completeness": {
+            "order_delivered_customer_date": 1.0
+          }
+        },
+        {
+          "date": "2018-08-27",
+          "rows": 67,
+          "by_status": {
+            "delivered": 66,
+            "other": 1
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.985
+          }
+        },
+        {
+          "date": "2018-08-28",
+          "rows": 44,
+          "by_status": {
+            "delivered": 39,
+            "other": 5
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.886
+          }
+        },
+        {
+          "date": "2018-08-29",
+          "rows": 14,
+          "by_status": {
+            "delivered": 11,
+            "other": 3
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.786
+          }
+        },
+        {
+          "date": "2018-08-30",
+          "rows": 4,
+          "by_status": {
+            "delivered": 0,
+            "other": 4
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.0
+          }
+        },
+        {
+          "date": "2018-08-31",
+          "rows": 1,
+          "by_status": {
+            "delivered": 0,
+            "other": 1
+          },
+          "completeness": {
+            "order_delivered_customer_date": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}

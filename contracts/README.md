@@ -1,7 +1,7 @@
 # BIFlow : les contrats
 
 > À lire par toute l'équipe avant d'écrire une ligne de code d'agent.
-> Version des contrats : **1.0** (20 octobre 2026).
+> Version des contrats : **1.1** (20 octobre 2026). Voir l'historique à la section 10.
 
 ## 1. C'est quoi un contrat, en une phrase
 
@@ -58,12 +58,12 @@ Trois étapes peuvent tourner **en parallèle** dès le départ : `similarity`, 
 | `similarity` | Malek | `similarity_report.json` | upload |
 | `column_types` | Malek | `column_types.json` | upload/tables |
 | `pii` | Ikbel | `pii_report.json`, `tables/` (Parquet masqué) | upload/tables, column_types |
-| `profiling` | Ahmed | `profile_report.json`, `anomaly_report.json`, `anomaly_model.joblib`, `anomaly_scores.parquet` | pii/tables, column_types |
+| `profiling` | Ahmed | `profile_report.json`, `coverage_profile.json`, `anomaly_report.json`, `anomaly_model.joblib`, `anomaly_scores.parquet` | pii/tables, column_types |
 | `cleaning` | Ikbel | `cleaning_report.json`, `tables/` (Parquet propre) | pii/tables, profil, similarité, playbooks |
 | `etl` | Ahmed | `warehouse.duckdb`, `warehouse_manifest.json`, `receipts.json` | cleaning/tables |
 | `request` | Malek | `analysis_request.json` | question, glossaire, catalogue |
 | `analysis` | Rabeb | `analysis_result.json`, `result.parquet` | request, entrepôt, manifeste, reçus, catalogue |
-| `comparisons` | Tasnim | `comparison_report.json` | request, résultat, entrepôt, manifeste, reçus, catalogue |
+| `comparisons` | Tasnim | `comparison_report.json` | request, résultat, **profil de couverture**, entrepôt, manifeste, reçus, catalogue |
 | `dashboard` | Samar | `dashboard_spec.json` | request, résultat, comparaisons |
 | `lineage` | Ahmed | `lineage.json` | reçus, manifeste, catalogue |
 | `auditor` | Tasnim | `explanations.json`, `drift_report.json`, `integrity_report.json` | anomalies, modèle, scores, lignage, **journal** |
@@ -184,14 +184,19 @@ Sarra dépose les tables Olist et demande : *« Revenue by state in August 2018 
 
 Les comptes de lignes et les chiffres d'affaires des exemples sont **réels** : ils ont été calculés sur le dataset Olist complet. Les scores, valeurs SHAP et taux de confiance sont fictifs.
 
-Ce scénario montre pourquoi BO4-12 existe :
+Ce scénario montre pourquoi BO4-12 existe. Le profil de couverture (`profiling/coverage_profile.json`, nombre de commandes par jour) montre qu'août est complet jusqu'au 23. À partir du 24, le volume tombe entre 1 et 99 commandes par jour, contre environ 195 un jour normal. Et aucune commande des 30 et 31 n'est livrée.
 
 | Comparaison | Août | Juillet | Évolution |
 |---|---|---|---|
-| Mois entiers | 985 414 BRL | 1 027 904 BRL | **−4,1 %** (fausse baisse) |
-| Du 1er au 29 | 985 414 BRL | 930 970 BRL | **+5,8 %** |
+| Mois entiers (demande brute) | 985 414 BRL | 1 027 904 BRL | **−4,1 %** (fausse baisse) |
+| Du 1er au 23 (correction recommandée) | 941 291 BRL | 699 239 BRL | **+34,6 %** |
+| Par jour : 1–23 août contre juillet entier (alternative) | 40 926 BRL/j | 33 158 BRL/j | **+23,4 %** |
 
-Les données livrées d'août s'arrêtent le 29. Le contrôle `coverage` bloque donc la première comparaison et propose la seconde.
+Le contrôle `coverage` bloque la comparaison sur les mois entiers et propose les deux corrections, chacune avec sa justification chiffrée. C'est Sarra qui choisit.
+
+Les deux corrections ne donnent pas le même chiffre, parce que les commandes de juillet sont concentrées en fin de mois. C'est voulu : l'agent ne tranche pas à la place de l'utilisateur, il lui donne de quoi décider.
+
+La règle utilisée dans l'exemple : *les derniers jours d'une période sont incomplets si leur volume est inférieur à 60 % du volume médian de l'autre période*. Ce seuil de 60 % est un paramètre à régler, pas une loi. `check_contracts` vérifie que le 23 août découle bien du profil, et qu'il n'est pas écrit à la main.
 
 ## 8. Règles de l'équipe
 
@@ -213,14 +218,26 @@ Ces choix ont été faits pour pouvoir démarrer. Chacun relit **la partie qui l
   - les actions possibles d'une règle (`CleaningAction`) ;
   - la politique PII (quelles colonnes Olist sont masquées, et comment).
 - **Ahmed** :
+  - le nouveau `CoverageProfile` (`quality.py`) : le profiling compte, pour chaque jour, les lignes, leur statut et le remplissage des colonnes clés (c'est le « DQ measures completeness » de BO4-12) ;
   - la liste des tables de l'entrepôt et leur granularité ;
   - la table sur laquelle tourne la détection d'anomalies (`order_payments` dans l'exemple).
 - **Rabeb** :
   - les KPI du catalogue (Revenue@2.0, Orders@1.0) et leurs filtres ;
+  - le nouveau champ `population` de chaque KPI : une phrase qui dit qui ou quoi est compté (c'est le « SEM supplies definitions » de BO4-12) ;
   - le format de `result.parquet` (dimensions + `period` + `value`).
 - **Samar** :
   - les types de graphiques (`ChartType`) ;
   - le comportement de l'orchestrateur pour `needs_review` et `skipped`.
 - **Tasnim** :
-  - les 4 contrôles de comparaison (`coverage`, `unit`, `grain`, `population`) ;
+  - les 5 contrôles de comparaison (`coverage`, `population`, `unit`, `scale`, `grain`) et la règle des jours incomplets ;
   - le format du rapport de drift (les runs de référence = des runs mensuels sur Olist).
+
+## 10. Historique des versions
+
+- **1.1** (20 octobre 2026), adaptations à la définition officielle de BO4-12. Ce ne sont que des ajouts :
+  - `CoverageProfile` écrit par le profiling et lu par comparisons ;
+  - le contrôle `scale` ;
+  - `ProposedFix` reçoit `method`, `justification` et `unit` ;
+  - `ComparisonReport` reçoit `alternatives` et `chosen_fix` ;
+  - `KpiDefinition` reçoit `population`.
+- **1.0** (20 octobre 2026), première version.

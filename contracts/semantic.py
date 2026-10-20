@@ -30,6 +30,7 @@ class KpiDefinition(Contract):
     date_column: str                   # column used for periods
     unit: str                          # e.g. "BRL", "orders", "%"
     filters: list[str] = Field(default_factory=list)       # SQL WHERE parts
+    population: str = ""               # who/what is counted, in words: quoted to the user by BO4-12
     allowed_dimensions: list[str] = Field(default_factory=list)
 
     @property

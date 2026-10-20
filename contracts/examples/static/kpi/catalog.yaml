@@ -10,6 +10,7 @@ kpis:
   unit: BRL
   filters:
   - order_status = 'delivered'
+  population: Payments of orders already delivered to the customer.
   allowed_dimensions:
   - customer_state
   - payment_type
@@ -24,6 +25,7 @@ kpis:
   unit: orders
   filters:
   - order_status = 'delivered'
+  population: Orders already delivered to the customer.
   allowed_dimensions:
   - customer_state
   - product_category

@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.0",
+  "contract_version": "1.1",
   "table": "order_payments",
   "model_version": "iforest@1.0",
   "explainer": "shap.TreeExplainer",

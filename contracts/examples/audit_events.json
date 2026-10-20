@@ -74,17 +74,18 @@
     "run_id": "run_001",
     "agent": "comparisons",
     "step": "coverage_check",
-    "decision": "BLOCKING: fix proposed (1-29 Aug vs 1-29 Jul)",
+    "decision": "BLOCKING: fix proposed (1-23 Aug vs 1-23 Jul)",
     "timestamp": "2026-10-20T10:00:00Z",
     "inputs": [
       "request/analysis_request.json",
-      "etl/warehouse_manifest.json"
+      "profiling/coverage_profile.json"
     ],
     "outputs": [],
-    "rule_version": null,
+    "rule_version": "comparability-rules@1.0",
     "evidence": {
-      "current_days": 29,
-      "previous_days": 31
+      "last_complete_day": "2018-08-23",
+      "threshold_rows": 117,
+      "reference_median_rows": 195
     }
   }
 ]
