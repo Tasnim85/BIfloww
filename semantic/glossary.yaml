@@ -1,4 +1,6 @@
-version: '1.0'
+# The glossary: the words a manager uses -> the names of the KPI catalog (owner: Rabeb).
+# Read by Malek's request agent. A synonym must belong to ONE term only.
+version: '1.1'
 terms:
 - term: Revenue
   kind: metric
@@ -8,80 +10,99 @@ terms:
   - chiffre d'affaires
   - CA
   - ventes
-  - revenue
-  - revenu
   definition: Money paid by customers for delivered orders.
 - term: Orders
   kind: metric
   synonyms:
   - number of orders
+  - order count
   - commandes
   - nombre de commandes
-  - order count
-  - nb orders
-  - orders
   definition: Distinct delivered orders.
-- term: ReviewScore
+- term: Customers
   kind: metric
   synonyms:
-  - review score
-  - average review
-  - rating
-  - note moyenne
-  - moyenne des avis
-  - avis
-  - satisfaction
-  - review score average
-  definition: Average rating given by customers.
+  - number of customers
+  - buyers
+  - clients
+  - nombre de clients
+  - acheteurs
+  definition: Distinct customers who paid for a delivered order.
+- term: ItemsSold
+  kind: metric
+  synonyms:
+  - items sold
+  - units sold
+  - products sold
+  - articles vendus
+  - quantité vendue
+  - nombre d'articles
+  definition: Items sold in delivered orders.
+- term: Freight
+  kind: metric
+  synonyms:
+  - shipping cost
+  - delivery cost
+  - frais de port
+  - frais de livraison
+  - coût de transport
+  definition: Shipping cost charged for the items of delivered orders.
+- term: AverageBasket
+  kind: metric
+  synonyms:
+  - average basket
+  - average order value
+  - AOV
+  - panier moyen
+  - montant moyen par commande
+  definition: Average amount paid per delivered order.
 - term: customer_state
   kind: dimension
   synonyms:
   - state
   - region
-  - etat
-  - customer state
+  - région
+  - état
   definition: State where the customer lives.
 - term: product_category
   kind: dimension
   synonyms:
   - category
-  - categorie
   - product type
-  definition: Product category in English.
+  - catégorie
+  - catégorie de produit
+  - famille de produits
+  definition: Category of the product sold.
 - term: seller_state
   kind: dimension
   synonyms:
   - seller state
-  - vendor state
   - seller region
+  - état du vendeur
+  - région du vendeur
   definition: State where the seller is located.
 - term: payment_type
   kind: dimension
   synonyms:
   - payment method
-  - mode paiement
-  - payment
-  definition: Method of payment (credit_card, boleto, voucher, debit_card).
+  - mode de paiement
+  - moyen de paiement
+  - type de paiement
+  definition: How the customer paid (credit card, boleto, voucher, debit card).
 - term: order_month
   kind: dimension
   synonyms:
   - month
+  - monthly
+  - by month
   - mois
-  - order month
-  definition: Month of purchase in YYYY-MM format.
-- term: seller_id
-  kind: dimension
-  synonyms:
-  - seller
-  - vendor
-  - vendeur
-  - seller_id
-  - seller id
-  definition: Unique identifier of the seller.
+  - par mois
+  - mensuel
+  definition: Month of purchase.
 - term: last month
   kind: time
   synonyms:
   - previous month
   - mois dernier
-  - dernier mois
+  - le mois précédent
   definition: The calendar month before the current one.

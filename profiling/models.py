@@ -77,7 +77,7 @@ class CoverageReport(BaseModel):
     schema_version: Literal["bo2-local-1"] = "bo2-local-1"
     source_table: str
     date_column: str
-    status_column: str
+    status_column: str | None
     id_column: str | None
     grain: Literal["order_id", "input_row"]
     total_orders: Count

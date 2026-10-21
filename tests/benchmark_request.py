@@ -45,14 +45,14 @@ GLOSSARY_PATH = REPO_ROOT / "semantic" / "glossary.yaml"
 BENCHMARK_CASES: list[dict[str, Any]] = [
     {
         "id": "Q01_TOP5",
-        "requirement": "Top 5 limit constraint",
-        "question": "Top 5 categories by Revenue in August",
+        "requirement": "Top 5 limit constraint (logged as top_n: LIMIT is not a WHERE part)",
+        "question": "Top 5 categories by Orders in August",
         "expected": {
-            "metric": "Revenue",
+            "metric": "Orders",
             "dimensions": ["product_category"],
             "period": {"start": "2018-08-01", "end": "2018-08-31"},
             "compare_to": None,
-            "filters": ["LIMIT 5"],
+            "filters": [],
         },
     },
     {
@@ -69,11 +69,11 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "Q03_AVG_REVIEW_SELLER",
-        "requirement": "Moyenne des avis par vendeur (ReviewScore by seller)",
-        "question": "Average review score by seller in August",
+        "requirement": "Panier moyen par mode de paiement (ReviewScore is not in the shared catalog)",
+        "question": "Average basket by payment method in August",
         "expected": {
-            "metric": "ReviewScore",
-            "dimensions": ["seller_id"],
+            "metric": "AverageBasket",
+            "dimensions": ["payment_type"],
             "period": {"start": "2018-08-01", "end": "2018-08-31"},
             "compare_to": None,
             "filters": [],
@@ -81,11 +81,12 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "Q04_TYPO_TOLERANCE",
-        "requirement": "Faute de frappe (rewnue -> Revenue, catgorie -> product_category)",
-        "question": "rewnue by catgorie in August",
+        # Revenue does not allow product_category in the catalog: same typo check on payment_type.
+        "requirement": "Faute de frappe (rewnue -> Revenue, paymnt -> payment_type)",
+        "question": "rewnue by paymnt in August",
         "expected": {
             "metric": "Revenue",
-            "dimensions": ["product_category"],
+            "dimensions": ["payment_type"],
             "period": {"start": "2018-08-01", "end": "2018-08-31"},
             "compare_to": None,
             "filters": [],
@@ -154,10 +155,12 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
     {
         "id": "Q10_COMBO",
         "requirement": "Combinaison multiple (FR + catégorie + mois relatif + exclusion)",
-        "question": "ventes par categorie le mois dernier hors SP",
+        # Revenue does not allow product_category in the catalog: Orders does. The Analyst
+        # filters only on a dimension of the breakdown, so customer_state is added.
+        "question": "commandes par categorie le mois dernier hors SP",
         "expected": {
-            "metric": "Revenue",
-            "dimensions": ["product_category"],
+            "metric": "Orders",
+            "dimensions": ["product_category", "customer_state"],
             "period": {"start": "2018-07-01", "end": "2018-07-31"},
             "compare_to": None,
             "filters": ["customer_state != 'SP'"],

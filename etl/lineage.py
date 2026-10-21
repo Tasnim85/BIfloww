@@ -115,6 +115,15 @@ def _run(ctx: RunContext) -> AgentResult:
             for key in receipt.join_keys:
                 for source in receipt.source_tables:
                     connect(f"clean:{source}.{key}", f"transformation:{receipt.output_table}", "join_dependency")
+        # Analytic views published in the shared manifest (contract names: fact_payments,
+        # dim_date...): each column comes from a cleaned source column, or from a column of
+        # the technical warehouse (dim_calendar.date).
+        views = {view["name"]: set(view["columns"]) for view in manifest.get("analytic_views", [])}
+        for receipt in manifest.get("analytic_receipts", []):
+            for col, source in receipt["column_sources"].items():
+                source_table = source.partition(".")[0]
+                origin = f"warehouse:{source}" if source_table in manifest["tables"] else f"clean:{source}"
+                connect(origin, f"warehouse:{receipt['output_table']}.{col}", "analytic_view")
         # A catalog owner supplies validated bindings; this default is only a demo trace.
         bindings = ctx.params.get("metric_sources", {} if manifest.get("source_tables") else {"Revenue_demo": {"table": "fact_payments", "column": "payment_value"}})
         for metric, binding in bindings.items():
@@ -123,7 +132,11 @@ def _run(ctx: RunContext) -> AgentResult:
                 raise ValueError("Metric binding needs source columns")
             for source in sources:
                 table, column = source["table"], source["column"]
-                if table not in manifest["tables"] or column not in {x["name"] for x in manifest["tables"][table]["columns"]}:
+                if table in manifest["tables"]:
+                    known = {x["name"] for x in manifest["tables"][table]["columns"]}
+                else:
+                    known = views.get(table, set())   # the KPI catalog names the analytic views
+                if column not in known:
                     raise ValueError("Invalid metric source binding")
                 connect(f"warehouse:{table}.{column}", f"kpi:{metric}", "catalog_binding" if "metric_sources" in ctx.params else "demo_binding_pending_Rabeb_catalog")
         # Deduplicate edges because a calendar is derived from several dates.

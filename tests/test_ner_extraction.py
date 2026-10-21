@@ -18,7 +18,9 @@ from semantic.request import _find_dimensions, _find_filters, _find_metric, _fin
 TEST_QUESTIONS = [
     "Top 5 categories by Revenue in August",
     "chiffre d'affaires par etat en aout sauf SP",
-    "moyenne des avis par vendeur du 5 au 20 juin",
+    # ReviewScore / seller_id are not in the shared catalog (fact_order_reviews is not in the
+    # warehouse contract): same day-range check with a KPI of the catalog.
+    "frais de port par categorie du 5 au 20 juin",
     "number of orders by seller state in July vs June",
     "sales by payment method last month",
 ]

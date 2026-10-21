@@ -20,7 +20,8 @@ def names_for(roles, metadata):
     for role in roles:
         slug = unicodedata.normalize("NFKD",metadata[role.table]["source"]).encode("ascii","ignore").decode()
         slug = re.sub(r"[^a-zA-Z0-9_]+","_",slug).lower().strip("_")[:70] or role.table
-        name = {"fact":"fact_","dimension":"dim_","reference":"ref_","unresolved":"other_"}[role.role] + slug
+        # Technical tables start with bi_: the names fact_/dim_ are kept for the shared views (etl/analytics.py).
+        name = {"fact":"bi_fact_","dimension":"bi_dim_","reference":"bi_ref_","unresolved":"bi_other_"}[role.role] + slug
         if name in used or name=="dim_calendar":
             name += "_" + role.table
         used.add(name); result[role.table]=name
@@ -223,7 +224,9 @@ def build(connection,frames,metadata,profiles,plan):
         info['physical_sources']={c['name']:[physical_columns.get(name,{}).get(c['name'],locations[name]+'.'+c['name'])] for c in info['columns']}
         info['grain']=next(r['grain'] for r in receipts if r['output_table']==name)
         tables[name]=info
-    return {'tables':tables,'physical_tables':physical_tables,'source_tables':origins,'table_roles':table_roles,
+    from .analytics import build_views
+    views,view_receipts=build_views(connection,frames,metadata,roles,names,links,date_specs,reachable)
+    return {'analytic_views':views,'analytic_receipts':view_receipts,'tables':tables,'physical_tables':physical_tables,'source_tables':origins,'table_roles':table_roles,
         'source_storage_tables':{'source.'+t:describe('source',t,[]) for t in frames},
         'measure_bindings':measure_bindings,'dimensional_links':checks,'column_sources':column_sources,'receipts':receipts,'source_row_counts':{metadata[t]['source']:len(f) for t,f in frames.items()}}
 

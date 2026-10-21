@@ -1,4 +1,7 @@
-version: '1.0'
+# The KPI catalog: the ONLY place where a KPI formula is defined (owner: Rabeb).
+# Change a formula -> raise that KPI's `version`. Add or remove a KPI -> raise the catalog `version`.
+# First drafted with `python -m analysis.kpi_proposer`, then reviewed by hand (units, filters, names).
+version: '1.1'
 kpis:
 - name: Revenue
   version: '2.0'
@@ -31,20 +34,68 @@ kpis:
   - product_category
   - seller_state
   - order_month
-- name: ReviewScore
+- name: Customers
   version: '1.0'
-  description: Average customer review score (1 to 5).
-  expression: AVG(review_score)
-  table: fact_order_reviews
-  grain: review
-  date_column: review_creation_date
-  unit: score
-  filters: []
-  population: Customer reviews with valid scores.
+  description: Number of distinct customers who paid for a delivered order.
+  expression: COUNT(DISTINCT customer_id)
+  table: fact_payments
+  grain: payment
+  date_column: order_purchase_date
+  unit: customers
+  filters:
+  - order_status = 'delivered'
+  population: Customers with at least one delivered order in the period.
   allowed_dimensions:
-  - seller_id
+  - customer_state
+  - payment_type
+  - order_month
+- name: ItemsSold
+  version: '1.0'
+  description: Number of items sold in delivered orders (one order can hold several items).
+  expression: COUNT(*)
+  table: fact_order_items
+  grain: order_item
+  date_column: order_purchase_date
+  unit: items
+  filters:
+  - order_status = 'delivered'
+  population: Items of orders already delivered to the customer.
+  allowed_dimensions:
   - customer_state
   - product_category
+  - seller_state
+  - order_month
+- name: Freight
+  version: '1.0'
+  description: Shipping cost charged for the items of delivered orders.
+  expression: SUM(freight_value)
+  table: fact_order_items
+  grain: order_item
+  date_column: order_purchase_date
+  unit: BRL
+  filters:
+  - order_status = 'delivered'
+  population: Items of orders already delivered to the customer.
+  allowed_dimensions:
+  - customer_state
+  - product_category
+  - seller_state
+  - order_month
+- name: AverageBasket
+  version: '1.0'
+  description: Average amount paid per delivered order (Revenue divided by the number of orders).
+  expression: SUM(payment_value) / COUNT(DISTINCT order_id)
+  table: fact_payments
+  grain: payment
+  date_column: order_purchase_date
+  unit: BRL
+  filters:
+  - order_status = 'delivered'
+  population: Delivered orders; an order paid in several payments counts once.
+  allowed_dimensions:
+  - customer_state
+  - payment_type
+  - order_month
 dimensions:
 - name: customer_state
   table: dim_customer
@@ -66,7 +117,3 @@ dimensions:
   table: dim_date
   column: year_month
   description: Month of purchase, 'YYYY-MM'.
-- name: seller_id
-  table: dim_seller
-  column: seller_id
-  description: Unique identifier of the seller.
