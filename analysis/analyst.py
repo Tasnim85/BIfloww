@@ -46,7 +46,9 @@ def run(ctx: RunContext) -> AgentResult:
     con = duckdb.connect(str(ctx.inputs["warehouse"]), read_only=True)
     try:
         df = con.execute(q.sql).df()
-        totals = df.groupby("period")["value"].sum().to_dict()
+        # The total is computed again without the breakdown: adding the groups is only right for a
+        # SUM. An order with items in 2 categories counts once in COUNT(DISTINCT order_id), not twice.
+        totals = dict(con.execute(q.total_sql).fetchall())
         checks = run_checks(con, q, manifest, receipts, totals)
 
         # ---- 3. LOG: one line per BO3-03 check, with its numbers -----------------------------

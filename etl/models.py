@@ -55,6 +55,9 @@ class WarehouseManifest(BaseModel):
     source_row_counts: dict[str, int] = Field(default_factory=dict)
     measure_bindings: dict[str, list[dict]] = Field(default_factory=dict)
     source_storage_tables: dict[str, WarehouseTable] = Field(default_factory=dict)
+    # Views published in the shared manifest (etl/analytics.py).
+    analytic_views: list[dict] = Field(default_factory=list)
+    analytic_receipts: list[dict] = Field(default_factory=list)
 
 
 class LineageNode(BaseModel):

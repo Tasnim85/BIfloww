@@ -39,6 +39,7 @@ class CompiledQuery:
     has_request_filters: bool = False
     count_sql: str = ""           # rows of the fact table that enter the KPI (no join)
     joined_count_sql: str = ""    # the same rows AFTER the dimension joins: must be equal (BO3-03)
+    total_sql: str = ""           # the KPI per period WITHOUT the breakdown (COUNT DISTINCT and ratios don't add up)
 
 
 def _table(manifest: WarehouseManifest, name: str) -> WarehouseTable:
@@ -148,4 +149,6 @@ def compile_query(request: AnalysisRequest, catalog: KpiCatalog, manifest: Wareh
                          dimension_columns=list(request.dimensions),
                          has_request_filters=bool(request_filters),
                          count_sql=f"SELECT COUNT(*) FROM {fact.name} f WHERE {reference_where}",
-                         joined_count_sql=f"SELECT COUNT(*) FROM {fact.name} f{join_sql} WHERE {reference_where}")
+                         joined_count_sql=f"SELECT COUNT(*) FROM {fact.name} f{join_sql} WHERE {reference_where}",
+                         total_sql=(f"SELECT {period_case} AS period, {expression} AS value "
+                                    f"FROM {fact.name} f{join_sql} WHERE {where_sql} GROUP BY 1 ORDER BY 1"))

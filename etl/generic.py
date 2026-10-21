@@ -66,17 +66,48 @@ def inventory(ctx):
             raise ValueError("Table needs named columns")
         if len({c.casefold() for c in frame}) != len(frame.columns):
             raise ValueError("Column names differ only by case or are duplicated")
-        keys = key_columns(frame)
         frames[table] = frame
-        metadata[table] = {"source": path.stem, "rows": len(frame), "primary_key": keys,
+        metadata[table] = {"source": path.stem, "rows": len(frame), "primary_key": [],
             "columns": {c: {"dtype": str(frame[c].dtype), "missing": int(frame[c].isna().sum())} for c in frame}}
+    # Keys need every table: a column shared with another table is a key candidate too.
+    for table, frame in frames.items():
+        shared = {c for c in frame for other, f in frames.items() if other != table and c in f}
+        metadata[table]["primary_key"] = key_columns(frame, shared)
     return frames, metadata, hashes
 
 
-def key_columns(frame):
-    candidates = [c for c in frame if c.lower() == "id" or c.lower().endswith(("_id", "_key", "_code"))]
-    for size in range(1, min(3, len(candidates)) + 1):
-        for combo in itertools.combinations(candidates, size):
+# Words that name an identifier, in English, French, Spanish, German... ("id_client", "num_commande",
+# "CustomerID", "order_ref"). Matched on whole words of the column name, not on its ending only.
+KEY_WORDS = {"id", "ids", "identifier", "identifiant", "key", "code", "ref", "reference", "uuid", "guid", "num", "no", "nr", "numero", "nummer", "cle"}
+# Words of a line number inside a parent ("payment_sequential", "line_no"): only the 2nd part of a key.
+PART_WORDS = {"sequential", "sequence", "seq", "line", "ligne", "rank", "position", "item", "index"}
+
+
+def name_words(column):
+    """'order_purchase_timestamp' -> ['order', 'purchase', 'timestamp']; 'CustomerID' -> ['customer', 'id']."""
+    import re
+    import unicodedata
+    plain = unicodedata.normalize("NFKD", column).encode("ascii", "ignore").decode()
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", "_", plain)
+    return [w for w in re.split(r"[^a-zA-Z0-9]+", spaced.lower()) if w]
+
+
+def is_key_name(column):
+    return bool(KEY_WORDS & set(name_words(column)))
+
+
+def key_columns(frame, shared=frozenset()):
+    """Smallest unique, complete combination of identifier-like columns (1 to 3 columns)."""
+    usable = [c for c in frame if not pd.api.types.is_float_dtype(frame[c]) and not pd.api.types.is_datetime64_any_dtype(frame[c])
+              and not pd.api.types.is_bool_dtype(frame[c])]
+    named = [c for c in usable if is_key_name(c)]
+    linked = [c for c in usable if c in shared and c not in named]
+    parts = [c for c in usable if PART_WORDS & set(name_words(c)) and c not in named and c not in linked]
+    candidates = named + linked
+    for size in range(1, 4):
+        for combo in itertools.combinations(candidates + parts, size):
+            if not set(combo) & set(candidates) or (size == 1 and combo[0] in parts):
+                continue
             if len(frame) and not frame[list(combo)].isna().any().any() and not frame.duplicated(list(combo)).any():
                 return list(combo)
     return []

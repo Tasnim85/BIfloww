@@ -75,8 +75,10 @@ def profiling(ctx, result):
             days=[]
             for day in pd.date_range(data['period_start'],data['period_end'],freq='D'):
                 day=day.strftime('%Y-%m-%d'); subset=frame.loc[dates==day]
-                statuses=subset[data['status_column']].astype('string').str.strip().replace('',pd.NA).fillna('__missing__')
-                by_status={str(k):int(v) for k,v in statuses.value_counts().items()}
+                by_status={}
+                if data['status_column']:
+                    statuses=subset[data['status_column']].astype('string').str.strip().replace('',pd.NA).fillna('__missing__')
+                    by_status={str(k):int(v) for k,v in statuses.value_counts().items()}
                 days.append(DayCoverage(date=day,rows=len(subset),by_status=by_status,
                     completeness={c:float(subset[c].notna().mean()) if len(subset) else 0.0 for c in frame}))
             tables=[TableCoverage(table=data['source_table'],date_column=data['date_column'],status_column=data['status_column'],
@@ -140,6 +142,14 @@ def etl(ctx,result):
     if result.status!=AgentStatus.SUCCESS:
         return
     path=result.outputs['manifest']; data=raw(path)
+    if data.get('analytic_views'):
+        # Dimensional build: the shared manifest lists the analytical views (etl/analytics.py),
+        # the technical tables stay in the private .bo2.json file.
+        manifest=WarehouseManifest(database_file=result.outputs['warehouse'].name,
+            tables=[WarehouseTable(**t) for t in data['analytic_views']])
+        receipts=TransformationReceipts(receipts=[TransformationReceipt(**r) for r in data['analytic_receipts']])
+        publish(path,manifest);publish(result.outputs['receipts'],receipts)
+        return
     import duckdb
     conn=duckdb.connect(str(result.outputs['warehouse']),read_only=True)
     tables=[]
