@@ -1,0 +1,357 @@
+review_id,order_id,review_score,review_comment_title,review_comment_message,review_creation_date,review_answer_timestamp
+4670c66ed36af1bea9e48df8980b3f60,778c82e7cfc479718385de0c169ddf41,1,Atraso na entrega,Nao recebi o produto no prazo,2018-02-28,2018-02-28 13:45:00
+bc2076cb7f78dd9f38f0a079b6085603,afb2169a6a4a831961ff0554c78ec9f8,5,Muito bom,"Produto excelente, recomendo!",2017-11-25,2017-11-25 12:41:00
+f06d509be16f38b93be6b3f1fc920d4a,401e3ec731727e376b0bacf9e017d1f4,5,Muito bom,"Produto excelente, recomendo!",2017-02-08,2017-02-08 10:26:00
+8be7aa88f670159942788ab631a1f92a,55f8b9552bfa02db91c3653a0e8ac842,5,Muito bom,"Produto excelente, recomendo!",2017-11-02,2017-11-02 17:38:00
+c600bf2ff8826d21662fe98d9c0d4b66,d729c193a93d4d33122ff0f0f1b64163,4,Muito bom,"Produto excelente, recomendo!",2018-06-21,2018-06-21 15:56:00
+cecd673bf74e203943377b252c7c04cf,a412be7eb2c42e610888b686b73d1499,5,Muito bom,"Produto excelente, recomendo!",2017-04-26,2017-04-26 13:10:00
+0a1bf23b16c3fb3f9d92d51e1eb0c0aa,b175dd4c40683beee17ddf2d0957e6c5,2,Atraso na entrega,Nao recebi o produto no prazo,2017-01-15,2017-01-15 19:21:00
+44fafd22d86cc61d182f653bae7a8556,c9c1fb5b024f0f86682c138b5c5c7cb8,3,,,2017-07-09,2017-07-09 10:30:00
+03796966b1db776e24969fe7f9df7261,7d8870fedd766f497db8429d30d0ff48,5,Muito bom,"Produto excelente, recomendo!",2018-04-03,2018-04-03 20:17:00
+0e21ac39d310fa4d3d9f3fab9ee3fa99,773bd70f1e07d5941c3406033fc226aa,5,Muito bom,"Produto excelente, recomendo!",2018-01-04,2018-01-04 19:15:00
+53f371ac6bc46146bf7bba31485b425b,734ce592bd3512542f104cb5592b7ca6,5,Muito bom,"Produto excelente, recomendo!",2017-06-13,2017-06-13 14:43:00
+ae48a5ead75398b6efcf10177346684d,7c2a54b373a266694fa66cf3d9278a70,5,Muito bom,"Produto excelente, recomendo!",2017-10-30,2017-10-30 13:39:00
+0b8b3d586593f4d04ca71582a78ce2eb,937f16357b3f48f63f084c8d126d6ddc,5,Muito bom,"Produto excelente, recomendo!",2018-01-18,2018-01-18 14:44:00
+65b9f471d96d13e73b4dd8d4cf413ca1,4c5a74b76dfffa05b766ca0c7fc925dd,5,Muito bom,"Produto excelente, recomendo!",2017-03-25,2017-03-25 16:28:00
+c822a70c688571056fa1fda37a88863e,19ed1b07a8d549cfa3442a898f96707f,5,Muito bom,"Produto excelente, recomendo!",2017-03-05,2017-03-05 16:57:00
+ffc4075bd9827d0189fd0e78ab3e41ee,88cefac2e7b4db7aa53892c1a0fa1d4c,5,Muito bom,"Produto excelente, recomendo!",2018-06-17,2018-06-17 15:07:00
+a94dbe8b0494eddc8dcd9f09a3a72fe9,355e4ef65a8201e0eb2ff27c8d7bd62e,5,Muito bom,"Produto excelente, recomendo!",2017-03-01,2017-03-01 16:29:00
+ebbebe763bec18b2b4cffe64ffc2b56f,2f6df2cc2071744618f8ff38e4f420c2,5,Muito bom,"Produto excelente, recomendo!",2017-01-04,2017-01-04 19:13:00
+6c8f462ef842223fef8712951c2eddab,72b0532e4ffbe4f7ed94f2dd0b58c225,5,Muito bom,"Produto excelente, recomendo!",2017-03-07,2017-03-07 16:03:00
+cb7cee3edfa33d328c1cdffc2bdd8586,135dfe3d982dceeb0274e138d4c4faa5,5,Muito bom,"Produto excelente, recomendo!",2018-02-23,2018-02-23 10:49:00
+f6615d026181b39575ec5490d776e47b,da1c2e9bae0bcbb76ee2cd170563c101,5,Muito bom,"Produto excelente, recomendo!",2018-04-05,2018-04-05 14:24:00
+b51a89e9e6876c836bb344b439800ded,4880107de188af2e40b5953324b9ea70,5,Muito bom,"Produto excelente, recomendo!",2017-08-17,2017-08-17 08:48:00
+4008bdfb322e5ac7956d5b8668416327,f10a41c2ecf4226f7e1ce51914ec018e,3,,,2017-08-24,2017-08-24 11:29:00
+fb9adf7cc19493cceff83ecd3a7042e6,75a6345d2864ad40f2cf4d6b818ed84d,5,Muito bom,"Produto excelente, recomendo!",2017-02-04,2017-02-04 15:38:00
+b3be05c8ca07afa91fc62b15cf3c6010,c11ea505d7e95b33a0f03d5d96064b56,5,Muito bom,"Produto excelente, recomendo!",2017-05-27,2017-05-27 18:33:00
+39aca342c09f2ed3747a7522e24ac25c,8381b8593ae544fccb612b490293d7c3,1,Atraso na entrega,Nao recebi o produto no prazo,2018-01-26,2018-01-26 20:33:00
+6e4823cd2b5b37a36d2eae58692e82b8,108dc1a1b2db21206d5cb5133c18ba84,3,,,2018-01-21,2018-01-21 10:48:00
+7b1f212f25d96bb37aa71dffe8d216ec,98dcc36a88188510799924ed046d71c3,1,Atraso na entrega,Nao recebi o produto no prazo,2017-05-28,2017-05-28 20:29:00
+c2351add266473d9e09f4091aae71516,c5fd63e669efb167892299566fce127f,5,Muito bom,"Produto excelente, recomendo!",2018-03-03,2018-03-03 16:33:00
+168787216eaa0b25fb9aaf45be89bad8,fb73f56b12ec90d6892446086ef78fb2,1,Atraso na entrega,Nao recebi o produto no prazo,2017-03-22,2017-03-22 15:54:00
+3b70da3f4c8d2f480c0813d73ec68e97,56afa90b7e65e0fea46f2f4535148658,4,Muito bom,"Produto excelente, recomendo!",2018-01-22,2018-01-22 18:38:00
+b49815fe6ef9e4231dae53cf4f377b34,9b7e78b11aaf6b477b8429e40f635e64,1,Atraso na entrega,Nao recebi o produto no prazo,2017-01-16,2017-01-16 11:59:00
+5788285912e353189bc91d4f4502dc02,db1513821548dd2e415716541ccc4112,5,Muito bom,"Produto excelente, recomendo!",2018-01-25,2018-01-25 15:34:00
+51de02a215f9e1e7830d793b2f2b0fc6,c489f6cbc0356f7cc8a4a17cf4ac38f7,2,Atraso na entrega,Nao recebi o produto no prazo,2017-11-17,2017-11-17 14:02:00
+3e4baf6a0f4999ad07848242fe6ea77e,a67b3982c7a2d295d53992203440b1e2,5,Muito bom,"Produto excelente, recomendo!",2018-07-21,2018-07-21 17:37:00
+72445352cb089819fd28e6806b505639,4f178dc2dda27264b70c72335a4d5f4f,3,,,2017-08-24,2017-08-24 14:36:00
+e1ea472c13bdc50b70875668aace559b,58ed82eadb4c5fca6d436d090c4a4077,5,Muito bom,"Produto excelente, recomendo!",2017-12-27,2017-12-27 10:08:00
+1d111267ec3ceb9cea052dc712b6597d,f2756c46953622283e86909de024c541,5,Muito bom,"Produto excelente, recomendo!",2018-02-27,2018-02-27 10:53:00
+c903cb0b1b61ce90b413a99f6516a3cd,34fac8f83ffe6039ae7a42912a2aacad,5,Muito bom,"Produto excelente, recomendo!",2018-06-02,2018-06-02 15:23:00
+28f790b6342253b361c1bcd76f41ccdc,3da381169d8f3fe53f31b2e03a5af57c,4,Muito bom,"Produto excelente, recomendo!",2017-01-17,2017-01-17 08:34:00
+b7a5dbc433a48fa0ca66cb0832205fc9,151d982a4c0d9e23655b54100e3933d9,5,Muito bom,"Produto excelente, recomendo!",2017-10-09,2017-10-09 16:18:00
+c7c7c00edfb6104f2b914ad1a71c21c1,3a2a0a4f1ef85d8cc1f306bd952ce212,1,Atraso na entrega,Nao recebi o produto no prazo,2017-04-20,2017-04-20 09:33:00
+841aa7629d7a144ec395da7a5eed0465,4c3935356665820b2933bc7e21858aaa,5,Muito bom,"Produto excelente, recomendo!",2017-10-01,2017-10-01 20:25:00
+75a3685b1f3690b5ab5ba0eebebdf017,98517ed81dc0d09a885f0eead7dc5d19,4,Muito bom,"Produto excelente, recomendo!",2017-08-20,2017-08-20 12:43:00
+da466b3f7f5535dedd6984b3c37e1932,fcb67b2bf48cf4ceca9ed950423a8365,2,Atraso na entrega,Nao recebi o produto no prazo,2018-01-24,2018-01-24 14:35:00
+14aae898853dbb4feda4e3cddd16faaf,3fae8dea40796bf032245d6f3f4e346a,5,Muito bom,"Produto excelente, recomendo!",2017-03-26,2017-03-26 15:54:00
+ca57220f39161b992ba8740d9a043c55,c6b769ae0f9ad09c4d1911ff11991420,4,Muito bom,"Produto excelente, recomendo!",2018-08-04,2018-08-04 15:17:00
+89b1b17d14281354cfb1493874703647,e8f51a09e1925bb165b28c2783debde2,5,Muito bom,"Produto excelente, recomendo!",2018-02-12,2018-02-12 09:19:00
+17a91d1d9bd44115c8b8255dfa3b338a,dbdd65cf115890c9c1635d554df21bc9,5,Muito bom,"Produto excelente, recomendo!",2017-12-21,2017-12-21 08:06:00
+f8a2933712b40ffb7e4fda4ea10cba39,6ff0be56fa5d9355b8a1c3247c17634a,5,Muito bom,"Produto excelente, recomendo!",2018-02-11,2018-02-11 20:20:00
+8f6bc2db7125573db13a276c8b2b261b,4774f7ff44a5024daea618790cdff3dc,5,Muito bom,"Produto excelente, recomendo!",2017-12-31,2017-12-31 16:24:00
+6f8c0651f8011fe9c14843b24c2d3e34,e794beffaf9dab5d9bfa822c7c714d1f,5,Muito bom,"Produto excelente, recomendo!",2017-06-07,2017-06-07 14:45:00
+26f31b0def23155477a45c68a642037b,4f68c32a6be43d369d14cd5c54836c85,1,Atraso na entrega,Nao recebi o produto no prazo,2017-04-20,2017-04-20 09:00:00
+cf758f5ff6eb7844d33688fc71cbfc1d,584e4be00da8a6a55868366b6d93fba7,4,Muito bom,"Produto excelente, recomendo!",2017-03-31,2017-03-31 10:27:00
+951cb0394a7d05142e145f9a1b6b4c33,8f0339595ff91f9171211f518a5e1c81,5,Muito bom,"Produto excelente, recomendo!",2017-04-02,2017-04-02 13:35:00
+6d18ce01487248b97cde9ddb3feaf153,4eed6d6a5132981a530d451e13b29231,5,Muito bom,"Produto excelente, recomendo!",2017-10-26,2017-10-26 14:24:00
+dcee1983626b2e45579aa94ed8f6eba7,89776c06ff23359f04e72783d0ff949f,4,Muito bom,"Produto excelente, recomendo!",2018-05-20,2018-05-20 10:04:00
+7848149023b015e219180b0bc46bdb5c,b36bbdf7138e2498148cc0a9a950fec2,5,Muito bom,"Produto excelente, recomendo!",2017-03-20,2017-03-20 13:16:00
+ce04ed9cc16972da33664e2aa665ff40,36a103adacf7660e63a6bd8c4fa32cc1,4,Muito bom,"Produto excelente, recomendo!",2018-01-25,2018-01-25 20:55:00
+779c6df9a85ba7246a3c94ccf38206a3,c2ddaee9feea54d2cafee311df7d9bea,5,Muito bom,"Produto excelente, recomendo!",2017-05-20,2017-05-20 12:20:00
+3b2f9e493aa9f52904797523c2c7d57f,55d620ff26cc9e120766044802992740,3,,,2017-07-01,2017-07-01 14:20:00
+4cbfb37d597163a595a3353bfc4f1cf9,08c550ba10f8b3ba4bf578d316b6802c,5,Muito bom,"Produto excelente, recomendo!",2018-02-07,2018-02-07 13:07:00
+1cd662b1b9492dfe00018e2664d108db,c71afbedb31e8e73d58ffe26ffecb768,4,Muito bom,"Produto excelente, recomendo!",2018-03-25,2018-03-25 20:18:00
+9e15ac63b1f478a4ea6546851eddc15c,838bbb12e7dafc44ebe4f903d80fc97b,5,Muito bom,"Produto excelente, recomendo!",2017-05-23,2017-05-23 18:19:00
+34fee1dd723dcbdea80347bb61efaba0,badd34fa3f529c580a87b6acf253c1f0,4,Muito bom,"Produto excelente, recomendo!",2018-01-22,2018-01-22 09:28:00
+413330805b00bee43e0bd111697afc38,a19c2b6d7a8f0b1a4ed9262d1ed99efd,5,Muito bom,"Produto excelente, recomendo!",2018-03-17,2018-03-17 09:00:00
+80c341ba079ced9c4c63731d46819d5d,886b3822c210d568080570bf01085c80,5,Muito bom,"Produto excelente, recomendo!",2018-02-05,2018-02-05 15:49:00
+5bdf75edc6c12c09bf5524736c3ba3f3,97be3e4dd5f49d60c1ac68a0e88005b8,5,Muito bom,"Produto excelente, recomendo!",2018-05-10,2018-05-10 09:18:00
+6af33bbe440a403fe2baecaed7022e5c,8b1ab2eb9959ed665847178e72cf899d,2,Atraso na entrega,Nao recebi o produto no prazo,2017-12-18,2017-12-18 15:50:00
+fb8d86e851ab0bdfcef52a89b7a8d00f,b7e934c5a4a6b8635774d01d01f45841,5,Muito bom,"Produto excelente, recomendo!",2018-03-25,2018-03-25 19:44:00
+b092e0bd6403229faf9b2c96f1f2e635,450cbafa5b8015a94fb64cbfbab01717,4,Muito bom,"Produto excelente, recomendo!",2017-04-28,2017-04-28 08:54:00
+cfbf580f7d94dd8376f883257089fffa,b0ca1dcd6c3568b54644e393f8cadb36,5,Muito bom,"Produto excelente, recomendo!",2017-06-18,2017-06-18 19:15:00
+1e45668087960729db5e8fa71daf90dc,ac6af6dd4f4d44d391d37aac9875c07c,5,Muito bom,"Produto excelente, recomendo!",2018-03-13,2018-03-13 15:14:00
+54093f45aa652cd6b127f8e4c0405dcd,d6d9b39509ab5dce71dda3964883d563,5,Muito bom,"Produto excelente, recomendo!",2017-07-21,2017-07-21 15:07:00
+b423ff0afd9d70b85808c940f9af5d29,e4f388598dbfbdac2dda475e16e1b65c,5,Muito bom,"Produto excelente, recomendo!",2018-02-06,2018-02-06 17:07:00
+188e5768d2da348968fdd1f243836c73,774925e4a5a9449bd8f6a711bf1778cb,5,Muito bom,"Produto excelente, recomendo!",2017-09-02,2017-09-02 12:07:00
+c2d02e1ceb3a656bb5d653a5c9a4c7d1,8077b0447c1d1a8274ba41b9a9b0a2e0,4,Muito bom,"Produto excelente, recomendo!",2018-03-05,2018-03-05 17:08:00
+c3bb646306ec9eb542447e181771f72a,f4d9c4a78c1d47aa625f17c20d867805,5,Muito bom,"Produto excelente, recomendo!",2018-07-05,2018-07-05 19:58:00
+9d6e7cc588ac5b5c64d9119d53975403,731f9484c20a719763d3550be1788726,5,Muito bom,"Produto excelente, recomendo!",2018-05-17,2018-05-17 12:08:00
+addced7eff592134c70f601326c5e916,f422b037da4a0691967c45ab224c7add,5,Muito bom,"Produto excelente, recomendo!",2018-05-12,2018-05-12 10:12:00
+b4a135de16b4da2afde4883a1dde3196,2b29d5e228b57016aaf8307f16102f62,4,Muito bom,"Produto excelente, recomendo!",2018-08-02,2018-08-02 08:50:00
+7aaadf3825d4465d41b17267d8ca86bb,561b16c9fb16b9943665a0f5b013973f,3,,,2017-10-23,2017-10-23 10:49:00
+00f3d5d6862da3819c98b1d7be961558,d90749aa53e537e3fd4d06c673611248,1,Atraso na entrega,Nao recebi o produto no prazo,2017-04-26,2017-04-26 17:07:00
+d48c0ee244135a7b00c145119ea7ca33,0cb32d24803cd08599e6647f37ffe316,5,Muito bom,"Produto excelente, recomendo!",2018-03-12,2018-03-12 09:47:00
+210585d95b8abbcd6fb76fd0f37acb81,e4988d6faefa7ef411fd97129b0f5a78,5,Muito bom,"Produto excelente, recomendo!",2017-12-23,2017-12-23 09:28:00
+d13f2fb74e2706cd2c092e1589cef6d8,c05d904b894967bf4d62ae47a25859ba,4,Muito bom,"Produto excelente, recomendo!",2017-12-26,2017-12-26 16:17:00
+58f1f6e04552ef1822f0a4087a0af078,7e0f71afeb3ac6e30f3c82b4f75bb8f6,4,Muito bom,"Produto excelente, recomendo!",2017-10-24,2017-10-24 17:17:00
+c412b7784e70d5f8f531d1cf08a67bd2,88764e918e56de4aadedbeb1c63dda21,5,Muito bom,"Produto excelente, recomendo!",2018-02-07,2018-02-07 15:09:00
+c2a2ae7a5d478afca7696f671f7c119b,ed892b4cae6859e90182d4b65fd2180e,3,,,2018-01-20,2018-01-20 15:04:00
+421419b7e2a05596ff7cf08bef2ba09a,b5487dc66ee0da147b499e93458d032f,4,Muito bom,"Produto excelente, recomendo!",2018-04-11,2018-04-11 15:20:00
+d098ee591f65ea3ee59e37c293804d38,2832410b920573d58e44c94ac286b1a0,1,Atraso na entrega,Nao recebi o produto no prazo,2018-01-02,2018-01-02 09:50:00
+f60c8839e40abe857e168c277972ed9d,c80e39770e2dfa22997a0f4805761092,5,Muito bom,"Produto excelente, recomendo!",2017-10-02,2017-10-02 13:53:00
+cc6a9923bd3bb6bc7608c06d2e925094,9d9ace5ff46c01bbae291f6e8d8d1672,4,Muito bom,"Produto excelente, recomendo!",2018-05-12,2018-05-12 20:21:00
+07eebc1a5647cdabba70883e10da360f,8497d52d4e1dd74e3f4510f1cbd09a91,5,Muito bom,"Produto excelente, recomendo!",2018-04-16,2018-04-16 08:07:00
+b5505450a9ee690db12711122ee0026f,d6b317449f784406c42f80dac39c18c0,5,Muito bom,"Produto excelente, recomendo!",2017-05-16,2017-05-16 18:19:00
+5dcd761cea7e8352fb8323b115d222cd,c0c8170934e95aad8140c74d56b1a723,5,Muito bom,"Produto excelente, recomendo!",2018-01-16,2018-01-16 18:57:00
+bd66cab3d145f501229663cd41b86503,feddaca84eeab057df443ade143106d1,5,Muito bom,"Produto excelente, recomendo!",2017-08-28,2017-08-28 14:41:00
+6a1ad0ebd7dd6de4f1c23c59299847f0,8330b18773c5ff58ab6ab7f945438e7a,4,Muito bom,"Produto excelente, recomendo!",2017-03-21,2017-03-21 10:37:00
+0bd6ba72bbf802eee0e3c306934aef6c,24b5bc73658c0a88219592cb2c1a1336,5,Muito bom,"Produto excelente, recomendo!",2017-12-18,2017-12-18 09:55:00
+83ba07b15a8be96bfb1cc7119d083364,36a72cf7d80270c97618279be7c1926b,5,Muito bom,"Produto excelente, recomendo!",2018-01-28,2018-01-28 09:46:00
+7116fa5a75e68d078a9289a989edcb2e,de04a0cb3ea989e8aaf2a6fdc47f0664,5,Muito bom,"Produto excelente, recomendo!",2018-01-27,2018-01-27 20:52:00
+acd35dbc1ba56037eed317e630483e1f,494eb49fdd58d13d271b2fdde09ef278,5,Muito bom,"Produto excelente, recomendo!",2018-07-31,2018-07-31 08:39:00
+2655e0676a34931786a9fdd717bddaa4,fd4925a9f29bd18658328b88033572e4,5,Muito bom,"Produto excelente, recomendo!",2017-08-07,2017-08-07 18:47:00
+4d96482e6b650ff1fbf5041ec7272e41,807db180743268a08d50134cbf124098,5,Muito bom,"Produto excelente, recomendo!",2018-01-29,2018-01-29 13:27:00
+5ddc815a0cad70f877d76f022872b4bf,95f4d782d76fa1bf508acadc0da3c5dd,1,Atraso na entrega,Nao recebi o produto no prazo,2017-09-12,2017-09-12 16:38:00
+4d7c072577df89610445fbe98f2a30f6,f41c53c9643fd03355dcb67c9050ddc1,5,Muito bom,"Produto excelente, recomendo!",2017-03-14,2017-03-14 16:56:00
+0075a47848078af8107ccea640708b6f,30ce2d3574382bf59fac6d619f872cdd,5,Muito bom,"Produto excelente, recomendo!",2017-03-16,2017-03-16 08:37:00
+b0107adc601ce6222619574caf11607a,e562d2280cd63240a2c32b0845234755,5,Muito bom,"Produto excelente, recomendo!",2018-02-12,2018-02-12 16:18:00
+9ebbdadbcf2c2b20141f06f9a2247901,9b5e5c856a9a237a8f651f0c21343796,1,Atraso na entrega,Nao recebi o produto no prazo,2018-02-16,2018-02-16 09:40:00
+f6407c87cd9f9b45c5b88a22b43ace3f,b68eaa0d7f9302e5e14ea44b3ff6d3da,5,Muito bom,"Produto excelente, recomendo!",2017-11-14,2017-11-14 09:32:00
+977a41f1487d29386cf0fcb7a0f07052,b2e0cb9a2518fdfd9af73bf3ae827682,5,Muito bom,"Produto excelente, recomendo!",2017-03-30,2017-03-30 14:07:00
+e895354c43122153d97b373db6578f99,0f34b279a86813ad8219427ca2da20d3,5,Muito bom,"Produto excelente, recomendo!",2017-06-17,2017-06-17 15:22:00
+6aa0738d6718542d4754856435adbf3c,5d52d71c518f0b984fd598f775f26fb2,1,Atraso na entrega,Nao recebi o produto no prazo,2017-05-10,2017-05-10 19:49:00
+804fbbe41789acadee97bcbc7b4924dc,1190ace8e82957ad8a8dcc053245b17e,5,Muito bom,"Produto excelente, recomendo!",2018-08-04,2018-08-04 10:23:00
+1695a66dac450e790e91e1ab711c380e,1abfb20307883e384021aba10c82330f,4,Muito bom,"Produto excelente, recomendo!",2017-06-03,2017-06-03 10:59:00
+5e170225aeab813092c4645fbc483dd4,cef24a850047e05283eff7699a1d8983,1,Atraso na entrega,Nao recebi o produto no prazo,2017-09-12,2017-09-12 14:58:00
+37dc8106124da5fdb5eef4422ff707cb,270e6b13f21579c88e70ebf0a791d2bf,4,Muito bom,"Produto excelente, recomendo!",2017-05-03,2017-05-03 16:43:00
+b914a9a6560969c364286c86d8d7f585,d2440ec5765bbb4fe9e7965837544c3e,5,Muito bom,"Produto excelente, recomendo!",2018-04-22,2018-04-22 12:49:00
+e18a0ed6a20cf49cc288eaba7925128d,a8034ce148acd759f14b5da3a6eca92b,5,Muito bom,"Produto excelente, recomendo!",2017-07-25,2017-07-25 12:36:00
+a79e302cbf5cc1b9169eedb2d7e074f0,6588cb8cdf1718b941ccd540060b044e,3,,,2018-05-21,2018-05-21 20:49:00
+ca02e9e5b6197b6aceed010b066d6980,5c31bac99b8e2665121f7297981809a5,4,Muito bom,"Produto excelente, recomendo!",2018-02-24,2018-02-24 08:14:00
+c6ca7b6a9e0650edd112171da19ad337,95a61295e9b197175d0043ba440f87b0,4,Muito bom,"Produto excelente, recomendo!",2018-01-21,2018-01-21 19:46:00
+0d3be9be7a77c5c77bf49e19c916b052,8384bd6aa1e381229fe9db7941d0e72f,4,Muito bom,"Produto excelente, recomendo!",2017-03-03,2017-03-03 10:45:00
+19cd2cba689f3e160208c3b179e64150,f3b6cbc550ca9f056f843d8105d72dd3,4,Muito bom,"Produto excelente, recomendo!",2018-01-17,2018-01-17 15:47:00
+b24ae1ebed1a6a83e169b433efb3b89e,85a17cf43c99f2f89f915d7bbb8961bf,5,Muito bom,"Produto excelente, recomendo!",2018-02-08,2018-02-08 09:37:00
+5bf8bebc0683f9d20cf7588206ab2eb0,66b0c17fdf783bda7da3d159fa0d55c1,5,Muito bom,"Produto excelente, recomendo!",2017-12-01,2017-12-01 13:28:00
+2686af8152435c613fddf5c8c04f8280,cfe0892f2c4daeecaa74b79db7f01446,1,Atraso na entrega,Nao recebi o produto no prazo,2017-11-18,2017-11-18 14:07:00
+0b5d952d0c54ab91ae23959d8a6e5d85,44742f411719061a5375b895cd617ab6,3,,,2018-04-20,2018-04-20 12:54:00
+7f0a8e0d43a8b1a0692e4d520915da40,a0fb0316d42bb0690e56898e3102f975,4,Muito bom,"Produto excelente, recomendo!",2017-02-11,2017-02-11 11:53:00
+7122b9c16ba9da81cb0811fdd5d7e0d2,077a2bfe2bc7bc35b058d303be5b627f,1,Atraso na entrega,Nao recebi o produto no prazo,2017-09-24,2017-09-24 10:01:00
+fa5cf21ade78160cb0d69b243f1c8954,9bef6e84046381bfb358ab63b63afeca,5,Muito bom,"Produto excelente, recomendo!",2017-04-15,2017-04-15 20:50:00
+a4b8b5a001f48fc886a734d79a63c2e2,0ca400a44175249e8e647f901a2312d4,5,Muito bom,"Produto excelente, recomendo!",2017-05-14,2017-05-14 11:52:00
+596fe65badf3de06ca3a29a86fdfcea5,3b4463b10b82499062771e99e0f4559c,5,Muito bom,"Produto excelente, recomendo!",2017-04-05,2017-04-05 20:21:00
+b9d5f5b79516b699b198e4434b371897,4e59cd72b0ab509673242bfc2995094e,5,Muito bom,"Produto excelente, recomendo!",2018-03-20,2018-03-20 19:25:00
+f0ee808954dd0133e9e97bb6688d0d6c,b59366fa5f2323f534f76bbe0b719a38,3,,,2017-06-26,2017-06-26 13:13:00
+5433b954be2358b9a1a12bd3c488421d,3796e1a6f74bfd3c3a9ceef468a12a53,5,Muito bom,"Produto excelente, recomendo!",2017-09-09,2017-09-09 18:18:00
+346b07ddc8c0f25b0a92ac662057faf2,a1caa655848682a9f5b5ad4a608a88c9,5,Muito bom,"Produto excelente, recomendo!",2017-10-14,2017-10-14 14:08:00
+9ffee2908b89e3e58c02731427b1e1f5,d9f59c2af3644e115a7ca374f4cefcb2,5,Muito bom,"Produto excelente, recomendo!",2017-01-31,2017-01-31 20:49:00
+268f73a4e00e05eb591a5692f4c63726,e2dc5a2264a19a5d3de9d7392f6174f4,5,Muito bom,"Produto excelente, recomendo!",2017-08-27,2017-08-27 10:06:00
+5b9905aa092f8dcac31efb9d2d14323d,07abfded8a3d38f32e73a422d5d3344e,4,Muito bom,"Produto excelente, recomendo!",2018-01-03,2018-01-03 17:01:00
+e7dd62736e98446f492251847d50b078,d003f1464f386752b976c5eb343cadb8,5,Muito bom,"Produto excelente, recomendo!",2017-02-08,2017-02-08 09:03:00
+67f7d3b4f49afc442b47aad61a1bea7b,2bceac4d8ad0e687ff35d07021942a40,5,Muito bom,"Produto excelente, recomendo!",2017-01-01,2017-01-01 13:58:00
+afb57db60da8cf58472be33c1945661f,b02a7cd4cedc5f945781c6a87b8e1924,1,Atraso na entrega,Nao recebi o produto no prazo,2017-05-26,2017-05-26 20:07:00
+f401631b6680372e85a448ceb26a80e6,8ca02e1dbeca248b9f16561ac0720069,5,Muito bom,"Produto excelente, recomendo!",2017-06-11,2017-06-11 19:27:00
+ece256015512ab2955aa3372b8098b18,34081ccbcd9cda2d777f52b5015d4da5,5,Muito bom,"Produto excelente, recomendo!",2017-01-02,2017-01-02 19:36:00
+7a85c6428486b5c556de96f0641c311c,49564661deaba4f5c426c0f48622ae92,5,Muito bom,"Produto excelente, recomendo!",2017-08-15,2017-08-15 18:36:00
+8db1851e73780572ae1cb20353175865,f493758bfdff70ae2458df8e0f06ee6a,4,Muito bom,"Produto excelente, recomendo!",2017-09-01,2017-09-01 13:20:00
+a8663b0889eb60e5790fa502cfbf9008,8a6844d672415c766147e80e9951639c,5,Muito bom,"Produto excelente, recomendo!",2017-09-29,2017-09-29 11:15:00
+c7b6e50556fc6483df24a3c8b4c51035,789255beaed2def3f72a345eef22a39d,4,Muito bom,"Produto excelente, recomendo!",2017-01-02,2017-01-02 08:24:00
+3ca80b3bd0bebe5bb49629127c635d49,79ed5a0c8ecaddc2a68aa6f10e23bed9,4,Muito bom,"Produto excelente, recomendo!",2018-01-23,2018-01-23 13:34:00
+4b3ffc831aacfd204aca17f38242f7a8,e273ba2ec112801b9c946133c87cc1f4,5,Muito bom,"Produto excelente, recomendo!",2017-03-17,2017-03-17 20:54:00
+5759108bf8895c74f75a725b7b81d3f6,26414ed123a4087b3052578315b6c1a8,5,Muito bom,"Produto excelente, recomendo!",2017-03-17,2017-03-17 13:10:00
+ef83222a273acc135e45e0bb4d2bd90f,351df45b95f13ef6cd8b6d28a39dd127,4,Muito bom,"Produto excelente, recomendo!",2017-12-13,2017-12-13 17:39:00
+0cc2f0f76df58c5df1a7b214cdec05ff,332af1fcde8f6b132a0563c9cd33d394,5,Muito bom,"Produto excelente, recomendo!",2018-03-21,2018-03-21 10:03:00
+dee194b21cefdacd88c8040dd6d89199,0f1f39c9752882c0e43619793fd7a04f,1,Atraso na entrega,Nao recebi o produto no prazo,2018-07-22,2018-07-22 19:59:00
+cca62428ea2aad50e2c54369b0019ee9,2a37306fcbfd1ad28009844d1867e2c5,5,Muito bom,"Produto excelente, recomendo!",2017-11-01,2017-11-01 11:06:00
+a03ce4cdf4aaa1aa72fc1c62d1a4f132,23019b056a76f9e8a007a9d2596436d0,3,,,2018-01-05,2018-01-05 08:27:00
+5f7fd7a9fa18e0ba5e61a4699810496e,d44919e0705c7c6ab50124acc15214b0,5,Muito bom,"Produto excelente, recomendo!",2017-01-27,2017-01-27 11:10:00
+c80eb068acc22464135889da00d438de,8b4db5f6b3148f9ed94e951762d83882,5,Muito bom,"Produto excelente, recomendo!",2018-02-12,2018-02-12 15:31:00
+971742878a4961f1985e4c1a94b417e9,179e0849bfb72aa6d1149cbd1a02b38c,5,Muito bom,"Produto excelente, recomendo!",2018-01-26,2018-01-26 13:11:00
+b296fadb80c89bdd1cac82ab2ed9dcb8,8adc446c01cde07847aec9b1153af8ae,4,Muito bom,"Produto excelente, recomendo!",2017-08-20,2017-08-20 12:36:00
+d18af3537244e64702e7c5b7509de8e8,879b008df76a96e2d44f41b46f6a36eb,1,Atraso na entrega,Nao recebi o produto no prazo,2017-12-19,2017-12-19 20:34:00
+c122283a37619023f26a03b434d92d9d,e316fccef2f408a948da6a016c446fd3,5,Muito bom,"Produto excelente, recomendo!",2018-02-01,2018-02-01 16:26:00
+5ed48c09c5da5b0332b8dfba71ae7d6b,aeeda306917c70bda850ecc2a17d29a6,4,Muito bom,"Produto excelente, recomendo!",2017-03-22,2017-03-22 14:57:00
+c95b4b849a7445e7f049e35854d18da2,1a98fea13e37558066d4ecdbe99c5c00,2,Atraso na entrega,Nao recebi o produto no prazo,2017-05-10,2017-05-10 08:27:00
+58e27985ff30d6f5bb7bfe02b90fe399,54ef22db0919cc06f408272311636c8c,5,Muito bom,"Produto excelente, recomendo!",2017-09-22,2017-09-22 13:58:00
+75a89820da5f90929b13d8e0bfba785d,4bbd361ea6d4e67eee13b6a0418625bb,5,Muito bom,"Produto excelente, recomendo!",2018-07-20,2018-07-20 13:54:00
+3925d1c6ea166bea465c464fbf9af8d0,57cc0af3c0e7d070d7c003d84903bb5a,5,Muito bom,"Produto excelente, recomendo!",2018-08-04,2018-08-04 17:37:00
+b550d3a85f79b20204e415ce001dd42f,5eace70344e52f046b46e38bac4e427c,5,Muito bom,"Produto excelente, recomendo!",2018-07-03,2018-07-03 13:56:00
+6c6acc51da76d9e102c3e5276d77cb2c,81ab7aec8eab4b42d2fe0f2402a9a10b,5,Muito bom,"Produto excelente, recomendo!",2017-11-07,2017-11-07 12:17:00
+084501b445d2ca360aac89afa99ab74e,9c5f03aefd4fc05ae398d7f2e71ce862,5,Muito bom,"Produto excelente, recomendo!",2017-11-25,2017-11-25 12:46:00
+08cfcd4dd0d27bde30d4e27a7c852322,124359706826f70215fe5f5ff1f64808,5,Muito bom,"Produto excelente, recomendo!",2018-06-13,2018-06-13 13:52:00
+862b55cff941e9b310c6df54390832de,f2b897bb8408f069288bd006e9f9b0d1,5,Muito bom,"Produto excelente, recomendo!",2018-06-03,2018-06-03 14:08:00
+f1ea73d4d4bf52b94fbafa407d95ff72,dce3757ffde86a566f47943115d83e11,4,Muito bom,"Produto excelente, recomendo!",2017-07-25,2017-07-25 08:15:00
+44dcfd8f1e209cab9023af0d155416d9,8f8294812d20fcc75e576e569adbd9c5,1,Atraso na entrega,Nao recebi o produto no prazo,2018-01-05,2018-01-05 19:12:00
+f6260f48d8eca6daa17bf788dec9d5bd,e4f2517480fd02aa18b10bf29e7dc40e,4,Muito bom,"Produto excelente, recomendo!",2017-02-01,2017-02-01 11:23:00
+59a3f6668e9792d2e7388919bb3a2fd0,97d258ad6750d6f901545b6f9e352560,5,Muito bom,"Produto excelente, recomendo!",2018-01-31,2018-01-31 08:10:00
+5705076ba0a5c2ec63cde26c481ebd90,77aa7ed76dc4c3f483ff02d6da788700,5,Muito bom,"Produto excelente, recomendo!",2017-10-03,2017-10-03 18:26:00
+ddb6a577b628b1245f38a71addc6d264,5a0d23d71d4a22b16c61d4f42777e425,5,Muito bom,"Produto excelente, recomendo!",2017-06-27,2017-06-27 17:51:00
+7504d1ad5ff497c1d65330139bda71dc,9826644d71093ae7f47efd6fc5e36dba,2,Atraso na entrega,Nao recebi o produto no prazo,2017-08-12,2017-08-12 15:19:00
+89bfe4b4ddc5e06b30a29b6c91460408,a49689f08fba6612b601dcd1624f0681,1,Atraso na entrega,Nao recebi o produto no prazo,2017-01-08,2017-01-08 16:42:00
+dec43d3e92d51abd01e286d7373300e3,2a1d298b0363068b1cd1b062bf685c01,1,Atraso na entrega,Nao recebi o produto no prazo,2017-10-11,2017-10-11 12:41:00
+8d6f8b1b1e73a19b54258a66a9eecb05,7093f7fbd5d9258e566d3ecd965d9be3,5,Muito bom,"Produto excelente, recomendo!",2017-01-27,2017-01-27 18:31:00
+49af327db3eea865fa39ee5fa3144df7,aa0ca807e5f908b3a094bc08c766274a,5,Muito bom,"Produto excelente, recomendo!",2017-02-06,2017-02-06 17:45:00
+4cf1cabc9792734d903e0f3bf9054264,1537cc7d646bbd62b65d138ea290cb81,5,Muito bom,"Produto excelente, recomendo!",2018-06-04,2018-06-04 12:54:00
+125a3569271cf27166cd1eaa08ca9285,093380953a3657537e793d776388401d,5,Muito bom,"Produto excelente, recomendo!",2018-04-28,2018-04-28 10:47:00
+d05c357f4dd401e5a64b964978b30e1b,b7e3cf29d052d055d336305ae7b43436,4,Muito bom,"Produto excelente, recomendo!",2017-04-02,2017-04-02 11:22:00
+7683a19523bb529e0a99f61d1d5e9c7e,75d5f48f2c82046c7ce89e34f7c8192f,4,Muito bom,"Produto excelente, recomendo!",2018-01-16,2018-01-16 12:37:00
+889bffad3929bb1a430cc86e15c7920c,b37f6fce28fd723cb0ce233474a08efc,5,Muito bom,"Produto excelente, recomendo!",2018-01-26,2018-01-26 16:19:00
+139dfc02fdeb1441d3a7ab804425bc59,62799e2b42c456de8ba1b95c6b87711c,4,Muito bom,"Produto excelente, recomendo!",2018-02-24,2018-02-24 17:57:00
+4f44ca63f98d7961e54c6f82c8be205f,78962f8978398fc154c799e9624f5375,2,Atraso na entrega,Nao recebi o produto no prazo,2018-05-15,2018-05-15 13:40:00
+93a9f25fa11fe60c1294b8d3961f0e1a,7aa125a6ac89550ae10312526512b868,5,Muito bom,"Produto excelente, recomendo!",2017-10-08,2017-10-08 11:48:00
+f462072e9c5564a4921ffeed6aee96ed,43a8379462dad3e4959553a62eddd411,3,,,2018-02-18,2018-02-18 14:30:00
+ad3f5cf14b694e5d1678a715f0c9669b,694e4f3e10e0261b3bf81fce2b90ae24,5,Muito bom,"Produto excelente, recomendo!",2017-01-15,2017-01-15 13:48:00
+80c8353f922d024bb62ec3ff41726c25,2f0e072c71ca57e14ef1c949a74a3682,4,Muito bom,"Produto excelente, recomendo!",2018-01-28,2018-01-28 16:37:00
+96d7e257bfc2c3df3ab5c92efa24cdc6,f9d658f4e4a09f2d87d4b73a761ddaec,5,Muito bom,"Produto excelente, recomendo!",2018-04-12,2018-04-12 19:33:00
+f0fec5d8d7d94e1a55a49afe5851de44,53ea89c25964045fc5365444cbd01f26,5,Muito bom,"Produto excelente, recomendo!",2017-12-17,2017-12-17 15:22:00
+4773ac56229770b3d1f542f5f228f99e,ecb981add8c800b91af62498f9b8f253,5,Muito bom,"Produto excelente, recomendo!",2017-08-18,2017-08-18 19:08:00
+a35c4232836997575befa24611ab5ac0,726bee845db6b806f74315ea2bc22a52,1,Atraso na entrega,Nao recebi o produto no prazo,2017-02-08,2017-02-08 14:56:00
+96530e916f064a87a2271e26a0fb2d72,d11735497605ec8d36dbf3f632a3a810,1,Atraso na entrega,Nao recebi o produto no prazo,2017-04-21,2017-04-21 18:53:00
+6f66834118e6f7dc8f74325d7a809f3e,de366604ce331b88b5a122bfaba9c46f,3,,,2018-01-25,2018-01-25 09:35:00
+b0b2bfe5c6e9682cfb46f5fc9a0f7ab7,ec1fd0b33bad5bfc20513d7046931a08,5,Muito bom,"Produto excelente, recomendo!",2017-01-10,2017-01-10 12:26:00
+302b97b32b6006975dbba124f00be581,2e1a5646e7db8ab42e293065a378be88,3,,,2017-10-04,2017-10-04 17:38:00
+2c56ab82f3d042bd41b146120cd9bb3b,a2002386574eee9480a9de1352c545cd,5,Muito bom,"Produto excelente, recomendo!",2017-09-27,2017-09-27 16:12:00
+0878b5ac9bd1cbfaa9defbecad3bfb3b,172a0a560905d7cba1186df162965e27,4,Muito bom,"Produto excelente, recomendo!",2018-07-16,2018-07-16 15:58:00
+d72a27bf6574d2a5529a4046309808a5,6a06bc91ebcd36706603861821ccc7a5,5,Muito bom,"Produto excelente, recomendo!",2017-01-14,2017-01-14 18:05:00
+ef54f46f8d2f106c8bd79693c9bdb412,6198f067c50c59b98ecc4b77965fa83a,4,Muito bom,"Produto excelente, recomendo!",2018-06-08,2018-06-08 09:46:00
+a38f62466ecdb639859d531a653be5f6,922672a4559e87fe05375bd592ae622e,5,Muito bom,"Produto excelente, recomendo!",2017-09-28,2017-09-28 15:03:00
+fbaad1d9974eec6646b9af2bd8b1b505,4245a15ce3c36270c5a9d0485c4bcb9e,1,Atraso na entrega,Nao recebi o produto no prazo,2018-01-17,2018-01-17 13:11:00
+681e36ad72b056c18c7e760890352f30,b6e60936c7e34ac0f97aedebf00eba7e,1,Atraso na entrega,Nao recebi o produto no prazo,2017-06-20,2017-06-20 09:08:00
+8d3582c8c5c667e996c4c2946930f284,8b01be1d8e64ac991264124c8a132133,4,Muito bom,"Produto excelente, recomendo!",2018-05-10,2018-05-10 20:36:00
+820fba16199eb6008c4f5298c7fc715c,d6b1d54bafa85ca173956f823c047b3e,5,Muito bom,"Produto excelente, recomendo!",2017-01-30,2017-01-30 18:56:00
+4eac14946034a6700104070caafd3b35,e31323fc6b8253a585fb542a3203e12d,5,Muito bom,"Produto excelente, recomendo!",2018-03-28,2018-03-28 08:04:00
+23f1a2bda977df46d05cb3791e01191b,b30fbd1f150f155970c2f782c602b511,5,Muito bom,"Produto excelente, recomendo!",2018-06-22,2018-06-22 20:47:00
+de890872f64d83c0fe3fc54d7a58ffb8,aa5db95b7c6b96cd03fdf0dc9cc5a5e8,5,Muito bom,"Produto excelente, recomendo!",2018-06-02,2018-06-02 15:54:00
+ab4e7db0e767bfcaedc3a898f5df91b8,a68f4a226fa54edb57ed97fee8e7af57,3,,,2017-12-05,2017-12-05 12:03:00
+1ae2e566a1d58fe7a2e8c545beed544d,b17ea0d07b8bd779c4b019c9f9b107e6,5,Muito bom,"Produto excelente, recomendo!",2017-01-19,2017-01-19 09:25:00
+6de473365182fb22fb108a32d59874fa,f04feb33b5372aaf0976fa67d2b32391,5,Muito bom,"Produto excelente, recomendo!",2018-04-13,2018-04-13 13:23:00
+c3ed534e770c01f2a798cb123e63ca22,8bee5d6827e92f8246078bb3cdaefc22,5,Muito bom,"Produto excelente, recomendo!",2018-07-28,2018-07-28 20:39:00
+8091eb2d9796497463309774617ba015,3727576bdd3e5ad5dee3e835e014f3b0,4,Muito bom,"Produto excelente, recomendo!",2017-04-27,2017-04-27 09:48:00
+501bb64709438fed062ba9f42e697dbc,bcd06f9cf5bfdd3b6e72a23306b9d762,5,Muito bom,"Produto excelente, recomendo!",2017-10-26,2017-10-26 16:33:00
+f52243f1aff8303bbc12e821b00719db,4618c9ba48fb5fd105c57f090fd9bc1e,4,Muito bom,"Produto excelente, recomendo!",2017-02-16,2017-02-16 10:31:00
+4e6b9796d47c0788e7ee43ab551b4d2b,24ba1907f2c31b42f09dbd16fa6e1d63,4,Muito bom,"Produto excelente, recomendo!",2017-07-20,2017-07-20 11:07:00
+7a3ce037d3c8d728a48e454c9b84f08b,ebd839620b633ad94eb8cb1a7e3879db,5,Muito bom,"Produto excelente, recomendo!",2017-04-21,2017-04-21 20:26:00
+c49cc6412a98544fcca7de7eef8fd2c4,7487d101f575e3882ee5eae3cf4edcc4,5,Muito bom,"Produto excelente, recomendo!",2018-04-14,2018-04-14 18:37:00
+e2e42b900245c55d270032255986bd45,7971cd03ea6fd53f1699252ab36784ed,1,Atraso na entrega,Nao recebi o produto no prazo,2017-07-01,2017-07-01 19:37:00
+f970f21054e2c70765f9d1c55bc85efe,533d4bdc39785d75d948b101793275c5,4,Muito bom,"Produto excelente, recomendo!",2018-03-05,2018-03-05 17:58:00
+9af2350085c2499ba15e23e4853850fd,84849709ef7716db7d907b56aab75c5c,5,Muito bom,"Produto excelente, recomendo!",2018-04-09,2018-04-09 20:08:00
+15ae17a94e05abc0253c80b8878f90ec,d8ccee59db8f522097eb435897dd6494,5,Muito bom,"Produto excelente, recomendo!",2017-11-18,2017-11-18 19:47:00
+0bad05218541e820a7c49a0da841dc5d,aa6f063a6453386a640c956a1324c399,2,Atraso na entrega,Nao recebi o produto no prazo,2017-10-25,2017-10-25 18:22:00
+0e6f6de48484614f85b6d6067cf23033,9a3b3beacea6af035e8b0c2056bf8417,5,Muito bom,"Produto excelente, recomendo!",2017-11-27,2017-11-27 19:07:00
+a10b777f267fff22427a57379d8182f0,764dd3239500c4d4b3d365f911dc00d2,4,Muito bom,"Produto excelente, recomendo!",2018-06-20,2018-06-20 09:01:00
+5c779909ea823341ea5fad31f51b025b,67e30faf212b8164c166deaccd105bc4,5,Muito bom,"Produto excelente, recomendo!",2017-06-14,2017-06-14 12:43:00
+b326cf334ad05c5d5c0f343b05b217b5,3823b4b3981704d4bcfab9f739f91bfe,4,Muito bom,"Produto excelente, recomendo!",2017-07-27,2017-07-27 17:55:00
+73bfb505fdf375d63dd62da60142027a,6ed0bef9d5a96ca58c99c192f95a390e,5,Muito bom,"Produto excelente, recomendo!",2017-07-01,2017-07-01 18:04:00
+534933c069017368c4189de1e2ab4ea0,a4c3403b6b304a5ad1d99808dd55f8c7,4,Muito bom,"Produto excelente, recomendo!",2018-03-15,2018-03-15 12:35:00
+2c2b7d7c41a3dfd2d610b0ff682b5fc6,e9a178c1e3c8fa3eaf568d3e4116bc44,4,Muito bom,"Produto excelente, recomendo!",2018-04-23,2018-04-23 19:59:00
+d4adaafb22f120349d06b7e3a6216465,32537f5fdc5b70b17b03907c59252f14,5,Muito bom,"Produto excelente, recomendo!",2017-11-05,2017-11-05 15:50:00
+41b95556eb0beb9b30012f1029e4c985,76aae73dfaf2d3b2fbdc9053d528fad4,3,,,2017-08-07,2017-08-07 18:21:00
+d1e3431f5652de613f305d7c4f888059,64401efbff088b87f92c0e267b80fdb9,5,Muito bom,"Produto excelente, recomendo!",2018-04-02,2018-04-02 11:57:00
+74ae471b108939cec77d4b972c8ab1df,4742e9dedbfbe672eb470d14e2b6d527,5,Muito bom,"Produto excelente, recomendo!",2017-11-25,2017-11-25 14:58:00
+1a1014a1ad7999732722e4959cfb04d9,369c9dd2d9f66c6add93f711c78a98c1,4,Muito bom,"Produto excelente, recomendo!",2017-10-17,2017-10-17 08:58:00
+262eeef0cb216ee54d11bcf4593e7927,3e9ec823109fa9e0af958e71c34ec343,1,Atraso na entrega,Nao recebi o produto no prazo,2017-10-31,2017-10-31 18:12:00
+d2fcb66ad864b6acbaf3705063e2a1ff,9b503bd5300f49e4432996fdd429900b,5,Muito bom,"Produto excelente, recomendo!",2017-08-07,2017-08-07 18:27:00
+b333161c71be8d8c8e24532938ce08c8,83279866c97c7d0045ad1c8750711696,5,Muito bom,"Produto excelente, recomendo!",2017-03-17,2017-03-17 08:11:00
+0eb6d897dd9a02056815ccf26991294b,69ca2230c12f4a5c7e67e0275825b2c0,5,Muito bom,"Produto excelente, recomendo!",2018-02-02,2018-02-02 15:40:00
+2cd0e3f4c4e31b77d698e7c0a9a54286,6afe6d15d7ad3efd04613fe425a05dcc,5,Muito bom,"Produto excelente, recomendo!",2017-05-02,2017-05-02 16:00:00
+1e62e12cba5d7159534aade083f14553,271e2b50adbca2ed80b54fbd21ce5891,1,Atraso na entrega,Nao recebi o produto no prazo,2017-10-24,2017-10-24 20:43:00
+15e503e9c57992dd23aafba704383479,e137cd38704baf25af5195a74cec9c9d,5,Muito bom,"Produto excelente, recomendo!",2018-01-26,2018-01-26 14:52:00
+bd549ef47b6d8c54c2f5ab3246b717cd,166d3737153896dee9b68fb8de5a13d3,5,Muito bom,"Produto excelente, recomendo!",2017-05-20,2017-05-20 19:25:00
+dbc07a1f28c18cc76f31829a0a4a8c53,f5ce6b3e536f35354367b331f6e7d1cb,3,,,2017-01-06,2017-01-06 17:38:00
+0b5f9907477f682c2daa3ff69dcf8d12,11fdf0cac660001bc0a10af529605e80,5,Muito bom,"Produto excelente, recomendo!",2017-12-19,2017-12-19 11:26:00
+f358f4ac7b5cf3c25dde1eb2b36fca4a,28ebe2f2fa916161dae9e788bb890f88,4,Muito bom,"Produto excelente, recomendo!",2017-09-16,2017-09-16 11:07:00
+14cd8e6d784a6394bab7c86c688d105b,98e9bcb8909d729d9071c0a935ba91cd,5,Muito bom,"Produto excelente, recomendo!",2018-04-18,2018-04-18 18:35:00
+a02543bf934b1a8dc99526708c0c9dc3,d2faafd813539e6a9a473a6e22e6d33a,5,Muito bom,"Produto excelente, recomendo!",2017-07-22,2017-07-22 19:37:00
+feb00f9224d29ad70a076ad052bcb03d,84aa44d74e6161155f54934e5e5967e2,5,Muito bom,"Produto excelente, recomendo!",2018-05-13,2018-05-13 15:21:00
+c7df107c3703adc773dbc5b1ae056d56,1b5aed63ac9f504f87cbb0c8ac92998a,3,,,2017-08-15,2017-08-15 19:47:00
+7d3ccb5f9fdc74ed49559e9969558eb9,549018c1431421798a344eed5e2a6ec6,5,Muito bom,"Produto excelente, recomendo!",2018-05-14,2018-05-14 16:06:00
+bd029a2dcb37e80f2bf6ce6f52855877,d1c251319ae185e81fc3d3ac53d3b12d,4,Muito bom,"Produto excelente, recomendo!",2017-03-20,2017-03-20 19:04:00
+c39b2fa0ab3dc770980502d859ad1438,bc66394b0a3d48cf8aab006090726d11,5,Muito bom,"Produto excelente, recomendo!",2018-05-30,2018-05-30 08:42:00
+8b6db7bbaadc7f0324c14f524b74f58e,58e6bcf0af5c9cd2ea6b0ccd24371007,1,Atraso na entrega,Nao recebi o produto no prazo,2018-05-11,2018-05-11 13:02:00
+dc739700f1e032a060d5eb2fbb5d95b4,9bedea65fcbaca436030cc720ad1e9c4,4,Muito bom,"Produto excelente, recomendo!",2017-09-28,2017-09-28 13:14:00
+14b3b0478631bdec5232d0b0ae5bde84,ccd6adf5ec8a9301658d868eddc3af2f,5,Muito bom,"Produto excelente, recomendo!",2018-04-11,2018-04-11 08:02:00
+9307b7097725e41ab6dae62742be265f,6a9fd865dd069f2f03d9bce15b105927,3,,,2018-07-12,2018-07-12 17:11:00
+9a88944dacfd0260b63da3ead82a3ac2,3ae1bff4603bda33bb0ef2f681a55faa,4,Muito bom,"Produto excelente, recomendo!",2017-12-28,2017-12-28 13:31:00
+a23652e69202bf6df593a19167baff3f,54be46809035d0d88f8e745dda31f9fe,5,Muito bom,"Produto excelente, recomendo!",2017-08-24,2017-08-24 09:32:00
+578f33e243d7f764ebd9905baddd9ede,16033853583df386fa28fc7b571e79e2,1,Atraso na entrega,Nao recebi o produto no prazo,2018-01-06,2018-01-06 17:45:00
+ef22b6261946a2f83ace59cd79a22120,0426673b973a3d15735798419ba793c3,5,Muito bom,"Produto excelente, recomendo!",2017-04-27,2017-04-27 15:43:00
+ce3bb62100c9cb1165ff0b08a8c995f0,6f4b91c8c218986c211348b79a376193,4,Muito bom,"Produto excelente, recomendo!",2017-06-14,2017-06-14 10:40:00
+d5a3fe081c190863d00a427b7d8fee03,39764d1c076fe86733b894107f299385,3,,,2017-09-22,2017-09-22 10:33:00
+a8a1d574b8c18792a7fdfa75b800717c,941a2c854b57a8501a8f8d5486af730c,5,Muito bom,"Produto excelente, recomendo!",2017-08-13,2017-08-13 14:38:00
+459bda5cfd44d3c7725baba772efea9b,98792f612476532b31b1812f59ad849d,5,Muito bom,"Produto excelente, recomendo!",2017-03-12,2017-03-12 11:24:00
+e0aed93c645c09c1a4cd93ffb643f521,4057be54efb01b036e2c50c0728eb84c,5,Muito bom,"Produto excelente, recomendo!",2018-06-20,2018-06-20 16:43:00
+390eec50823165f2c690480c729af692,50721e82ec248ba0b8eb1f1326f43112,1,Atraso na entrega,Nao recebi o produto no prazo,2017-02-09,2017-02-09 20:34:00
+c37179160048451b6f4ea75955b42a9b,7c3a1ffb2ba8cea814f9f55ea4481823,4,Muito bom,"Produto excelente, recomendo!",2018-07-07,2018-07-07 08:57:00
+49633f7c763f85bf47201ead1d098ac6,b061474c3738fc73cb7873f37cc6e63d,5,Muito bom,"Produto excelente, recomendo!",2018-07-11,2018-07-11 14:16:00
+6c5813d923061fe7f8f22f18419186d4,b885781662af6bafa166bb29b56c0c13,4,Muito bom,"Produto excelente, recomendo!",2017-09-17,2017-09-17 12:54:00
+3d31e9e4f91ec12327910ccb3a8e2ccb,77ac9e2a7b8218bee5c7afb6bff6c4a4,5,Muito bom,"Produto excelente, recomendo!",2018-02-11,2018-02-11 20:13:00
+f80ab6f77d3f6b0dd306c21f8253ad02,12a8dc10887d4b6a2fa41b7411de9092,5,Muito bom,"Produto excelente, recomendo!",2018-07-27,2018-07-27 16:30:00
+8f59fbd02cc83f2767e8b707a60b28d2,a0303f25fe97a7f3200b9959e5891202,4,Muito bom,"Produto excelente, recomendo!",2018-02-12,2018-02-12 19:08:00
+ce179adb520c522597dbd08811762b65,cfdda343e00a98b1ba82c3bf1df4a75d,5,Muito bom,"Produto excelente, recomendo!",2018-04-03,2018-04-03 20:44:00
+c02ceedab5cdda8ed40d19f6b1548de6,648a769df879dab96297b43b130f12f6,3,,,2018-07-18,2018-07-18 17:44:00
+0c34e7df3356c38204e0c17d57fa44d4,fed35d9c764d83576570a8fc00b16804,5,Muito bom,"Produto excelente, recomendo!",2017-04-01,2017-04-01 09:16:00
+6f17f2611022ff5ac64ba498a7913d41,ac37ed0b85f0974f583223a10e8cf9ae,4,Muito bom,"Produto excelente, recomendo!",2018-02-15,2018-02-15 17:41:00
+83388befbba86a9d52385405754879d1,21103c5caff9f1283f10ae53eebad156,3,,,2018-06-15,2018-06-15 12:12:00
+ee6c48c70dba8fccbd34477dff231d17,02ab6b7b13f6a13e3b5372e63cd51924,3,,,2017-02-06,2017-02-06 13:15:00
+de82e4584b227c089ad92b892e807f90,5049d1a52133ee465f6a04c8adc2984f,5,Muito bom,"Produto excelente, recomendo!",2017-10-19,2017-10-19 19:53:00
+86f65fce6fc763f486c04a3b5709af39,050d91517636d67ad4bffcfbd2096fa9,5,Muito bom,"Produto excelente, recomendo!",2017-01-05,2017-01-05 12:11:00
+c2b773b125258964ee3a7e355fb6a56a,468bf1bd954b842f52ad2a961d5da7e6,5,Muito bom,"Produto excelente, recomendo!",2017-12-15,2017-12-15 09:51:00
+adae25d5d17c8c9a77d4ef4a7b5499ae,3dc920d97f073d96533cde447072d86d,5,Muito bom,"Produto excelente, recomendo!",2018-01-22,2018-01-22 17:30:00
+86bb163db7a425fc516ae076d707a370,02e93252cf71bc0f137cba51a15ff02f,4,Muito bom,"Produto excelente, recomendo!",2017-01-29,2017-01-29 15:07:00
+55d58474b5367d4eeeeddbfec961bcf5,673b7b6aef623f952426b66dfccfc0ef,4,Muito bom,"Produto excelente, recomendo!",2017-01-10,2017-01-10 19:53:00
+c3f717635f95afd432a03d49a8dbb088,a2dd10e95887d5cd26006a287814ded4,5,Muito bom,"Produto excelente, recomendo!",2017-12-17,2017-12-17 09:35:00
+f5c7d9f9e503427549690b0e303ba2cf,6046f921a72a279ba4ebfea2a7443a4b,1,Atraso na entrega,Nao recebi o produto no prazo,2017-08-29,2017-08-29 19:15:00
+5bd732bfc1f731b56eb59cd01c143435,8f2ee6a2b2008fd4c2cb61fbcc5c1129,1,Atraso na entrega,Nao recebi o produto no prazo,2017-12-31,2017-12-31 10:49:00
+94b2ec5837fc2fd2bfd51c7c2c014949,dcc4ea38f4406587654411e2b38525c1,5,Muito bom,"Produto excelente, recomendo!",2018-05-20,2018-05-20 17:00:00
+f2388d83a7b544d05ff1625424611454,3b328cf9d86d10e3c1cb24d8aabef8b6,3,,,2018-05-20,2018-05-20 17:55:00
+be242d4d917629846f8b6add31c1c52c,bbeacd6921412df8036a9d949302ac48,1,Atraso na entrega,Nao recebi o produto no prazo,2017-05-12,2017-05-12 08:33:00
+6d8a4ed63ae7c95b4e75215461e33462,27d31133f77ea8571db188543ac92649,5,Muito bom,"Produto excelente, recomendo!",2018-02-08,2018-02-08 18:49:00
+cad8170e0a8e73d2fe0f020ee5dbd528,ebd9f759590e4d8048896d20ba75c42e,5,Muito bom,"Produto excelente, recomendo!",2017-11-30,2017-11-30 13:39:00
+ed3d956e5d2f36cb88c5de118d1c5779,4d39617e010f80bcae5e05688b304442,5,Muito bom,"Produto excelente, recomendo!",2018-04-28,2018-04-28 17:21:00
+c72252647efa4b4c09bbe57d382ba6e0,2eddc2d8a62fbe090cffa9f345b3c043,1,Atraso na entrega,Nao recebi o produto no prazo,2018-01-17,2018-01-17 13:54:00
+b0e9649bf425651068027d05c1a883b9,46bbf0378959719b5033e5d9478b8e2a,4,Muito bom,"Produto excelente, recomendo!",2017-08-23,2017-08-23 09:46:00
+525e5ae8cb289a3b324312b2a23b41d6,995226387d43ed419fcd891adcab6966,5,Muito bom,"Produto excelente, recomendo!",2017-05-30,2017-05-30 20:47:00
+ce7738ffa46f89a3dab8fba5ccc7908c,451d07041086835f4397e108105c07b9,1,Atraso na entrega,Nao recebi o produto no prazo,2018-05-27,2018-05-27 10:57:00
+930571e490fee7e1a84ebc2b784e19b6,593838596d169c03eff52b58dde4cedc,4,Muito bom,"Produto excelente, recomendo!",2017-11-04,2017-11-04 12:35:00
+bfcda6b9f0001269cd82d05b575d6c3f,1c722a6e52a0aaa26dc64f78912e79d7,5,Muito bom,"Produto excelente, recomendo!",2017-03-03,2017-03-03 11:52:00
+69a0bfc56fc7b3aa52af13676148af05,91b38cdb8d5b317e140b032bc6560b08,5,Muito bom,"Produto excelente, recomendo!",2017-12-09,2017-12-09 12:23:00
+43f0b23ef19b083e3c0941ff4704c8bd,68a708bcb1ea4ab6cd45893a30eae12b,5,Muito bom,"Produto excelente, recomendo!",2018-02-26,2018-02-26 09:22:00
+ea727345bb2501e22eff198dcbe1a7a6,3bb4515f7f3dd58177f51ee20b71407d,4,Muito bom,"Produto excelente, recomendo!",2017-12-30,2017-12-30 13:43:00
+598c548e862e3a349f482572d8f4d61e,fe50b52a32df2b3fc11849c3e575380f,1,Atraso na entrega,Nao recebi o produto no prazo,2017-10-21,2017-10-21 15:40:00
+095a470e3354ebbfba570440d27ac50f,0d15131e82f2204508dc0e3355867e82,5,Muito bom,"Produto excelente, recomendo!",2017-11-21,2017-11-21 18:18:00
+85990a8875b26c72d2ce8522fe75b146,a7689ed69dec128ba52474a4fd0dd801,4,Muito bom,"Produto excelente, recomendo!",2018-01-07,2018-01-07 19:37:00
+85f3e8d29c8935d6fcb2d4424f8b90eb,ebd314d8d5e5eb7a85ae36fb3a4a3a95,4,Muito bom,"Produto excelente, recomendo!",2017-03-23,2017-03-23 11:10:00
+d3b84c359ded9fe649f0bd96dcd1dba1,6421e4dd2c6dcf93e39154ba8b0de736,2,Atraso na entrega,Nao recebi o produto no prazo,2017-06-09,2017-06-09 09:41:00
+68a99d232fd803704ba5db0563c9b3cc,470a364c62a524574c1d1058eb897bdf,4,Muito bom,"Produto excelente, recomendo!",2018-03-30,2018-03-30 18:08:00
+506bad09035a75d8e728da9183d51461,fa7362f799c92034d64f410dcc84c1a0,4,Muito bom,"Produto excelente, recomendo!",2018-01-01,2018-01-01 13:55:00
+60faf2bf7120065302cf12e6bb3632e2,48fb30a9a6a16a163e8b15bc6ac41c0b,5,Muito bom,"Produto excelente, recomendo!",2018-07-16,2018-07-16 15:08:00
+f68e9dbf72d37a63cd41a55182a85865,69fad2df21839ed9257f68c0d4d7cccc,5,Muito bom,"Produto excelente, recomendo!",2018-08-01,2018-08-01 14:33:00
+c44f8592233db25fb0a01aa30ac6f844,a02df226fd9ab7e8c6041d34e5a2c543,5,Muito bom,"Produto excelente, recomendo!",2018-07-07,2018-07-07 11:51:00
+dc8fe852f747b3821a3c8e8cc8126212,7854b10bf66229530147885eb4cb4c60,4,Muito bom,"Produto excelente, recomendo!",2017-06-09,2017-06-09 12:00:00
+15325cce242d34e317d6e7a7b59b4c04,065012ebb0e03715cd44c382c09ec0ac,5,Muito bom,"Produto excelente, recomendo!",2018-04-26,2018-04-26 16:00:00
+b3ca10377479e4c3060b5d67e194cd88,ef79c888816e7a9b7f4fe9267d956039,5,Muito bom,"Produto excelente, recomendo!",2018-03-17,2018-03-17 20:18:00
+f9b96f902031c8b92919de6a4ebcf322,7535bf76525c4d5f19f10bb9a412f99c,5,Muito bom,"Produto excelente, recomendo!",2017-07-13,2017-07-13 14:56:00
+de01e53b7ac49ad93cceb438ec5de225,120d2a0d7abe354786370ab3d8981edf,4,Muito bom,"Produto excelente, recomendo!",2017-09-03,2017-09-03 16:48:00
+c5c1cd377d7e9dc59900e61f20bda461,6d8021e18abf156d26a17e0e65a00854,5,Muito bom,"Produto excelente, recomendo!",2017-05-20,2017-05-20 12:07:00
+5bcd42ba62ccb0e8d1c2c701e5523bce,f06d175e6b9bde95d421ff192cb063cb,5,Muito bom,"Produto excelente, recomendo!",2017-01-09,2017-01-09 11:05:00
+2cd7d5173c8c3cc700e2ffc1bcacad37,cb1e3b1ef83dba0a9465d3b08f524f4e,5,Muito bom,"Produto excelente, recomendo!",2017-11-16,2017-11-16 20:51:00
+0c2933b5e5acda17eaa7e65c975c7fce,9cc428d7f65f4aacd3f139c9372719cf,5,Muito bom,"Produto excelente, recomendo!",2017-05-30,2017-05-30 08:17:00
+0fbadfc617607798dc684f730d07ca86,9faa9a2592a4d04624658daf79a80654,5,Muito bom,"Produto excelente, recomendo!",2017-09-14,2017-09-14 14:53:00
+26bfcc32f4cb79451a36b17f8deeacc1,8c8a030ff0d70140796e8e66f09278f7,3,,,2017-04-07,2017-04-07 16:42:00
+55e632b1f99a92f327ae6082fe2cd348,ec919e037be1cafad3b45913f7db167d,5,Muito bom,"Produto excelente, recomendo!",2017-02-13,2017-02-13 19:59:00
+4e0c170e38273e34cbbefbc8046c407b,5d288a7f9bb79df0109947802fb501d1,5,Muito bom,"Produto excelente, recomendo!",2018-03-21,2018-03-21 13:00:00
+abca0bdde7480e28074e3dc8b54677c5,3c17deb2e33b0cdd6d31978e409927b3,3,,,2017-12-13,2017-12-13 20:40:00
+e6f597585bce814893b09950dd752cc9,0e65168622bf0e3a33c8dae614577df1,5,Muito bom,"Produto excelente, recomendo!",2017-07-17,2017-07-17 08:44:00
+2ff3344d4cde69606f54aa8fea7c6556,d710c4f3b65b0277138388a480e120e9,5,Muito bom,"Produto excelente, recomendo!",2018-05-12,2018-05-12 19:28:00
+765eb927a72de54d4d0e41e2bff0cc35,87f42a4ef620d18ae9d6af84a15ec054,5,Muito bom,"Produto excelente, recomendo!",2017-09-27,2017-09-27 16:23:00
+f7838a415e8e43459dc2a08af2f9a0d1,7ba786f9ec1d77dc304a5af0d078fa27,4,Muito bom,"Produto excelente, recomendo!",2017-01-20,2017-01-20 17:54:00
+b705b60143197715fbc494fcfdd92c9b,e2be51cbc0fd23a75f470097d8a52f44,1,Atraso na entrega,Nao recebi o produto no prazo,2018-07-06,2018-07-06 14:12:00
+c3b460583221836ea02c754d7a242e93,d03d47e9012950e7d9f7d8c59837b4a9,2,Atraso na entrega,Nao recebi o produto no prazo,2017-11-27,2017-11-27 14:41:00
+bf17c94f3edaebc44093f879e29eb0a6,72f91bb2986b6bff406498bea8e466a5,5,Muito bom,"Produto excelente, recomendo!",2017-05-13,2017-05-13 10:55:00
+4040299e5bed173dcbc591f0dbf7ae96,31d5952f54ebd51edc680d55d19fe2d4,5,Muito bom,"Produto excelente, recomendo!",2018-05-13,2018-05-13 11:06:00
+c29baa03f27c89285316968697c96bec,91a6dbbe3c9a72ff31681a1d0db3589e,5,Muito bom,"Produto excelente, recomendo!",2018-06-23,2018-06-23 17:44:00
+d045bcf10ce17447f44c6a897b5b44b6,8e2598a753e4161fb43d63e03efb457d,5,Muito bom,"Produto excelente, recomendo!",2017-03-04,2017-03-04 13:35:00
+597b64b319763d6475e6ec66db3e4746,a0f71ad0127a2753657acb7d99c8c3d9,5,Muito bom,"Produto excelente, recomendo!",2018-06-26,2018-06-26 08:46:00
+4b485791fbdbfa826bbc45b839e1b099,bb5b0ccde4e68e981cd7ba61c6037d7c,5,Muito bom,"Produto excelente, recomendo!",2017-04-14,2017-04-14 19:14:00
+13abb4a00a7e28155c02f9b373ba992a,a28bd24b56c0c64fe9b85e3e2e0b7f37,5,Muito bom,"Produto excelente, recomendo!",2017-09-12,2017-09-12 17:40:00
+97c6d61614ba867b7b9a399f2d8b9ae5,eb40877b6b288dffbedecbe813eee682,3,,,2018-01-02,2018-01-02 18:29:00
+b5e1bdf63c3d48b9f1fb5bdc71b9ef90,5a46b4c002a8d7f0b637d5a6f99d326b,1,Atraso na entrega,Nao recebi o produto no prazo,2017-07-04,2017-07-04 16:25:00
+5a9af7aba6b54043d9db480d9fb52a4c,abaa7615a21df11b5ccf9d0be39ad17c,5,Muito bom,"Produto excelente, recomendo!",2018-07-01,2018-07-01 17:28:00
+de73715cd6e10dee04fab3d7759710e0,65dee8563a405999698db627d0dc9525,5,Muito bom,"Produto excelente, recomendo!",2018-03-17,2018-03-17 19:20:00
+094ee4bb99853402f12f3dd2ce4adeea,9f96ad8938eda96baafcefe6c8e3d8a9,5,Muito bom,"Produto excelente, recomendo!",2018-02-11,2018-02-11 08:46:00
+907d28c82aedfd58db638fc08642c6b0,433867ea2b82e763431b21f2cdfd9834,1,Atraso na entrega,Nao recebi o produto no prazo,2017-11-06,2017-11-06 08:19:00
+22d5494f0bfaf4d57632f1ea3915cfdf,bf254101d746b0d4b9081931ffd8cce6,5,Muito bom,"Produto excelente, recomendo!",2017-10-10,2017-10-10 16:32:00
+580ccb60ada1776c1532293a4c7f095f,d65cac9d31eb07b4424e288faece9eaa,1,Atraso na entrega,Nao recebi o produto no prazo,2018-04-17,2018-04-17 13:09:00
+c53fdf8e8a75347c9fc42260e438f049,5211db998fa7465af4fff2b8455fd0cb,5,Muito bom,"Produto excelente, recomendo!",2017-11-04,2017-11-04 09:36:00

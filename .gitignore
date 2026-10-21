@@ -1,9 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+*.zip
+
+# BIFlow runtime artifacts
+/runs/
 *.db
 *.duckdb
-.venv/
-__pycache__/
-data/olist/
-# only the runs/ folder at the root (not web/src/app/app/runs/, the analysis page)
-/runs/
+*.duckdb.wal
+*.joblib
+*.parquet
+
+# Environment & secrets
 .env
-/.env.example
+.env.*
+!.env.example
+
+# Datasets
+Dataset/
+test-work/
+data/*
+!data/sample/
+data/olist/
+
+# Frontend / Web
+node_modules/
+.next/
+
+# Coverage & logs
+*.log
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Documentation & temporary files
+Thumbs.db
+Desktop.ini
+.streamlit/
+README_LOCAL_STACK.md
+convertir_parquet_csv.py
+lancer_pii.cmd
+README_CLEANING.md
+README_PII_GENERIC.md
+README_STREAMLIT_PII.md
+README_ETL.md
+README_PROFILING.md
+README_LINEAGE.md
+pytest.ini

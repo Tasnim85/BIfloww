@@ -1,0 +1,10 @@
+pydantic>=2,<3
+pandas>=2.2,<3
+pyarrow>=17
+duckdb>=1.1,<2
+scikit-learn>=1.5,<2
+joblib>=1.4
+PyYAML>=6
+pytest>=8,<10
+neo4j>=5.26,<7
+python-dotenv>=1,<2
