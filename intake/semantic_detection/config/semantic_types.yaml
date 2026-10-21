@@ -1,4 +1,4 @@
-taxonomy_version: "1.0.0"
+taxonomy_version: "1.1.0"
 taxonomy_name: "BIFlow Semantic Taxonomy"
 description: >
   Hierarchical taxonomy of semantic types for the BIFlow Semantic Detection module.
@@ -12,7 +12,7 @@ groups:
       - type_id: EMAIL
         label: "Email Address"
         description: "Electronic mail address of a person."
-        privacy_hint: HIGH
+        privacy_hint: LIKELY_PII
         column_aliases: [email, email_address, mail, e_mail, courriel, customer_email]
         patterns:
           - regex: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
@@ -20,7 +20,7 @@ groups:
       - type_id: PHONE
         label: "Phone Number"
         description: "Telephone number, fixed or mobile."
-        privacy_hint: HIGH
+        privacy_hint: LIKELY_PII
         column_aliases: [phone, phone_number, telephone, mobile, tel, contact_number, customer_phone]
         patterns:
           - regex: "^\\+?[0-9]{8,15}$"
@@ -28,13 +28,13 @@ groups:
       - type_id: PERSON_NAME
         label: "Person Name"
         description: "Full name, first name, or last name of a person."
-        privacy_hint: HIGH
+        privacy_hint: LIKELY_PII
         column_aliases: [name, full_name, first_name, last_name, customer_name, employee_name, person_name, prenom, nom]
         patterns: []
       - type_id: PERSON_ID
         label: "Person Identifier"
         description: "Unique identifier for a person (customer ID, employee ID)."
-        privacy_hint: HIGH
+        privacy_hint: LIKELY_PII
         column_aliases: [customer_id, client_id, user_id, employee_id, person_id, cust_id, emp_id]
         patterns:
           - regex: "^[A-Z]?[0-9]{4,12}$"
@@ -42,7 +42,7 @@ groups:
       - type_id: AGE
         label: "Age"
         description: "Age of a person in years (integer 0-120)."
-        privacy_hint: MEDIUM
+        privacy_hint: CONTEXT_DEPENDENT
         column_aliases: [age, customer_age, years_old, age_client]
         patterns:
           - regex: "^(1[0-1][0-9]|[1-9]?[0-9])$"
@@ -50,7 +50,7 @@ groups:
       - type_id: BIRTH_DATE
         label: "Birth Date"
         description: "Date of birth of a person."
-        privacy_hint: HIGH
+        privacy_hint: LIKELY_PII
         column_aliases: [birth_date, date_of_birth, dob, birthdate, date_naissance]
         patterns:
           - regex: "^\\d{4}-\\d{2}-\\d{2}$"
@@ -58,7 +58,7 @@ groups:
       - type_id: PERSONAL_ADDRESS
         label: "Personal Address"
         description: "Postal address of a person (street, apartment, building)."
-        privacy_hint: HIGH
+        privacy_hint: LIKELY_PII
         column_aliases: [address, street, personal_address, home_address, billing_address, shipping_address]
         patterns: []
 
@@ -69,49 +69,49 @@ groups:
       - type_id: PRICE
         label: "Price"
         description: "Unit price of a product or service."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [price, unit_price, prix, prix_unitaire]
         patterns: []
       - type_id: PAYMENT_AMOUNT
         label: "Payment Amount"
         description: "Amount paid in a transaction."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [payment_value, payment_amount, montant_paiement, amount_paid]
         patterns: []
       - type_id: REVENUE
         label: "Revenue"
         description: "Total revenue or turnover."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [revenue, total_revenue, chiffre_affaires, turnover, sales]
         patterns: []
       - type_id: COST
         label: "Cost"
         description: "Cost or expense amount."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [cost, expense, cout, charge]
         patterns: []
       - type_id: DISCOUNT
         label: "Discount"
         description: "Discount amount or rate applied."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [discount, remise, reduction, rebate]
         patterns: []
       - type_id: TAX
         label: "Tax"
         description: "Tax amount or rate (VAT, sales tax)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [tax, vat, tva, tax_amount]
         patterns: []
       - type_id: FREIGHT_COST
         label: "Freight Cost"
         description: "Shipping or freight cost."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [freight_value, shipping_cost, freight_cost, delivery_cost]
         patterns: []
       - type_id: PROFIT
         label: "Profit"
         description: "Profit or margin amount."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [profit, margin, benefice, marge]
         patterns: []
 
@@ -122,7 +122,7 @@ groups:
       - type_id: DATE
         label: "Date"
         description: "Calendar date without time component."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [date, order_date, purchase_date, created_date, report_date]
         patterns:
           - regex: "^\\d{4}-\\d{2}-\\d{2}$"
@@ -132,7 +132,7 @@ groups:
       - type_id: DATETIME
         label: "Date and Time"
         description: "Timestamp with date and time."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [datetime, timestamp, created_at, updated_at, order_purchase_timestamp, order_delivered_timestamp, order_approved_at, order_estimated_delivery_date]
         patterns:
           - regex: "^\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}"
@@ -140,7 +140,7 @@ groups:
       - type_id: TIME
         label: "Time"
         description: "Time of day (HH:MM:SS)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [time, hour, heure]
         patterns:
           - regex: "^\\d{2}:\\d{2}(:\\d{2})?$"
@@ -148,7 +148,7 @@ groups:
       - type_id: YEAR
         label: "Year"
         description: "4-digit calendar year."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [year, annee, fiscal_year]
         patterns:
           - regex: "^(19|20)\\d{2}$"
@@ -156,19 +156,19 @@ groups:
       - type_id: MONTH
         label: "Month"
         description: "Month number or name."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [month, mois]
         patterns: []
       - type_id: DURATION
         label: "Duration"
         description: "Duration in days, hours, or other time units."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [duration, duration_days, delivery_duration, processing_time, tenure]
         patterns: []
       - type_id: PERIOD
         label: "Period"
         description: "Named time period (Q1, semester, fiscal year label)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [period, quarter, semester, trimestre]
         patterns: []
 
@@ -179,7 +179,7 @@ groups:
       - type_id: COUNTRY
         label: "Country"
         description: "Country name or ISO code."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [country, pays, country_code, nation]
         patterns:
           - regex: "^[A-Z]{2}$"
@@ -187,25 +187,25 @@ groups:
       - type_id: STATE
         label: "State / Region"
         description: "State, province, region or administrative division."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [state, region, province, customer_state, seller_state, gouvernorat]
         patterns: []
       - type_id: CITY
         label: "City"
         description: "City or town name."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [city, ville, town, customer_city, seller_city]
         patterns: []
       - type_id: REGION
         label: "Region"
         description: "Broader geographical region."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [region, area, zone, district]
         patterns: []
       - type_id: POSTAL_CODE
         label: "Postal Code"
         description: "Postal or ZIP code."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [postal_code, zip, zip_code, postcode, customer_zip_code_prefix, code_postal]
         patterns:
           - regex: "^[0-9A-Z]{3,10}$"
@@ -213,7 +213,7 @@ groups:
       - type_id: LATITUDE
         label: "Latitude"
         description: "Geographic latitude coordinate (WGS-84)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [latitude, lat, geolocation_lat]
         patterns:
           - regex: "^-?(90(\\.0+)?|[1-8]?\\d(\\.\\d+)?)$"
@@ -221,7 +221,7 @@ groups:
       - type_id: LONGITUDE
         label: "Longitude"
         description: "Geographic longitude coordinate (WGS-84)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [longitude, lng, lon, geolocation_lng]
         patterns:
           - regex: "^-?(180(\\.0+)?|(1[0-7]\\d|[1-9]?\\d)(\\.\\d+)?)$"
@@ -234,37 +234,37 @@ groups:
       - type_id: ORDER_ID
         label: "Order Identifier"
         description: "Unique reference of an order."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [order_id, order_ref, order_number, commande_id]
         patterns: []
       - type_id: PRODUCT_ID
         label: "Product Identifier"
         description: "Unique reference of a product or SKU."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [product_id, item_id, sku, article_id, reference]
         patterns: []
       - type_id: SELLER_ID
         label: "Seller Identifier"
         description: "Unique reference of a seller or vendor."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [seller_id, vendor_id, supplier_id, merchant_id]
         patterns: []
       - type_id: INVOICE_ID
         label: "Invoice Identifier"
         description: "Unique reference of an invoice."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [invoice_id, invoice_number, facture_id]
         patterns: []
       - type_id: TRANSACTION_ID
         label: "Transaction Identifier"
         description: "Unique reference of a transaction."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [transaction_id, txn_id, payment_id]
         patterns: []
       - type_id: ORGANIZATION_ID
         label: "Organization Identifier"
         description: "Unique reference of an organization or company."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [organization_id, company_id, org_id, enterprise_id]
         patterns: []
 
@@ -275,37 +275,37 @@ groups:
       - type_id: STATUS
         label: "Status"
         description: "State or status of an entity (active, delivered, pending)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [status, order_status, account_status, etat, statut]
         patterns: []
       - type_id: PRODUCT_CATEGORY
         label: "Product Category"
         description: "Category or classification of a product."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [product_category_name, category, categorie, product_type, product_category_name_english]
         patterns: []
       - type_id: PAYMENT_METHOD
         label: "Payment Method"
         description: "Method of payment (credit card, cash, wire transfer)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [payment_type, payment_method, mode_paiement]
         patterns: []
       - type_id: CUSTOMER_SEGMENT
         label: "Customer Segment"
         description: "Customer classification or segment."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [segment, customer_segment, customer_type, customer_class]
         patterns: []
       - type_id: PRIORITY
         label: "Priority"
         description: "Priority or urgency level."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [priority, priorite, urgency, severity]
         patterns: []
       - type_id: BOOLEAN_FLAG
         label: "Boolean Flag"
         description: "Binary true/false indicator."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [is_active, is_deleted, active, enabled, flag, has_discount]
         patterns:
           - regex: "^(true|false|yes|no|oui|non|0|1)$"
@@ -318,55 +318,55 @@ groups:
       - type_id: QUANTITY
         label: "Quantity"
         description: "Number of units, items or occurrences."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [quantity, qty, count, nb_items, units, order_item_id, payment_sequential]
         patterns: []
       - type_id: COUNT
         label: "Count"
         description: "Count or frequency."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [count, total_count, num_orders, frequency, nb]
         patterns: []
       - type_id: WEIGHT
         label: "Weight"
         description: "Mass measurement (kg, g, lb)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [weight, product_weight_g, poids, mass, weight_kg]
         patterns: []
       - type_id: LENGTH
         label: "Length"
         description: "Length measurement (cm, m, inches)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [length, product_length_cm, longueur, height, product_height_cm, width, product_width_cm]
         patterns: []
       - type_id: VOLUME
         label: "Volume"
         description: "Volume measurement."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [volume, capacity, contenance]
         patterns: []
       - type_id: PERCENTAGE
         label: "Percentage"
         description: "Value expressed as a percentage (0-100 or 0-1)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [percentage, rate, ratio, taux, pct, discount_rate]
         patterns: []
       - type_id: RATE
         label: "Rate"
         description: "A rate or ratio value."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [rate, ratio, conversion_rate]
         patterns: []
       - type_id: RATING
         label: "Rating / Score"
         description: "Score or rating given to an entity (1-5, 0-10)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [review_score, rating, score, note, satisfaction_score]
         patterns: []
       - type_id: NUMERIC_MEASURE
         label: "Generic Numeric Measure"
         description: "Numeric value not fitting a more specific type."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [value, measure, metric, indicator, nombre_photos, product_photos_qty, product_name_lenght, product_description_lenght]
         patterns: []
 
@@ -377,31 +377,31 @@ groups:
       - type_id: DESCRIPTION
         label: "Description"
         description: "Free text describing an object or entity."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [description, detail, details, product_description]
         patterns: []
       - type_id: COMMENT
         label: "Comment"
         description: "User-written remark, feedback or review."
-        privacy_hint: MEDIUM
+        privacy_hint: CONTEXT_DEPENDENT
         column_aliases: [comment, review_comment_message, review_comment_title, feedback, remarks, observation]
         patterns: []
       - type_id: TITLE
         label: "Title"
         description: "Title of a document, product or entity."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [title, titre, product_name, name, label, job_title]
         patterns: []
       - type_id: FREE_TEXT
         label: "Free Text"
         description: "Unstructured text not matching any specific type."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: []
         patterns: []
       - type_id: LABEL
         label: "Label / Code"
         description: "Short alphanumeric label or code."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [label, code, ref, tag, product_category_name_english]
         patterns: []
 
@@ -412,7 +412,7 @@ groups:
       - type_id: SYSTEM_ID
         label: "System Identifier"
         description: "Internal technical identifier (UUID, auto-increment)."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [id, uid, uuid, record_id, system_id, unique_id]
         patterns:
           - regex: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
@@ -420,7 +420,7 @@ groups:
       - type_id: HASH_VALUE
         label: "Hash Value"
         description: "Cryptographic hash or checksum."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [hash, checksum, md5, sha256, fingerprint]
         patterns:
           - regex: "^[0-9a-f]{32,64}$"
@@ -428,7 +428,7 @@ groups:
       - type_id: VERSION
         label: "Version"
         description: "Software or data version string."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [version, schema_version, api_version]
         patterns:
           - regex: "^\\d+\\.\\d+(\\.\\d+)?$"
@@ -436,7 +436,7 @@ groups:
       - type_id: FILE_REFERENCE
         label: "File Reference"
         description: "Path or URL referencing a file."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: [file_path, path, filepath, url, link, document_path]
         patterns: []
 
@@ -447,14 +447,14 @@ groups:
       - type_id: UNKNOWN
         label: "Unknown Type"
         description: "Column whose semantic type could not be determined."
-        privacy_hint: LOW
+        privacy_hint: NO_DIRECT_PII_INDICATOR
         column_aliases: []
         patterns: []
 
 metadata:
   total_groups: 10
   total_types: 65
-  privacy_hint_levels: [LOW, MEDIUM, HIGH, CRITICAL]
+  privacy_hint_levels: [NO_DIRECT_PII_INDICATOR, CONTEXT_DEPENDENT, POTENTIAL_PII, LIKELY_PII]
   created_by: "Malek"
   last_updated: "2026-10-21"
   compatible_with: "BIFlow v1.1+"
