@@ -151,20 +151,30 @@ git commit -m "feat(semantic): implement step 2 rule-based classification"
 
 ## 7. Statut de publication sur GitHub
 
-> [!WARNING]
-> **La branche a été créée localement** (`git checkout -b feature/semantic-detection-step2-rule-based`).
->
-> Un `git push -u origin feature/semantic-detection-step2-rule-based` est **nécessaire** pour la publier.
-> Ce push n'a pas été exécuté car il requiert des credentials GitHub avec droits en écriture sur `Tasnim85/BIfloww`.
+> [!NOTE]
+> **✅ BRANCHE PUBLIÉE SUR GITHUB** — Push réalisé avec succès le 2026-10-21.
 
-### Commande à exécuter pour publier
-
-```bash
-git push -u origin feature/semantic-detection-step2-rule-based
+```
+* [new branch]  feature/semantic-detection-step2-rule-based -> feature/semantic-detection-step2-rule-based
 ```
 
-Ne pas utiliser `git push --force`.
-Ne pas fusionner directement dans `main` — créer une Pull Request.
+### Lien Pull Request
+
+GitHub a automatiquement proposé la création d'une PR :
+
+```
+https://github.com/Tasnim85/BIfloww/pull/new/feature/semantic-detection-step2-rule-based
+```
+
+### Commit publié
+
+| Champ | Valeur |
+|-------|--------|
+| Hash | `9e3cce8` |
+| Branche remote | `origin/feature/semantic-detection-step2-rule-based` |
+| Fichiers | 15 fichiers, +3 325 insertions |
+| Push force | ❌ Non utilisé |
+| Fusion dans main | ❌ Non effectuée |
 
 ---
 
