@@ -1,10 +1,13 @@
-"""app.py — BIFlow Streamlit shell (Samar).
+"""app.py — BIFlow Streamlit shell (Multi-Agent BI Platform).
 
-Single-page Streamlit app that:
-1. Accepts CSV upload + natural-language question.
-2. Triggers the BIFlow DAG via orchestrator.dag_runner in a background thread.
-3. Reads progress safely from the SQLite task store (thread-safe, no session_state mutation from worker).
-4. Renders the dashboard panels from the DashboardSpec contract.
+Advanced Streamlit interface that:
+1. Connects seamlessly with the BIFlow DAG orchestrator across all 13 agents.
+2. Detects local Ollama / LLaMA 3 status in real time.
+3. Provides 1-click loading for the Olist demonstration dataset (9 tables).
+4. Features an interactive Human-in-the-Loop review panel for steps requiring human approval (NEEDS_REVIEW).
+5. Displays live multi-phase DAG execution progress, step details, and artifact inspection.
+6. Integrates Tasnim's Auditor components: Trust Badge, Comparison Banner, Audit Panel, and Causal Why-Box.
+7. Renders the interactive BI dashboard from the DashboardSpec contract with KPI metrics, charts, and data export.
 
 Run:
     streamlit run app/app.py
@@ -12,8 +15,12 @@ Run:
 from __future__ import annotations
 
 import json
+import logging
+import os
+import shutil
 import sys
 import time
+import urllib.request
 import uuid
 from pathlib import Path
 from threading import Thread
@@ -27,26 +34,85 @@ if str(_REPO_ROOT) not in sys.path:
 
 # ── Page config ─────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="BIFlow",
+    page_title="BIFlow — Multi-Agent BI Platform",
     page_icon="🔄",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
-# ── Imports (after sys.path fix) ─────────────────────────────────────────
-from contracts.pipeline import STEPS, execution_order
+# ── Imports ─────────────────────────────────────────────────────────────
+from contracts.audit import DEFAULT_JOURNAL
+from contracts.pipeline import RUNS_ROOT, STEPS, execution_order, output_path
 from orchestrator.dag_runner import get_run_status, run_pipeline
 from orchestrator.task_store import DEFAULT_DB
 
-# Process-level worker thread tracker (thread-safe, decoupled from session state)
+try:
+    from auditor.ui.components import audit_panel, comparison_banner, trust_badge, why_box
+    _AUDITOR_UI_AVAILABLE = True
+except Exception:
+    _AUDITOR_UI_AVAILABLE = False
+
+# Process-level worker thread tracker
 _ACTIVE_THREADS: dict[str, Thread] = {}
 
-# ── Session state helpers ────────────────────────────────────────────────
+# ── Theme and CSS Styling ───────────────────────────────────────────────
+st.markdown("""
+<style>
+    .metric-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid #e9ecef;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .status-pill {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+    .status-success { background-color: #d1e7dd; color: #0f5132; }
+    .status-running { background-color: #cfe2ff; color: #084298; }
+    .status-review { background-color: #fff3cd; color: #664d03; }
+    .status-failed { background-color: #f8d7da; color: #842029; }
+    .status-skipped { background-color: #e2e3e5; color: #41464b; }
+    .phase-badge {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #6c757d;
+        letter-spacing: 0.5px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+# ── Ollama Detection ─────────────────────────────────────────────────────
+@st.cache_data(ttl=5, show_spinner=False)
+def _check_ollama() -> tuple[bool, list[str]]:
+    """Detect if local Ollama server is running and which models are pulled."""
+    try:
+        url = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/") + "/api/tags"
+        with urllib.request.urlopen(url, timeout=1.5) as response:
+            data = json.load(response)
+            models = [m.get("name", "") for m in data.get("models", [])]
+            return True, models
+    except Exception:
+        return False, []
+
+
+# ── Session State Helpers ────────────────────────────────────────────────
 def _init_state():
     defaults = {
         "run_id": None,
         "running": False,
         "done": False,
+        "source_mode": "sample",
+        "question": "Revenue by state in August vs July",
+        "uploaded_by": "Senior Analyst",
+        "max_workers": 4,
+        "stop_on_failure": False,
+        "pipeline_params": {},
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -65,165 +131,374 @@ STATUS_ICON = {
     "NEEDS_REVIEW": "⚠️",
 }
 
+STEP_PHASES = {
+    "upload":       "Phase 1: Ingestion",
+    "similarity":   "Phase 1: Sémantique",
+    "column_types": "Phase 1: Sémantique",
+    "request":      "Phase 1: Requête",
+    "pii":          "Phase 2: Gouvernance PII",
+    "profiling":    "Phase 2: Qualité",
+    "cleaning":     "Phase 2: Nettoyage",
+    "etl":          "Phase 3: Entrepôt DuckDB",
+    "lineage":      "Phase 3: Lignage",
+    "analysis":     "Phase 4: Analyse & SQL",
+    "comparisons":  "Phase 4: Comparaisons & Dérive",
+    "auditor":      "Phase 4: Audit & XAI",
+    "dashboard":    "Phase 5: Restitution BI",
+}
 
-# ── Header ───────────────────────────────────────────────────────────────
-st.title("🔄 BIFlow — Intelligent BI Automation")
-st.caption("Multi-agent pipeline: upload → profile → clean → ETL → analyze → dashboard")
+# ── Sidebar ─────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.image("https://raw.githubusercontent.com/feathericons/feather/master/icons/activity.svg", width=40)
+    st.title("BIFlow Studio")
+    st.caption("Plateforme BI Multi-Agents & IA Décisionnelle")
 
-# ── Upload & Question form ────────────────────────────────────────────────
-with st.form("upload_form", clear_on_submit=False):
-    col1, col2 = st.columns([2, 3])
-    with col1:
-        uploaded_files = st.file_uploader(
-            "Upload CSV tables", type=["csv"], accept_multiple_files=True
-        )
-    with col2:
-        question = st.text_input(
-            "Your business question",
-            placeholder="e.g. Revenue by state in August vs July",
-        )
-        uploaded_by = st.text_input("Your name", value="anonymous")
+    st.markdown("---")
+    st.subheader("🤖 Statut IA Locale (Ollama)")
+    ollama_ok, models = _check_ollama()
+    if ollama_ok:
+        has_llama3 = any("llama3" in m.lower() for m in models)
+        if has_llama3:
+            st.success("🟢 **LLaMA 3 actif** (`llama3:latest`)")
+        else:
+            st.warning(f"🟡 Ollama actif, mais LLaMA 3 absent. Modèles: {', '.join(models) or 'aucun'}")
+    else:
+        st.error("🔴 **Ollama hors ligne** (`http://127.0.0.1:11434`)")
+        st.caption("Lancez `ollama serve` pour activer LLaMA 3.")
 
-    submitted = st.form_submit_button("▶ Run BIFlow Pipeline", type="primary")
+    st.markdown("---")
+    st.subheader("⚙️ Paramètres du DAG")
+    max_workers = st.slider("Workers parallèles", min_value=1, max_value=8, value=st.session_state["max_workers"])
+    st.session_state["max_workers"] = max_workers
+
+    stop_on_fail = st.checkbox("Arrêt strict sur échec (stop_on_failure)", value=st.session_state["stop_on_failure"])
+    st.session_state["stop_on_failure"] = stop_on_fail
+
+    st.markdown("---")
+    st.subheader("🕒 Historique des Runs")
+    if DEFAULT_DB.exists():
+        import sqlite3
+        try:
+            with sqlite3.connect(DEFAULT_DB) as conn:
+                past_runs = [r[0] for r in conn.execute("SELECT DISTINCT run_id FROM tasks ORDER BY created_at DESC LIMIT 10").fetchall()]
+            if past_runs:
+                selected_run = st.selectbox("Inspecter un run précédent", options=["-- Sélectionner --"] + past_runs)
+                if selected_run != "-- Sélectionner --":
+                    if st.button("Charger ce run", use_container_width=True):
+                        st.session_state["run_id"] = selected_run
+                        st.session_state["running"] = False
+                        st.session_state["done"] = True
+                        st.rerun()
+            else:
+                st.caption("Aucun run antérieur enregistré.")
+        except Exception:
+            pass
 
 
-# ── Pipeline trigger ──────────────────────────────────────────────────────
-if submitted and uploaded_files and question:
-    run_id = f"run_{uuid.uuid4().hex[:8]}"
-    st.session_state["run_id"] = run_id
+# ── Main Header ─────────────────────────────────────────────────────────
+st.title("🔄 BIFlow — Orchestrateur Multi-Agents & BI")
+st.markdown("Pipeline automatisé : **Ingestion** → **Similarité** → **Classification** → **Gouvernance PII** → **Nettoyage** → **ETL DuckDB** → **Analyste IA** → **Dashboard & Audit**")
+
+# ── Launch Form ─────────────────────────────────────────────────────────
+st.markdown("### 🚀 Nouveau Lancement")
+tab_sample, tab_upload = st.tabs(["⚡ Mode Démo : Olist Sample (9 tables)", "📁 Mode Personnalisé : Téléversement CSV"])
+
+sample_dir = _REPO_ROOT / "data" / "sample"
+source_dir: Path | None = None
+uploaded_files = []
+
+with tab_sample:
+    st.markdown("Utilisez le dataset d'e-commerce Olist préparé (Commandes, Clients, Produits, Paiements, Avis, Vendeurs).")
+    if sample_dir.exists():
+        csv_list = sorted(sample_dir.glob("*.csv"))
+        st.info(f"**9 tables disponibles dans `data/sample/`** : {', '.join(c.stem for c in csv_list)}")
+    else:
+        st.warning("Répertoire `data/sample` non trouvé.")
+
+with tab_upload:
+    custom_files = st.file_uploader(
+        "Sélectionnez un ou plusieurs fichiers CSV",
+        type=["csv"],
+        accept_multiple_files=True,
+        help="Déposez vos tables CSV brutes",
+    )
+
+col_q, col_u = st.columns([3, 1])
+with col_q:
+    question = st.text_input(
+        "Question analytique en langage naturel :",
+        value=st.session_state["question"],
+        placeholder="ex: Chiffre d'affaires par état en août 2018 (Revenue by state in August)",
+    )
+with col_u:
+    user_name = st.text_input("Auteur du run :", value=st.session_state["uploaded_by"])
+
+col_btn1, col_btn2 = st.columns([1, 4])
+with col_btn1:
+    launch_sample = st.button("⚡ Lancer la Démo Olist", type="primary", use_container_width=True)
+with col_btn2:
+    launch_custom = st.button("▶ Lancer avec mes CSV téléversés", use_container_width=False, disabled=not custom_files)
+
+# Trigger logic
+trigger_run = False
+target_source_dir: Path | None = None
+
+if launch_sample:
+    trigger_run = True
+    target_source_dir = sample_dir
+elif launch_custom and custom_files:
+    trigger_run = True
+    temp_run_id = f"run_{uuid.uuid4().hex[:8]}"
+    upload_dest = _REPO_ROOT / "runs" / temp_run_id / "_upload_src"
+    upload_dest.mkdir(parents=True, exist_ok=True)
+    for f in custom_files:
+        (upload_dest / f.name).write_bytes(f.read())
+    target_source_dir = upload_dest
+
+if trigger_run and target_source_dir:
+    new_run_id = f"run_{uuid.uuid4().hex[:8]}"
+    st.session_state["run_id"] = new_run_id
     st.session_state["running"] = True
     st.session_state["done"] = False
+    st.session_state["question"] = question
+    st.session_state["uploaded_by"] = user_name
 
-    # Save uploaded files to a temp source dir
-    source_dir = _REPO_ROOT / "runs" / run_id / "_upload_src"
-    source_dir.mkdir(parents=True, exist_ok=True)
-    for f in uploaded_files:
-        (source_dir / f.name).write_bytes(f.read())
+    pipeline_params = {
+        "source_dir": str(target_source_dir),
+        "question": question,
+        "uploaded_by": user_name,
+        "llm_model": "llama3:latest" if (ollama_ok and has_llama3) else "hybrid@tfidf@2.0",
+    }
+    st.session_state["pipeline_params"] = pipeline_params
 
-    # Start pipeline in a daemon thread — NO st.session_state mutations inside worker!
+    # Launch daemon worker thread
     worker = Thread(
         target=run_pipeline,
         kwargs={
-            "run_id": run_id,
-            "max_workers": 2,
-            "params": {
-                "source_dir": str(source_dir),
-                "question": question,
-                "uploaded_by": uploaded_by,
-            },
+            "run_id": new_run_id,
+            "max_workers": st.session_state["max_workers"],
+            "params": pipeline_params,
+            "stop_on_failure": st.session_state["stop_on_failure"],
         },
         daemon=True,
     )
     worker.start()
-    _ACTIVE_THREADS[run_id] = worker
-
-elif submitted and not uploaded_files:
-    st.warning("Please upload at least one CSV file.")
-elif submitted and not question:
-    st.warning("Please enter a business question.")
+    _ACTIVE_THREADS[new_run_id] = worker
+    st.rerun()
 
 
-# ── Progress display (Queried safely from SQLite) ──────────────────────────
+# ── Execution Tracker & Human-in-the-Loop Review ────────────────────────
 run_id = st.session_state.get("run_id")
 if run_id:
-    st.divider()
-    st.subheader(f"Run: `{run_id}`")
+    st.markdown("---")
+    st.subheader(f"📌 Suivi du Run : `{run_id}`")
 
     # Read current state directly from SQLite task store
     task_records = get_run_status(run_id, db=DEFAULT_DB)
     status_by_step = {r["step"]: r for r in task_records}
 
-    # Check worker thread status safely
+    # Check thread state
     worker_thread = _ACTIVE_THREADS.get(run_id)
     thread_alive = worker_thread.is_alive() if worker_thread is not None else False
 
     TERMINAL_STATES = {"SUCCESS", "FAILED", "SKIPPED", "NEEDS_REVIEW"}
     n_done = sum(1 for s in STEP_ORDER if status_by_step.get(s, {}).get("status") in TERMINAL_STATES)
-    total = len(STEP_ORDER)
-    st.progress(n_done / total if total else 0, text=f"Steps completed: {n_done}/{total}")
+    total_steps = len(STEP_ORDER)
+    progress_val = min(1.0, max(0.0, n_done / total_steps if total_steps else 0.0))
 
-    # One expander per step in DAG order
+    col_prog, col_stat = st.columns([4, 1])
+    with col_prog:
+        st.progress(progress_val, text=f"Progression globale : {n_done}/{total_steps} étapes terminées ({int(progress_val*100)}%)")
+    with col_stat:
+        if thread_alive:
+            st.markdown('<span class="status-pill status-running">🔄 En cours</span>', unsafe_allow_html=True)
+        elif any(r.get("status") == "NEEDS_REVIEW" for r in task_records):
+            st.markdown('<span class="status-pill status-review">⚠️ Revue Humaine</span>', unsafe_allow_html=True)
+        elif all(r.get("status") == "SUCCESS" for r in task_records if r.get("step") in STEP_ORDER):
+            st.markdown('<span class="status-pill status-success">✅ Succès</span>', unsafe_allow_html=True)
+        else:
+            st.markdown('<span class="status-pill status-skipped">⏹️ Arrêté</span>', unsafe_allow_html=True)
+
+    # ── Human-in-the-Loop Review Panel ──────────────────────────────────
+    review_steps = [s for s in STEP_ORDER if status_by_step.get(s, {}).get("status") == "NEEDS_REVIEW"]
+    if review_steps:
+        st.warning("### ⚠️ Intervention Humaine Requise (Human-in-the-Loop)")
+        for rev_step in review_steps:
+            rev_info = status_by_step.get(rev_step, {})
+            st.markdown(f"L'agent **{rev_step}** demande une validation humaine :")
+            st.info(f"**Motif :** {rev_info.get('message', 'Validation humaine requise')}")
+
+            col_app1, col_app2 = st.columns([1, 1])
+            with col_app1:
+                if st.button(f"✅ Approuver et Débloquer la suite du Pipeline ({rev_step})", type="primary", key=f"btn_app_{rev_step}"):
+                    approved_reviews = {
+                        rev_step: {
+                            "decision": "APPROVED",
+                            "reviewer": user_name or "ComplianceOfficer",
+                            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                            "run_id": run_id,
+                        }
+                    }
+                    # Resume pipeline in thread
+                    st.session_state["running"] = True
+                    st.session_state["done"] = False
+                    params = st.session_state.get("pipeline_params", {})
+                    # For PII, auto-redact unconfirmed attributes when approved
+                    if rev_step == "pii":
+                        params["uncertain_policy"] = "redact"
+
+                    worker = Thread(
+                        target=run_pipeline,
+                        kwargs={
+                            "run_id": run_id,
+                            "max_workers": st.session_state["max_workers"],
+                            "params": params,
+                            "approved_reviews": approved_reviews,
+                            "stop_on_failure": st.session_state["stop_on_failure"],
+                        },
+                        daemon=True,
+                    )
+                    worker.start()
+                    _ACTIVE_THREADS[run_id] = worker
+                    st.rerun()
+
+            with col_app2:
+                if rev_step == "pii":
+                    st.caption("💡 L'approbation appliquera la politique de protection automatique sur les colonnes incertaines (redact/hash) et débloquera Profiling, Cleaning, ETL et Analyst.")
+
+    # ── Multi-Agent Step Accordion ──────────────────────────────────────
+    st.markdown("#### 📋 Détail des Agents et Artéfacts")
     for step in STEP_ORDER:
         info = status_by_step.get(step, {"status": "PENDING", "message": ""})
-        icon = STATUS_ICON.get(info["status"], "❓")
-        owner = STEPS.get(step, {})
-        owner_name = getattr(owner, "owner", "?") if hasattr(owner, "owner") else "?"
-        label = f"{icon} **{step}** `{info['status']}`  ·  owner: {owner_name}"
-        with st.expander(label, expanded=(info["status"] == "RUNNING")):
-            if info["message"]:
-                st.caption(info["message"])
-            else:
-                st.caption("Waiting…")
+        icon = STATUS_ICON.get(info["status"], "⏳")
+        step_def = STEPS.get(step)
+        owner_name = getattr(step_def, "owner", "Équipe BIFlow")
+        phase = STEP_PHASES.get(step, "Exécution")
 
-    # If worker has completed, mark done
+        expander_title = f"{icon} **{step}** — `{info['status']}` · *{phase}* (Responsable : {owner_name})"
+        with st.expander(expander_title, expanded=(info["status"] in ("RUNNING", "NEEDS_REVIEW"))):
+            st.markdown(f"**Message de statut :** {info.get('message') or 'En attente...'}")
+
+            # Inspect step outputs if available
+            step_dir = _REPO_ROOT / "runs" / run_id / step
+            if step_dir.exists() and step_def and step_def.outputs:
+                st.markdown("##### 📦 Artéfacts produits :")
+                for out_key, fname in step_def.outputs.items():
+                    out_path = step_dir / fname.rstrip("/")
+                    if out_path.exists():
+                        if fname.endswith(".json") and out_path.is_file():
+                            try:
+                                json_data = json.loads(out_path.read_text(encoding="utf-8"))
+                                st.caption(f"📄 `{fname}`")
+                                st.json(json_data, expanded=False)
+                            except Exception:
+                                st.caption(f"📄 `{fname}` (Fichier JSON)")
+                        elif fname.endswith(".parquet") and out_path.is_file():
+                            st.caption(f"📊 `{fname}` (Table Parquet)")
+                        elif fname.endswith("/") and out_path.is_dir():
+                            files_count = len(list(out_path.glob("*")))
+                            st.caption(f"📁 `{fname}` ({files_count} fichier(s))")
+                    else:
+                        st.caption(f"⏳ `{fname}` (Non encore généré)")
+
+    # Complete worker detection
     if not thread_alive and task_records:
         st.session_state["running"] = False
         st.session_state["done"] = True
 
-    # Auto-refresh while running
+    # Auto-refresh loop while background worker runs
     if st.session_state.get("running"):
-        time.sleep(1)
+        time.sleep(1.2)
         st.rerun()
 
 
-# ── Dashboard panels ──────────────────────────────────────────────────────
-if st.session_state.get("done"):
-    run_id = st.session_state["run_id"]
-    spec_path = _REPO_ROOT / "runs" / run_id / "dashboard" / "dashboard_spec.json"
+# ── Final Results, Dashboard & Auditor Panels ───────────────────────────
+if st.session_state.get("done") and run_id:
+    st.markdown("---")
+    st.header("📊 Résultats Analytiques & Dashboard Final")
 
-    if spec_path.exists():
-        st.divider()
-        st.subheader("📊 Dashboard")
-        spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    tab_dash, tab_audit, tab_raw = st.tabs(["📈 Dashboard Décisionnel", "🛡️ Audit & Explicabilité (XAI)", "🔍 Données Brutes"])
 
-        charts = spec.get("charts", spec.get("panels", []))
-        for chart in charts:
-            st.markdown(f"### {chart.get('title', 'Chart')}")
-            chart_type = chart.get("chart_type", "bar")
-            st.caption(f"Chart type: `{chart_type}` · Reason: {chart.get('reason', '')}")
+    with tab_dash:
+        spec_path = _REPO_ROOT / "runs" / run_id / "dashboard" / "dashboard_spec.json"
+        if spec_path.exists():
+            try:
+                spec = json.loads(spec_path.read_text(encoding="utf-8"))
+                st.subheader(spec.get("title", "Analyse Décisionnelle"))
+                st.caption(f"Question traitée : *« {spec.get('question', '')} »* · KPI : `{spec.get('kpi', '')}`")
 
-            data_file = chart.get("data_file", "")
-            data_path = Path(data_file)
-            if not data_path.is_absolute():
-                data_path = _REPO_ROOT / data_path
+                charts = spec.get("charts", spec.get("panels", []))
+                for chart in charts:
+                    c_title = chart.get("title", "Graphique")
+                    c_type = chart.get("chart_type", "bar")
+                    st.markdown(f"#### {c_title}")
+                    st.caption(f"Type : `{c_type}` · {chart.get('reason', '')}")
 
-            if data_path.exists() and data_path.is_file():
-                import pandas as pd
-                try:
-                    df = pd.read_parquet(data_path)
-                    x_col = chart.get("x")
-                    y_col = chart.get("y")
-                    color_col = chart.get("color")
+                    data_file = chart.get("data_file", "")
+                    data_path = Path(data_file)
+                    if not data_path.is_absolute():
+                        data_path = _REPO_ROOT / data_path
 
-                    if chart_type == "kpi_card":
-                        val = df[y_col].iloc[0] if (y_col and y_col in df.columns) else df.iloc[0, 0]
-                        st.metric(label=chart.get("title", "KPI"), value=f"{val:,.2f}" if isinstance(val, (int, float)) else str(val))
-                    elif chart_type == "line" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                        st.line_chart(df[[x_col, y_col]].set_index(x_col))
-                    elif chart_type == "bar" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                        if color_col and color_col in df.columns:
-                            # Grouped/faceted bar chart
-                            st.bar_chart(df, x=x_col, y=y_col, color=color_col)
-                        else:
-                            st.bar_chart(df[[x_col, y_col]].set_index(x_col))
+                    if data_path.exists() and data_path.is_file():
+                        import pandas as pd
+                        try:
+                            df = pd.read_parquet(data_path)
+                            x_col = chart.get("x")
+                            y_col = chart.get("y")
+                            color_col = chart.get("color")
+
+                            if c_type == "kpi_card":
+                                val = df[y_col].iloc[0] if (y_col and y_col in df.columns) else df.iloc[0, 0]
+                                formatted_val = f"{val:,.2f} BRL" if isinstance(val, (int, float)) else str(val)
+                                st.metric(label=c_title, value=formatted_val)
+                            elif c_type == "bar" and x_col and y_col and x_col in df.columns and y_col in df.columns:
+                                if color_col and color_col in df.columns:
+                                    st.bar_chart(df, x=x_col, y=y_col, color=color_col)
+                                else:
+                                    st.bar_chart(df[[x_col, y_col]].set_index(x_col))
+                            elif c_type == "line" and x_col and y_col and x_col in df.columns and y_col in df.columns:
+                                st.line_chart(df[[x_col, y_col]].set_index(x_col))
+                            else:
+                                st.dataframe(df, use_container_width=True)
+                        except Exception as ex:
+                            st.warning(f"Impossible de tracer les données : {ex}")
                     else:
-                        st.dataframe(df)
-                except Exception as ex:
-                    st.warning(f"Could not render chart data: {ex}")
-            else:
-                st.info(f"Chart data file ({chart.get('data_file')}) is waiting for Analyst execution.")
+                        st.info("Données du graphique en attente de validation.")
 
-        for warning in spec.get("warnings", []):
-            msg = warning.get("message", str(warning)) if isinstance(warning, dict) else str(warning)
-            st.warning(f"⚠️ {msg}")
-    else:
-        st.info("Dashboard spec not yet available. The pipeline may still be running or some steps failed.")
+                for warning in spec.get("warnings", []):
+                    w_msg = warning.get("message", str(warning)) if isinstance(warning, dict) else str(warning)
+                    st.warning(f"⚠️ {w_msg}")
 
-    # Full run summary
-    with st.expander("📋 Full Run Summary"):
+            except Exception as exc:
+                st.error(f"Erreur lors de la lecture du Dashboard : {exc}")
+        else:
+            st.info("DashboardSpec non disponible (le pipeline s'est arrêté avant l'étape Dashboard).")
+
+    with tab_audit:
+        st.subheader("🛡️ Explicabilité, Intégrité et Dérive")
+        journal_path = _REPO_ROOT / "runs" / run_id / "journal.db"
+        if not journal_path.exists():
+            journal_path = _REPO_ROOT / DEFAULT_JOURNAL
+
+        if _AUDITOR_UI_AVAILABLE and journal_path.exists():
+            try:
+                trust_badge(run_id, journal_path, key=f"tb_{run_id}")
+                st.markdown("---")
+                comparison_banner(run_id, journal_path, key=f"cb_{run_id}")
+                st.markdown("---")
+                why_box(run_id, journal_path, suggestions=["Pourquoi ce chiffre d'affaires ?", "Y a-t-il eu une dérive ?"], key=f"wb_{run_id}")
+                st.markdown("---")
+                audit_panel(run_id, journal_path, key=f"ap_{run_id}")
+            except Exception as e:
+                st.caption(f"Composants d'audit interactifs : {e}")
+        else:
+            st.info("Journal d'audit SQLite infalsifiable enregistré dans `runs/journal.db`.")
+
+    with tab_raw:
+        st.subheader("📋 Récapitulatif Exhaustif des Tâches")
         summary = get_run_status(run_id, db=DEFAULT_DB)
-        import pandas as pd
         if summary:
+            import pandas as pd
             st.dataframe(pd.DataFrame(summary), use_container_width=True)
         else:
-            st.caption("No task records found.")
+            st.caption("Aucun enregistrement trouvé dans la base des tâches.")
