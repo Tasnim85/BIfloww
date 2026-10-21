@@ -1,0 +1,12 @@
+{
+  "description": "Privacy hints from Semantic Detection for Ikbel's PII agent. These are HINTS only — not PII decisions.",
+  "taxonomy_version": "1.0.0",
+  "hints": [
+    {"source_table": "olist_customers", "column_name": "customer_id", "semantic_group": "PERSONAL_DATA", "semantic_type": "PERSON_ID", "privacy_hint": "POTENTIAL_PII", "reason": "Person identifier in PERSONAL_DATA group"},
+    {"source_table": "olist_customers", "column_name": "customer_city", "semantic_group": "GEOGRAPHICAL_DATA", "semantic_type": "CITY", "privacy_hint": "NO_DIRECT_PII_INDICATOR", "reason": "City name not directly identifiable"},
+    {"source_table": "olist_customers", "column_name": "customer_state", "semantic_group": "GEOGRAPHICAL_DATA", "semantic_type": "STATE", "privacy_hint": "CONTEXT_DEPENDENT", "reason": "State combined with other fields could be identifying"},
+    {"source_table": "olist_order_payments", "column_name": "payment_value", "semantic_group": "FINANCIAL_DATA", "semantic_type": "PAYMENT_AMOUNT", "privacy_hint": "NO_DIRECT_PII_INDICATOR", "reason": "Financial amount without personal attribution"},
+    {"source_table": "olist_order_reviews", "column_name": "review_comment_message", "semantic_group": "TEXTUAL_DATA", "semantic_type": "COMMENT", "privacy_hint": "CONTEXT_DEPENDENT", "reason": "Free text may contain embedded personal data — needs PII scan by Ikbel"},
+    {"source_table": "olist_geolocation", "column_name": "geolocation_lat", "semantic_group": "GEOGRAPHICAL_DATA", "semantic_type": "LATITUDE", "privacy_hint": "CONTEXT_DEPENDENT", "reason": "Precise coordinates can reveal individual locations"}
+  ]
+}
