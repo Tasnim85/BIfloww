@@ -45,3 +45,49 @@ def test_view_names_match_the_files_renamed_by_the_pii_step():
     assert agreed_view(agreed, "order_payments")["name"] == "fact_payments"   # what PII publishes
     assert agreed_view(agreed, "customers")["name"] == "dim_customer"
     assert agreed_view(agreed, "reviews") == {}
+
+
+def test_pii_review_can_be_settled_by_a_human(tmp_path, monkeypatch):
+    """llama3 unsure about customer_state -> the run pauses; the reviewer's answer lets it continue."""
+    import privacy.agent as pii
+    from contracts import AgentStatus, RunContext, read_events
+    from privacy.detection import ColumnPrediction
+
+    tables = tmp_path / "tables"; tables.mkdir()
+    pd.DataFrame({"customer_id": ["a1", "b2", "c3"], "customer_state": ["SP", "RJ", "SP"]}).to_csv(tables / "customers.csv", index=False)
+    monkeypatch.setenv("BO2_PII_SECRET", "x" * 40)
+    monkeypatch.setattr(pii.detection, "classify_columns", lambda frames, **kw: {"customers": {
+        "customer_id": ColumnPrediction(semantic_type="INTERNAL_KEY", confidence=0.95),
+        "customer_state": ColumnPrediction(semantic_type="CATEGORY", confidence=0.6)}})
+
+    def run(out, **params):
+        return pii.run(RunContext(run_id="t", agent="pii", inputs={"tables": tables}, output_dir=tmp_path / out,
+                                  params=params, journal=tmp_path / "journal.db"))
+
+    assert run("first").status == AgentStatus.NEEDS_REVIEW
+    settled = run("second", pii_overrides={"customers.customer_state": "CATEGORY"})
+    assert settled.status == AgentStatus.SUCCESS
+    masked = pd.read_parquet(tmp_path / "second" / "tables" / "customers.parquet")
+    assert sorted(masked["customer_state"]) == ["RJ", "SP", "SP"]          # kept for the "by state" analyses
+    assert any(e.evidence.get("classification_source") == "human_review" for e in read_events(tmp_path / "journal.db"))
+
+
+def test_steps_after_a_needs_review_wait_instead_of_crashing(tmp_path):
+    """PII stops for a human: profiling and everything after it must wait (not run on missing files)."""
+    from unittest import mock
+    import orchestrator.dag_runner as runner
+    from contracts import AgentResult, AgentStatus
+
+    def fake_import(entrypoint):
+        def agent(ctx):
+            status = AgentStatus.NEEDS_REVIEW if ctx.agent == "pii" else AgentStatus.SUCCESS
+            return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=status, message="")
+        return agent
+
+    with mock.patch.object(runner, "_import_run", side_effect=fake_import):
+        res = runner.run_pipeline(run_id="r", runs_root=tmp_path / "runs", journal=tmp_path / "j.db",
+                                  db=tmp_path / "t.db", params={})
+    assert res["pii"].status == AgentStatus.NEEDS_REVIEW
+    for step in ("profiling", "cleaning", "etl", "analysis", "comparisons", "dashboard", "auditor"):
+        assert res[step].status == AgentStatus.SKIPPED and "human review" in res[step].message
+    assert res["request"].status == AgentStatus.SUCCESS          # independent of PII: still runs

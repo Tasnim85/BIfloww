@@ -14,7 +14,7 @@ class MaskDecision(BaseModel):
     non_null_rows: Count
     semantic_type: str | None = None
     confidence: float | None = None
-    classification_source: Literal["llm", "contact_guardrail", "key_group", "shared_key_name"] | None = None
+    classification_source: Literal["llm", "contact_guardrail", "key_group", "shared_key_name", "human_review"] | None = None
 
 
 class PiiReview(BaseModel):

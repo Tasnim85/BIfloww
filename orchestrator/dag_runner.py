@@ -153,6 +153,7 @@ def run_pipeline(
 
     results: dict[str, AgentResult] = {}
     failed_steps: set[str] = set()
+    paused_steps: set[str] = set()      # NEEDS_REVIEW, and every step that waits for it
 
     sorter = TopologicalSorter(dag)
     sorter.prepare()
@@ -195,6 +196,21 @@ def run_pipeline(
                                 callback(step_name, TaskStatus.SUCCESS.value, msg)
                             sorter.done(step_name)
                             continue
+
+                    # A dependency waits for a human (needs_review): this step cannot run yet.
+                    # Resume the same run_id after the review: finished steps are reused.
+                    waiting = STEPS[step_name].depends_on & paused_steps
+                    if waiting:
+                        msg = f"Waiting for the human review of: {', '.join(sorted(waiting))}"
+                        log.info("Step %s: %s", step_name, msg)
+                        set_done(run_id, step_name, TaskStatus.SKIPPED, msg, db=db)
+                        results[step_name] = AgentResult(run_id=run_id, agent=step_name,
+                                                         status=AgentStatus.SKIPPED, message=msg)
+                        paused_steps.add(step_name)          # and so do the steps after it
+                        if callback:
+                            callback(step_name, "SKIPPED", msg)
+                        sorter.done(step_name)
+                        continue
 
                     # Check if any dependency failed
                     if stop_on_failure and any(
@@ -240,6 +256,8 @@ def run_pipeline(
                 results[step_name] = result
                 if result.status == AgentStatus.FAILED:
                     failed_steps.add(step_name)
+                elif result.status == AgentStatus.NEEDS_REVIEW:
+                    paused_steps.add(step_name)
                 sorter.done(step_name)
 
     log.info("Run %s complete. Steps: %d succeeded, %d failed, %d skipped.",
