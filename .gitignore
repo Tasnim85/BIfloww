@@ -1,1 +1,7 @@
-runs/, *.db, *.duckdb, .venv/, __pycache__/
+runs/
+*.db
+*.duckdb
+.venv/
+__pycache__/
+.pytest_cache/
+.env
