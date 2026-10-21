@@ -10,6 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from bo2.local_llm import request_json
+from cleaning.identifiers import is_financial, is_identifier, is_temporal
 
 
 class Rule(BaseModel):
@@ -21,10 +22,9 @@ class Rule(BaseModel):
 
     @model_validator(mode="after")
     def conservative_policy(self):
-        column = self.column.lower()
-        identifier = column.endswith(("_id", "_key")) or "sequential" in column
-        temporal = any(term in column for term in ("date", "time")) or column.endswith("_at")
-        financial = any(term in column for term in ("price", "amount", "value", "freight", "payment"))
+        identifier = is_identifier(self.column)
+        temporal = is_temporal(self.column)
+        financial = is_financial(self.column)
         if self.action == "fill_constant" and (self.value is None or identifier or temporal or financial):
             raise ValueError("Never fabricate financial amounts, dates or identifiers; constant filling is restricted to noncritical categorical fields")
         if identifier and self.action in {"numeric", "datetime"}:

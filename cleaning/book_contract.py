@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from contracts import save
 from contracts.quality import Playbook, CleaningRule
+from cleaning.identifiers import is_coordinate, is_identifier
 
 
 def from_local(data):
@@ -22,7 +23,7 @@ def from_local(data):
                 'nonnegative':data.get('critical_nonnegative_columns',{}).get(table,[])},
             description='Retirer les espaces et vérifier les champs critiques'))
         for column in data.get('numeric_columns',{}).get(table,[]):
-            if column.endswith(('_id','_key','_lat','_lng')) or 'sequential' in column:
+            if is_identifier(column) or is_coordinate(column):
                 continue
             rules.append(CleaningRule(rule_id=f'number:{table}.{column}',table=table,column=column,action='cast',params={'dtype':'float64'},description='Reconnaître les nombres sans inventer de valeur'))
         for column in data.get('date_columns',{}).get(table,[]):

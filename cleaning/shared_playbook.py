@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 from contracts import AgentResult, AgentStatus, save
 from contracts.quality import Playbook, CleaningReport, RuleApplication
+from cleaning.identifiers import is_financial, is_identifier
 
 
 def compatible(book, frames):
@@ -42,7 +43,7 @@ def run(ctx, book):
         decision=protected.get((rule.table,col),{})
         if decision and (decision.get('action')!='keep' or decision.get('semantic_type') in {'PERSONAL_ID','INTERNAL_KEY','BUSINESS_KEY','POSTAL_CODE'}):
             raise ValueError('Playbook would modify a protected column or identifier')
-        sensitive=bool(col and (col.endswith(('_id','_key')) or re.search('amount|price|payment|freight|date|timestamp',col,re.I)))
+        sensitive=bool(col and (is_identifier(col) or is_financial(col) or re.search('date|timestamp',col,re.I)))
         if sensitive and action in {'fill_median','fill_value','to_abs','clip'}:
             raise ValueError('Cannot fabricate or silently correct critical data')
         old=frame.copy()
