@@ -4,9 +4,11 @@ import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import type { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { upsertGoogleUser, userByEmail } from "@/lib/db";
+import { sendWelcomeEmail } from "@/lib/mail";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { allow } from "@/lib/rate-limit";
 import { consumeTicket } from "@/lib/signup-ticket";
@@ -49,8 +51,10 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google") {
         const p = profile as { email?: string; email_verified?: boolean; name?: string; picture?: string } | undefined;
         if (!p?.email || p.email_verified === false) return false;            // only verified Google emails
+        const isNew = !userByEmail(p.email);
         const u = upsertGoogleUser({ email: p.email, name: p.name ?? user.name, image: p.picture ?? user.image });
         user.id = u.id;
+        if (isNew) void sendWelcomeEmail(u.email, u.name ?? u.email, (await cookies()).get("NEXT_LOCALE")?.value ?? "en");
       }
       return true;
     },

@@ -4,6 +4,7 @@ import { AlertCircle, CalendarRange, Check, Database, FileSpreadsheet, Loader2, 
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { NOTIFY_EVENT } from "@/components/app/Notifications";
 import { Skeleton } from "@/components/ui/kit";
 import { api, ApiError, type Dataset, useApi } from "@/lib/client";
 import { cn } from "@/lib/cn";
@@ -118,8 +119,11 @@ export function NewAnalysis() {
         question: question.trim() || autoQuestion, dataset: ds.run_id, metric: kpi.name,
         dimensions: dimension ? [dimension] : [], period, compareTo: compare, llm, lang: locale,
         file: file ? { name: file.name, rows: file.rows, columns: file.columns } : null } });
-      router.push(`/app/runs/${r.id}?new=1`);
+      window.dispatchEvent(new Event(NOTIFY_EVENT));                 // the bell refreshes at once
+      // if the user went elsewhere meanwhile, leave them there: the notification brings them back
+      if (window.location.pathname === "/app/new") router.push(`/app/runs/${r.id}?new=1`);
     } catch (e) {
+      window.dispatchEvent(new Event(NOTIFY_EVENT));
       setSubmitErr(e instanceof ApiError && e.status === 502 ? t("err_pipeline") : t("err_generic"));
       setBusy(false);
     }

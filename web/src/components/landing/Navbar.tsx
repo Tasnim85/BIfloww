@@ -8,9 +8,10 @@ import { LocaleSwitch } from "@/components/ui/LocaleSwitch";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { cn } from "@/lib/cn";
 
-const LINKS = ["how", "agents", "trust", "objectives"] as const;
+const LINKS = ["how", "proof", "goals"] as const;
 
-export function Navbar({ signedIn }: { signedIn: boolean }) {
+/** overDark: the page starts with a dark hero, so the bar is dark until the page scrolls. */
+export function Navbar({ signedIn, overDark = false }: { signedIn: boolean; overDark?: boolean }) {
   const t = useTranslations();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -21,7 +22,7 @@ export function Navbar({ signedIn }: { signedIn: boolean }) {
     return () => window.removeEventListener("scroll", on);
   }, []);
   return (
-    <header className={cn("sticky top-0 z-50 transition", scrolled ? "border-b border-line bg-bg/80 backdrop-blur-xl" : "bg-transparent")}>
+    <header className={cn("sticky top-0 z-50 transition", scrolled ? "border-b border-line bg-bg/80 backdrop-blur-xl" : overDark && !open ? "dark bg-bg text-ink" : "bg-transparent")}>
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/" aria-label="Askboard"><Logo variant="lockup" size={34} /></Link>
         <div className="hidden items-center gap-1 lg:flex">

@@ -6,6 +6,7 @@ import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
+import { NotificationBell } from "@/components/app/Notifications";
 import { LocaleSwitch } from "@/components/ui/LocaleSwitch";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { cn } from "@/lib/cn";
@@ -134,6 +135,7 @@ export function Shell({ user, health, children }: { user: User; health: Health; 
           <div className="lg:hidden"><Logo variant="mark" size={30} /></div>
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden sm:flex sm:items-center sm:gap-2"><LocaleSwitch /><ThemeToggle /></div>
+            <NotificationBell />
             <UserMenu user={user} />
           </div>
         </header>

@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createUser, userByEmail } from "@/lib/db";
+import { sendWelcomeEmail } from "@/lib/mail";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { allow } from "@/lib/rate-limit";
 import { issueTicket } from "@/lib/signup-ticket";
@@ -24,6 +26,9 @@ export async function POST(req: Request) {
   if (userByEmail(parsed.data.email)) return NextResponse.json({ error: "email_taken" }, { status: 409 });
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
   createUser({ email: parsed.data.email, name: parsed.data.name, passwordHash });
+  // welcome email in the reader's language; sent in the background, never blocks the sign-up
+  const lang = (await cookies()).get("NEXT_LOCALE")?.value ?? "en";
+  void sendWelcomeEmail(parsed.data.email, parsed.data.name, lang);
   // lets the browser sign in at once without a second reCAPTCHA (see lib/signup-ticket.ts)
   return NextResponse.json({ ok: true, ticket: issueTicket(parsed.data.email) }, { status: 201 });
 }
