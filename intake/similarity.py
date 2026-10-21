@@ -34,6 +34,11 @@ from typing import Any
 from contracts.agent import AgentResult, AgentStatus, RunContext
 from contracts.common import load, save
 from contracts.intake import DatasetMatch, SimilarityReport, Upload
+from contracts.proposals.semantic_contracts import (
+    RelationshipType,
+    SemanticMatch,
+    SemanticMatchesReport,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -254,20 +259,104 @@ def compute_embedding_similarity(cols_a: list[str] | set[str], cols_b: list[str]
         return _jaccard(set(list_a), set(list_b))
 
 
+
+def compute_column_matches(
+    tables_cols: dict[str, list[str]],
+    threshold: float = 0.70,
+    run_id: str = "",
+) -> SemanticMatchesReport:
+    """BO1-06 Phase 4: Compute pairwise cross-table column similarity matches.
+
+    Identifies shared business concepts and candidate foreign keys across tables.
+    Returns a SemanticMatchesReport contract with typed relationships.
+    """
+    matches: list[SemanticMatch] = []
+    table_names = sorted(tables_cols.keys())
+    total_comparisons = 0
+
+    for i in range(len(table_names)):
+        t1 = table_names[i]
+        cols1 = tables_cols[t1]
+        for j in range(i + 1, len(table_names)):
+            t2 = table_names[j]
+            cols2 = tables_cols[t2]
+            for c1 in cols1:
+                norm1 = _normalize(c1)
+                for c2 in cols2:
+                    norm2 = _normalize(c2)
+                    total_comparisons += 1
+
+                    # 1. Exact match on normalized names
+                    if norm1 == norm2:
+                        is_key = c1.lower().endswith("_id") or c1.lower() == "id"
+                        rel_type = RelationshipType.SAME_CONCEPT_CANDIDATE
+                        score = 1.0
+                        evidence_str = (
+                            f"Identical column '{c1}' across tables {t1} and {t2} (candidate join key)"
+                            if is_key else f"Identical column '{c1}' across tables {t1} and {t2}"
+                        )
+                        matches.append(SemanticMatch(
+                            source_table=t1,
+                            source_column=c1,
+                            target_table=t2,
+                            target_column=c2,
+                            relationship_type=rel_type,
+                            similarity_score=score,
+                            evidence=[evidence_str],
+                            review_required=False,
+                        ))
+                        continue
+
+                    # 2. Similarity comparison (Embeddings / TF-IDF Hungarian on 1-to-1)
+                    sim_res = compute_hungarian_similarity([c1], [c2])
+                    score = sim_res.get("score", 0.0)
+
+                    if score >= threshold:
+                        rel_type = (
+                            RelationshipType.SAME_CONCEPT_CANDIDATE
+                            if score >= 0.88
+                            else RelationshipType.RELATED_CONCEPT
+                        )
+                        review_req = score < 0.90
+                        matches.append(SemanticMatch(
+                            source_table=t1,
+                            source_column=c1,
+                            target_table=t2,
+                            target_column=c2,
+                            relationship_type=rel_type,
+                            similarity_score=round(score, 4),
+                            evidence=[f"Similarity score {score:.4f} via {sim_res.get('method')}"],
+                            review_required=review_req,
+                        ))
+
+    return SemanticMatchesReport(
+        schema_version="1.0.0",
+        taxonomy_version="1.1.0",
+        run_id=run_id,
+        method="hungarian-cross-table@2.0",
+        threshold=threshold,
+        matches=matches,
+        total_comparisons=total_comparisons,
+        matches_found=len(matches),
+    )
+
+
 def run(ctx: RunContext) -> AgentResult:
     """Step 0: compute dataset similarity and pick the best playbook match."""
     upload = load(Upload, ctx.inputs["upload"])
     tables_dir: Path = ctx.inputs["tables"]
 
-    # Collect all uploaded column names
+    # Collect all uploaded column names and table column mappings
     uploaded_cols: set[str] = set()
-    for csv_name in upload.tables.values():
+    tables_cols: dict[str, list[str]] = {}
+    for table_name, csv_name in upload.tables.items():
         csv_path = tables_dir / csv_name
         if csv_path.exists():
             import csv as csv_mod
             with open(csv_path, encoding="utf-8", newline="") as fh:
                 reader = csv_mod.reader(fh)
                 header = next(reader, [])
+                tables_cols[table_name] = header
                 uploaded_cols.update(c.lower().strip() for c in header)
 
     # Score against known datasets using Hungarian + Jaccard
@@ -302,7 +391,14 @@ def run(ctx: RunContext) -> AgentResult:
     matches.sort(key=lambda m: m.score, reverse=True)
     best = matches[0] if matches else None
 
-    active_method = "hungarian-embedding@2.0" if _get_embedding_model() else "hungarian-tfidf@2.0"
+    # Determine accurate method name based on actual execution path
+    actual_methods = {v.get("hungarian_method") for v in evidence_scores.values() if v.get("hungarian_method")}
+    if "hungarian_embedding" in actual_methods:
+        active_method = "hungarian-embedding@2.0"
+    elif "hungarian_tfidf" in actual_methods:
+        active_method = "hungarian-tfidf@2.0"
+    else:
+        active_method = "jaccard-fallback@1.0"
     method_name = f"{active_method}+jaccard"
 
     report = SimilarityReport(
@@ -315,26 +411,38 @@ def run(ctx: RunContext) -> AgentResult:
     out_path = ctx.output("report")
     save(report, out_path)
 
+    # BO1-06 Phase 4: Compute and save cross-table column matches report
+    col_matches_report = compute_column_matches(tables_cols, threshold=0.70, run_id=ctx.run_id)
+    col_matches_path = ctx.output_dir / "column_matches.json"
+    save(col_matches_report, col_matches_path)
+
+    outputs_dict: dict[str, Path] = {
+        "report": out_path,
+        "column_matches": col_matches_path,
+    }
+
     ctx.log(
         "dataset_similarity", "SUCCESS",
         inputs=[str(ctx.inputs["upload"])],
-        outputs=[str(out_path)],
+        outputs=[str(out_path), str(col_matches_path)],
         rule_version=f"similarity:{method_name}",
         evidence={
             "uploaded_columns": len(uploaded_cols),
             "matches": len(matches),
             "best_match": best.name if best else None,
             "best_score": best.score if best else None,
+            "column_matches_found": col_matches_report.matches_found,
             "scores_detail": evidence_scores,
         },
     )
 
-    msg = (f"Best match: {best.name} (score={best.score:.2f}, playbook={best.playbook})"
-           if best else "No known dataset matched — new dataset, LLM rules will be proposed.")
+    msg = (f"Best match: {best.name} (score={best.score:.2f}, playbook={best.playbook}), "
+           f"found {col_matches_report.matches_found} cross-table column match(es)."
+           if best else f"No dataset matched. Found {col_matches_report.matches_found} cross-table column match(es).")
 
     return AgentResult(
         run_id=ctx.run_id, agent=ctx.agent,
         status=AgentStatus.SUCCESS,
-        outputs={"report": out_path},
+        outputs=outputs_dict,
         message=msg,
     )
