@@ -1,12 +1,12 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, CalendarRange, Check, Database, FileSpreadsheet, Loader2, Sparkles, UploadCloud, X } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarRange, Check, Database, FileSpreadsheet, Loader2, ScanText, Sparkles, UploadCloud, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NOTIFY_EVENT } from "@/components/app/Notifications";
 import { Skeleton } from "@/components/ui/kit";
-import { api, ApiError, type Dataset, useApi } from "@/lib/client";
+import { api, ApiError, type Dataset, type ParsedQuestion, useApi } from "@/lib/client";
 import { cn } from "@/lib/cn";
 import { DATASET_INFO } from "@/lib/pipeline";
 
@@ -80,6 +80,9 @@ export function NewAnalysis() {
   const [llm, setLlm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [submitErr, setSubmitErr] = useState<string | null>(null);
+  // Malek's parser (live): what it proposed, and the form fields as it filled them
+  const [parsed, setParsed] = useState<{ res: ParsedQuestion; fields: string } | null>(null);
+  const [parsing, setParsing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const ds = useMemo(() => datasets?.find((d) => d.run_id === datasetId) ?? null, [datasets, datasetId]);
@@ -95,6 +98,31 @@ export function NewAnalysis() {
     const p = ex ? { cur: ex.period, prev: ex.compareTo } : monthPeriods(ds.last_day);
     setPeriod(p.cur); setCompare(p.prev);
   }, [ds]);
+
+  const fields = JSON.stringify([metric, dimension, period, compare]);
+  const parsedKept = parsed?.res.request != null && parsed.fields === fields;   // the user did not change the proposal
+
+  async function readQuestion() {
+    if (!ds || question.trim().length < 3) return;
+    setParsing(true);
+    try {
+      const res = await api<ParsedQuestion>("parse", { method: "POST", body: { question: question.trim(), base_run: ds.run_id } });
+      const r = res.request;
+      let next = fields;
+      if (r) {
+        const k = ds.kpis.find((x) => x.name === r.metric);
+        if (k) {
+          const dim = r.dimensions.find((d) => k.allowed_dimensions.includes(d)) ?? "";
+          const cmp = r.compare_to ?? compare;
+          setMetric(k.name); setDimension(dim); setPeriod(r.period); setCompare(cmp);
+          next = JSON.stringify([k.name, dim, r.period, cmp]);
+        }
+      }
+      setParsed({ res, fields: next });
+    } catch {
+      setParsed({ res: { status: "failed", message: t("parse_error"), request: null }, fields: "" });
+    } finally { setParsing(false); }
+  }
 
   const autoQuestion = kpi ? t("auto_question", { kpi: kpi.name, dim: dimension || t("overall"),
     p1: `${period.start} → ${period.end}`, p2: `${compare.start} → ${compare.end}` }) : "";
@@ -118,6 +146,7 @@ export function NewAnalysis() {
       const r = await api<{ id: string }>("/api/analyses", { method: "POST", body: {
         question: question.trim() || autoQuestion, dataset: ds.run_id, metric: kpi.name,
         dimensions: dimension ? [dimension] : [], period, compareTo: compare, llm, lang: locale,
+        ...(parsedKept && parsed.res.request ? { confidence: parsed.res.request.confidence, matchedTerms: parsed.res.request.matched_terms } : {}),
         file: file ? { name: file.name, rows: file.rows, columns: file.columns } : null } });
       window.dispatchEvent(new Event(NOTIFY_EVENT));                 // the bell refreshes at once
       // if the user went elsewhere meanwhile, leave them there: the notification brings them back
@@ -217,8 +246,17 @@ export function NewAnalysis() {
         <div className="mt-4 space-y-4">
           <div>
             <label htmlFor="q" className="label">{t("question")}</label>
-            <textarea id="q" rows={2} maxLength={500} value={question} onChange={(e) => setQuestion(e.target.value)}
-                      placeholder={autoQuestion} className="input h-auto py-3" />
+            <div className="relative">
+              <textarea id="q" rows={2} maxLength={500} value={question} onChange={(e) => setQuestion(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void readQuestion(); } }}
+                        placeholder={t("question_placeholder")} className="input h-auto py-3 pr-4 sm:pr-44" />
+              <button type="button" onClick={readQuestion} disabled={parsing || !ds || question.trim().length < 3}
+                      className="btn-primary mt-2 h-10 w-full sm:absolute sm:bottom-2 sm:right-2 sm:mt-0 sm:w-auto">
+                {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanText className="h-4 w-4" />}{t("parse")}
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-muted">{t("parse_hint")}</p>
+            {parsed && <ParseResult res={parsed.res} kept={parsedKept} />}
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -275,6 +313,31 @@ export function NewAnalysis() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function ParseResult({ res, kept }: { res: ParsedQuestion; kept: boolean }) {
+  const t = useTranslations("app.new");
+  const r = res.request;
+  if (!r) {
+    return <p role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{res.status === "failed" ? t("parse_error") : t("parse_unclear")}</p>;
+  }
+  const terms = Object.entries(r.matched_terms ?? {});
+  return (
+    <motion.div role="status" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                className="mt-3 rounded-xl border border-accent/40 bg-accent-soft/40 p-3.5">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Check className="h-4 w-4 text-ok" /><span className="font-semibold">{t("parsed_title")}</span>
+        <span className="text-xs text-muted">{t("parsed_by", { p: Math.round(r.confidence * 100) })}</span>
+        {!kept && <span className="chip bg-surface text-muted">{t("parsed_edited")}</span>}
+      </div>
+      {terms.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-1.5">
+          {terms.map(([w, g]) => <li key={w} className="chip border border-line bg-surface text-xs">“{w}”<ArrowRight className="h-3 w-3 text-subtle" /><b className="font-mono">{g}</b></li>)}
+        </ul>
+      )}
+    </motion.div>
   );
 }
 

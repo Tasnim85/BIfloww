@@ -55,7 +55,9 @@ aussi à Streamlit.
 | `GET /api/runs/{run_id}` | **tout l'écran de résultat en un appel** : question, verdict BO4-12, périodes du dashboard, intégrité, anomalies, drift |
 | `GET /api/runs/{run_id}/comparison` | le rapport BO4-12 |
 | `POST /api/runs/{run_id}/comparison/decision` | la décision de l'utilisateur (`accepted` + `chosen_fix`, `rejected`, `pending`), inscrite au journal |
-| `POST /api/comparisons` | lancer le vrai agent BO4-12 sur une nouvelle question (crée un run `custom_xxxx`, journal « ui ») |
+| `POST /api/comparisons` | une nouvelle question : lance **l'Analyste de Rabeb** puis le vrai agent BO4-12 (crée un run `custom_xxxx`, journal « ui ») |
+| `GET /api/runs/{run_id}/pipeline` | **ce que chaque agent a écrit** (similarité, types, PII, profilage, nettoyage, entrepôt, lignage, demande, analyse), lu dans les fichiers de contrat uniquement (`api/stages.py`). Un run `custom_*` montre les étapes de données de son run de base (`source_run`) |
+| `POST /api/parse` | **l'agent de Malek** lit une question en langage courant et propose KPI, dimensions, périodes. Simple proposition : journal temporaire, rien n'est calculé |
 | `GET /api/runs/{run_id}/dashboard` | le KPI par dimension pour les périodes fixées par la décision ; **409** tant qu'une comparaison bloquée attend la décision |
 | `GET /api/runs/{run_id}/explanations` | explications SHAP (pagination `offset` / `limit`) |
 | `GET /api/runs/{run_id}/explanations/{row_key}` | l'explication d'une ligne |
