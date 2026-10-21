@@ -1,0 +1,64 @@
+version: '1.0'
+terms:
+- term: Revenue
+  kind: metric
+  synonyms:
+  - sales
+  - turnover
+  - chiffre d'affaires
+  - CA
+  - ventes
+  - revenue
+  definition: Money paid by customers for delivered orders.
+- term: Orders
+  kind: metric
+  synonyms:
+  - number of orders
+  - commandes
+  - nombre de commandes
+  - order count
+  - nb orders
+  definition: Distinct delivered orders.
+- term: customer_state
+  kind: dimension
+  synonyms:
+  - state
+  - region
+  - region
+  - etat
+  - customer state
+  definition: State where the customer lives.
+- term: product_category
+  kind: dimension
+  synonyms:
+  - category
+  - categorie
+  - product type
+  definition: Product category in English.
+- term: seller_state
+  kind: dimension
+  synonyms:
+  - seller state
+  - vendor state
+  - seller region
+  definition: State where the seller is located.
+- term: payment_type
+  kind: dimension
+  synonyms:
+  - payment method
+  - mode paiement
+  - payment
+  definition: Method of payment (credit_card, boleto, voucher, debit_card).
+- term: order_month
+  kind: dimension
+  synonyms:
+  - month
+  - mois
+  - order month
+  definition: Month of purchase in YYYY-MM format.
+- term: last month
+  kind: time
+  synonyms:
+  - previous month
+  - mois dernier
+  definition: The calendar month before the current one.
