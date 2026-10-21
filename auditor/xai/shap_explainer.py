@@ -18,22 +18,50 @@ import numpy as np
 import pandas as pd
 import shap
 from sklearn.ensemble import IsolationForest
+from sklearn.pipeline import Pipeline
 
 from contracts.common import load
 from contracts.quality import AnomalyReport
+
+
+def split_model(model):
+    """The profiler may hand over a bare IsolationForest or an sklearn Pipeline
+    (e.g. imputer -> IsolationForest). SHAP's TreeExplainer only reads the trees, so a
+    Pipeline is split into its preprocessing and its final estimator."""
+    if isinstance(model, Pipeline):
+        prep = Pipeline(model.steps[:-1]) if len(model.steps) > 1 else None
+        return prep, model.steps[-1][1]
+    return None, model
+
+
+def model_matrix(model, X: pd.DataFrame) -> pd.DataFrame:
+    """What the trees actually see: X after the pipeline's preprocessing (same columns, same index)."""
+    prep, _ = split_model(model)
+    if prep is None:
+        return X
+    return pd.DataFrame(np.asarray(prep.transform(X), dtype=float), index=X.index, columns=X.columns)
 
 
 @dataclass
 class ProfilingOutputs:
     """Everything profiling handed over, loaded and checked."""
     report: AnomalyReport
-    model: IsolationForest
+    model: IsolationForest | Pipeline
     scores: pd.DataFrame       # row_key + features + anomaly_score + is_anomaly
 
     @property
     def X(self) -> pd.DataFrame:
-        """Feature matrix, indexed by the row key (e.g. payment_id)."""
+        """Feature matrix as the profiler stored it, indexed by the row key (e.g. payment_id)."""
         return self.scores.set_index(self.report.row_key)[self.report.features]
+
+    @property
+    def X_model(self) -> pd.DataFrame:
+        """The same rows after the model's preprocessing (identical to X for a bare forest)."""
+        return model_matrix(self.model, self.X)
+
+    @property
+    def estimator(self) -> IsolationForest:
+        return split_model(self.model)[1]
 
 
 def load_profiling(anomalies: Path, model: Path, scores: Path) -> ProfilingOutputs:
@@ -70,9 +98,10 @@ class RowExplanation:
                           ).reset_index(drop=True)
 
 
-def build_explainer(model: IsolationForest) -> shap.TreeExplainer:
-    """Create the explainer ONCE and reuse it for every row."""
-    return shap.TreeExplainer(model)
+def build_explainer(model) -> shap.TreeExplainer:
+    """Create the explainer ONCE and reuse it for every row. Accepts a forest or a Pipeline:
+    feed it model_matrix(model, X), not the raw X."""
+    return shap.TreeExplainer(split_model(model)[1])
 
 
 def explain_rows(explainer: shap.TreeExplainer, X: pd.DataFrame) -> list[RowExplanation]:

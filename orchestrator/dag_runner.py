@@ -277,6 +277,7 @@ def run_pipeline(
     results: dict[str, AgentResult] = {}
     failed_steps: set[str] = set()
     blocked_or_failed_steps: set[str] = set()
+    review_origins: dict[str, set[str]] = {}
     approved_steps = approved_reviews or (params.get("approved_reviews") if params else None) or {}
 
     sorter = TopologicalSorter(dag)
@@ -365,16 +366,22 @@ def run_pipeline(
                     ]
                     # Upstream blockage ALWAYS blocks dependent step, regardless of stop_on_failure!
                     if upstream_blocked:
-                        needs_review_deps = [
-                            d for d in upstream_blocked
-                            if results.get(d) and results[d].status == AgentStatus.NEEDS_REVIEW
-                        ]
+                        # Check if blocked due to a pending human review (direct or inherited)
+                        review_sources = set()
+                        for d in upstream_blocked:
+                            if d in review_origins:
+                                review_sources.update(review_origins[d])
+                            elif results.get(d) and results[d].status == AgentStatus.NEEDS_REVIEW:
+                                review_sources.add(d)
+
                         failed_deps = [
                             d for d in upstream_blocked
                             if results.get(d) and results[d].status == AgentStatus.FAILED
                         ]
-                        if needs_review_deps:
-                            msg = f"Blocked ? upstream step '{needs_review_deps[0]}' requires human review (NEEDS_REVIEW)"
+
+                        if review_sources:
+                            msg = f"Waiting for the human review of: {', '.join(sorted(review_sources))}"
+                            review_origins[step_name] = review_sources
                         elif failed_deps:
                             msg = f"Skipped ? upstream failure in: {set(failed_deps)}"
                         else:
@@ -439,6 +446,8 @@ def run_pipeline(
                 results[step_name] = result
                 if result.status != AgentStatus.SUCCESS:
                     blocked_or_failed_steps.add(step_name)
+                if result.status == AgentStatus.NEEDS_REVIEW:
+                    review_origins[step_name] = {step_name}
                 if result.status == AgentStatus.FAILED:
                     failed_steps.add(step_name)
                 sorter.done(step_name)

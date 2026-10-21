@@ -61,11 +61,24 @@ def date_name(column, taken):
     return name
 
 
+def bare_name(name):
+    """olist_order_payments_dataset -> order_payments (the name the PII step publishes)."""
+    return re.sub(r"^olist_|_dataset$", "", str(name).lower())
+
+
+def agreed_view(agreed, source):
+    """The agreed view name/grain for a source table, whatever spelling of the file reached the ETL:
+    the PII step renames olist_order_payments_dataset.csv to order_payments."""
+    if source in agreed:
+        return agreed[source]
+    return next((v for k, v in agreed.items() if bare_name(k) == bare_name(source)), {})
+
+
 def build_views(connection, frames, metadata, roles, names, links, date_specs, reachable, names_file=NAMES_FILE):
     """Create the views; return (tables for the shared manifest, their receipts)."""
     short = short_names(metadata)
     agreed = yaml.safe_load(Path(names_file).read_text(encoding="utf-8")) or {} if Path(names_file).is_file() else {}
-    config = {t: agreed.get(metadata[t]["source"], {}) for t in metadata}
+    config = {t: agreed_view(agreed, metadata[t]["source"]) for t in metadata}
     existing = {r[0] for r in connection.execute(
         "SELECT table_name FROM information_schema.tables WHERE table_schema='main'").fetchall()}
     used = set()
