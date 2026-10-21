@@ -202,3 +202,82 @@ class TestDashboardRun:
         chart_types = {c.chart_type for c in spec.charts}
         assert ChartType.BAR in chart_types        # dimension chart
         assert ChartType.KPI_CARD in chart_types   # headline card
+
+    def test_two_dims_sets_color_for_grouped_bar(self, tmp_path):
+        """T-DASH-08: multi-dimensions (2 dims) bind color=dimension[1] for grouped bar."""
+        from contracts.agent import AgentStatus, RunContext
+        from contracts.common import Period, save
+        from contracts.comparisons import ComparisonReport
+        from contracts.dashboard import DashboardSpec
+        from contracts.analysis import AnalysisResult, ValidationCheck
+
+        run_id = str(uuid.uuid4())
+        runs_root = tmp_path / "runs"
+
+        req_dir = runs_root / run_id / "request"
+        req_dir.mkdir(parents=True)
+        request = AnalysisRequest(
+            question="Revenue by state and payment method in August",
+            metric="Revenue",
+            dimensions=["customer_state", "payment_type"],
+            period=Period(start="2017-08-01", end="2017-08-31"),
+            compare_to=None,
+            filters=[],
+            confidence=0.88,
+            matched_terms={"Revenue": "revenue"},
+        )
+        save(request, req_dir / "analysis_request.json")
+
+        analysis_dir = runs_root / run_id / "analysis"
+        analysis_dir.mkdir(parents=True)
+        result = AnalysisResult(
+            request=request,
+            kpi="Revenue@2.0",
+            sql="SELECT customer_state, payment_type, SUM(payment_value) FROM fact_payments GROUP BY 1, 2",
+            rows=10,
+            value_current=98765.43,
+            unit="BRL",
+            validations=[
+                ValidationCheck(name="grain_matches_kpi", passed=True, detail="grain ok"),
+            ],
+        )
+        save(result, analysis_dir / "analysis_result.json")
+
+        comp_dir = runs_root / run_id / "comparisons"
+        comp_dir.mkdir(parents=True)
+        comparisons = ComparisonReport(has_comparison=False, checks=[])
+        save(comparisons, comp_dir / "comparison_report.json")
+
+        data_path = analysis_dir / "result.parquet"
+        data_path.write_text("")
+
+        dash_dir = runs_root / run_id / "dashboard"
+        dash_dir.mkdir(parents=True)
+
+        ctx = RunContext(
+            run_id=run_id,
+            agent="dashboard",
+            output_dir=dash_dir,
+            inputs={
+                "request":     req_dir / "analysis_request.json",
+                "result":      analysis_dir / "analysis_result.json",
+                "comparisons": comp_dir / "comparison_report.json",
+                "data":        data_path,
+            },
+        )
+
+        from app.dashboard import run
+        agent_result = run(ctx)
+
+        assert agent_result.status == AgentStatus.SUCCESS
+        spec_path = dash_dir / "dashboard_spec.json"
+        spec = DashboardSpec.model_validate_json(spec_path.read_text(encoding="utf-8"))
+
+        bar_charts = [c for c in spec.charts if c.chart_type == ChartType.BAR]
+        assert len(bar_charts) == 1, "Expected exactly 1 BAR chart"
+        bar_chart = bar_charts[0]
+        assert bar_chart.x == "customer_state"
+        assert bar_chart.color == "payment_type", (
+            f"Expected secondary dimension as color for grouped bar, got {bar_chart.color}"
+        )
+        assert "grouped bar" in bar_chart.reason
