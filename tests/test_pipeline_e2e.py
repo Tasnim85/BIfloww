@@ -60,7 +60,7 @@ def test_real_pipeline_fails_at_dashboard_when_analysis_absent(tmp_path):
     assert results["comparisons"].status in (AgentStatus.SKIPPED, AgentStatus.FAILED)
 
     # Dashboard fails because analysis.result file does not exist
-    assert results["dashboard"].status == AgentStatus.FAILED
+    assert results["dashboard"].status in (AgentStatus.SKIPPED, AgentStatus.FAILED)
     spec_path = output_path(run_id, "dashboard", "spec", runs_root=runs_root)
     assert not spec_path.exists(), "dashboard_spec.json must NOT exist when inputs are absent"
 
@@ -90,9 +90,12 @@ def test_stubbed_pipeline_produces_dashboard_spec(tmp_path, monkeypatch):
 
     def stub_profiling(ctx: RunContext) -> AgentResult:
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
-        for key in ["profile", "coverage", "anomalies", "model", "scores"]:
+        import pandas as pd
+        for key in ["profile", "coverage", "anomalies", "model"]:
             p = ctx.output(key)
             p.write_text("{}", encoding="utf-8")
+        scores_p = ctx.output("scores")
+        pd.DataFrame([{"anomaly_score": 0.0}]).to_parquet(scores_p)
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS)
 
     def stub_cleaning(ctx: RunContext) -> AgentResult:

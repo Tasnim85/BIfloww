@@ -44,11 +44,12 @@ _STEPS = [
 
     Step(name=AgentName.SIMILARITY, owner="Malek", entrypoint="intake.similarity:run",
          inputs={"upload": "upload.upload", "tables": "upload.tables"},
-         outputs={"report": "similarity_report.json"}),
+         outputs={"report": "similarity_report.json", "matches": "column_matches.json"}),
 
     Step(name=AgentName.COLUMN_TYPES, owner="Malek", entrypoint="intake.column_types:run",
          inputs={"tables": "upload.tables"},
-         outputs={"report": "column_types.json"}),
+         outputs={"report": "column_types.json", "semantic_metadata": "semantic_metadata.json"},
+         after=[AgentName.SIMILARITY]),
 
     Step(name=AgentName.PII, owner="Ikbel", entrypoint="privacy.pii:run",
          inputs={"tables": "upload.tables", "column_types": "column_types.report"},
@@ -74,7 +75,8 @@ _STEPS = [
     Step(name=AgentName.REQUEST, owner="Malek", entrypoint="semantic.request:run",
          inputs={"upload": "upload.upload", "glossary": "static:semantic/glossary.yaml",
                  "catalog": "static:kpi/catalog.yaml"},
-         outputs={"request": "analysis_request.json"}),
+         outputs={"request": "analysis_request.json"},
+         after=[AgentName.SIMILARITY]),
 
     Step(name=AgentName.ANALYSIS, owner="Rabeb", entrypoint="analysis.analyst:run",
          inputs={"request": "request.request", "warehouse": "etl.warehouse",

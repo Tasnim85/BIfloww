@@ -55,7 +55,7 @@ def stub_profiling(ctx: RunContext) -> AgentResult:
     c = ctx.output("coverage"); c.write_text("{}", encoding="utf-8")
     a = ctx.output("anomalies"); a.write_text("{}", encoding="utf-8")
     m = ctx.output("model"); m.write_text('{"model": "isolation_forest_stub"}', encoding="utf-8")
-    s = ctx.output("scores"); s.write_text('{"anomaly_scores": []}', encoding="utf-8")
+    s = ctx.output("scores"); import pandas as pd; pd.DataFrame([{"anomaly_score": 0.0}]).to_parquet(s)
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
                        outputs={"profile": p, "coverage": c, "anomalies": a, "model": m, "scores": s},
                        message="Profiling stub: pass-through")

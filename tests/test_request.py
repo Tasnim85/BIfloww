@@ -132,8 +132,11 @@ def test_metric_not_found_returns_none(catalog):
 
 def test_embedding_search_model_available():
     """Verify SentenceTransformer model loads properly for semantic similarity search."""
+    try:
+        import sentence_transformers
+    except ImportError:
+        pytest.skip("sentence-transformers not installed")
     model = _get_embedding_model()
-    # If installed, should load all-MiniLM-L6-v2
     assert model is not None, "SentenceTransformer model should load in offline or cached mode"
 
 
