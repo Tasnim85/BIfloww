@@ -174,7 +174,7 @@ def build(connection,frames,metadata,profiles,plan):
             for link in fact_links:
                 dim=link['dimension']
                 copied=schema+'.'+quote(dim)
-                if not connection.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema=? AND table_name=?",[schema,dim]).fetchone()[0]:
+                if not connection.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema=? AND table_name=?",[schema,dim]).fetchall()[0][0]:
                     connection.execute(f'CREATE TABLE {copied} AS SELECT * FROM main.{quote(dim)}')
                 link['physical_dimension']=schema+'.'+dim
         physical(target,data,[SK])
@@ -188,7 +188,7 @@ def build(connection,frames,metadata,profiles,plan):
         for link in fact_links:
             col=link['column'];dim=link['dimension']
             dimtarget=link.get('physical_dimension','main.'+dim)
-            bad=connection.execute(f'SELECT count(*) FROM {target} f LEFT JOIN {dimtarget} d ON f.{quote(col)}=d.{quote(SK)} WHERE f.{quote(col)} IS NOT NULL AND d.{quote(SK)} IS NULL').fetchone()[0]
+            bad=connection.execute(f'SELECT count(*) FROM {target} f LEFT JOIN {dimtarget} d ON f.{quote(col)}=d.{quote(SK)} WHERE f.{quote(col)} IS NOT NULL AND d.{quote(SK)} IS NULL').fetchall()[0][0]
             if bad:
                 raise ValueError('Invalid dimensional key')
             keys=[key for edge in candidates if edge['id'] in link['source_path'] for key in edge['columns']]
@@ -207,20 +207,20 @@ def build(connection,frames,metadata,profiles,plan):
         original='SELECT '+cols+' FROM '+source
         actual='SELECT '+cols+' FROM '+quote(name)
         for left,right in [(original,actual),(actual,original)]:
-            if connection.execute('SELECT count(*) FROM ('+left+' EXCEPT ALL '+right+')').fetchone()[0]:
+            if connection.execute('SELECT count(*) FROM ('+left+' EXCEPT ALL '+right+')').fetchall()[0][0]:
                 raise ValueError('Dimensional construction changed original rows or values')
-        if connection.execute('SELECT count(*) FROM '+quote(name)).fetchone()[0]!=len(frame):
+        if connection.execute('SELECT count(*) FROM '+quote(name)).fetchall()[0][0]!=len(frame):
             raise ValueError('Dimensional construction multiplied rows')
     physical_tables={}
     def describe(schema,name,keys):
         full=quote(schema)+'.'+quote(name)
-        return {'rows':connection.execute('SELECT count(*) FROM '+full).fetchone()[0],'grain':'source_row','primary_key':keys,
+        return {'rows':connection.execute('SELECT count(*) FROM '+full).fetchall()[0][0],'grain':'source_row','primary_key':keys,
             'columns':[{'name':r[0],'type':r[1]} for r in connection.execute('DESCRIBE '+full).fetchall()], 'kind':'table'}
     for schema,name,kind in connection.execute("SELECT table_schema,table_name,table_type FROM information_schema.tables WHERE table_schema<>'source'").fetchall():
         if kind=='BASE TABLE':
             physical_tables[schema+'.'+name]=describe(schema,name,[SK] if SK in [r[0] for r in connection.execute('DESCRIBE '+quote(schema)+'.'+quote(name)).fetchall()] else [])
     for name,role in table_roles.items():
-        info=describe('main',name,[SK]);info['kind']='view' if connection.execute("SELECT table_type FROM information_schema.tables WHERE table_schema='main' AND table_name=?",[name]).fetchone()[0]=='VIEW' else 'table'
+        info=describe('main',name,[SK]);info['kind']='view' if connection.execute("SELECT table_type FROM information_schema.tables WHERE table_schema='main' AND table_name=?",[name]).fetchall()[0][0]=='VIEW' else 'table'
         info['physical_sources']={c['name']:[physical_columns.get(name,{}).get(c['name'],locations[name]+'.'+c['name'])] for c in info['columns']}
         info['grain']=next(r['grain'] for r in receipts if r['output_table']==name)
         tables[name]=info
