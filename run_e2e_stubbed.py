@@ -54,8 +54,8 @@ def stub_profiling(ctx: RunContext) -> AgentResult:
     p = ctx.output("profile"); p.write_text("{}", encoding="utf-8")
     c = ctx.output("coverage"); c.write_text("{}", encoding="utf-8")
     a = ctx.output("anomalies"); a.write_text("{}", encoding="utf-8")
-    m = ctx.output("model"); m.write_text("", encoding="utf-8")
-    s = ctx.output("scores"); s.write_text("", encoding="utf-8")
+    m = ctx.output("model"); m.write_text('{"model": "isolation_forest_stub"}', encoding="utf-8")
+    s = ctx.output("scores"); s.write_text('{"anomaly_scores": []}', encoding="utf-8")
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
                        outputs={"profile": p, "coverage": c, "anomalies": a, "model": m, "scores": s},
                        message="Profiling stub: pass-through")
@@ -70,7 +70,7 @@ def stub_cleaning(ctx: RunContext) -> AgentResult:
 
 def stub_etl(ctx: RunContext) -> AgentResult:
     ctx.output_dir.mkdir(parents=True, exist_ok=True)
-    wh = ctx.output("warehouse"); wh.write_text("", encoding="utf-8")
+    wh = ctx.output("warehouse"); wh.write_text("DUCKDB_WAREHOUSE_STUB", encoding="utf-8")
     mf = ctx.output("manifest"); mf.write_text("{}", encoding="utf-8")
     rc = ctx.output("receipts"); rc.write_text("{}", encoding="utf-8")
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
@@ -93,8 +93,9 @@ def stub_analysis(ctx: RunContext) -> AgentResult:
     )
     res_path = ctx.output("result")
     save(result, res_path)
+    import pandas as pd
     data_path = ctx.output("data")
-    data_path.write_text("", encoding="utf-8")
+    pd.DataFrame([{"customer_state": "SP", "Revenue": 12345.67}]).to_parquet(data_path)
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
                        outputs={"result": res_path, "data": data_path}, message="Analysis stub: generated AnalysisResult")
 
