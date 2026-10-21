@@ -24,7 +24,7 @@ from contracts.analysis import AnalysisResult, ValidationCheck
 from contracts.common import save
 from contracts.comparisons import ComparisonReport
 from contracts.dashboard import DashboardSpec
-from contracts.pipeline import output_path
+from contracts.pipeline import STEPS, output_path
 from orchestrator.dag_runner import run_pipeline
 
 
@@ -123,7 +123,8 @@ def test_stubbed_pipeline_produces_dashboard_spec(tmp_path, monkeypatch):
         )
         res_p = ctx.output("result")
         save(result, res_p)
-        ctx.output("data").write_text("", encoding="utf-8")
+        import pandas as pd
+        pd.DataFrame([{"customer_state": "SP", "Revenue": 5000.0}]).to_parquet(ctx.output("data"))
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
                            outputs={"result": res_p, "data": ctx.output("data")})
 
