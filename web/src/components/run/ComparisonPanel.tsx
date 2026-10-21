@@ -89,7 +89,7 @@ export function ComparisonBanner({ runId, report, canDecide, onChanged }:
           <p className="mt-2 text-xs text-muted">{source} · {report.rules_version}</p>
         </div>
       </div>
-      <div className="grid gap-3 bg-surface p-5 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
+      <div className="grid grid-cols-1 gap-3 bg-surface p-5 md:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
         {fixes.map((f, i) => (
           <div key={f.method} className={cn("flex flex-col rounded-xl border p-4", i === 0 ? "border-primary ring-4 ring-primary/10" : "border-line")}>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
@@ -144,7 +144,7 @@ export function KpiChart({ runId, version }: { runId: string; version: number })
   const up = (data.change_pct ?? 0) >= 0;
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Metric label={`${data.period.start} → ${data.period.end}`} value={`${fmtNum(data.total_current, locale, 0)} ${data.unit}`} />
         {data.compare_to && <Metric label={`${data.compare_to.start} → ${data.compare_to.end}`} value={`${fmtNum(data.total_previous, locale, 0)} ${data.unit}`} muted />}
         <Metric label={t("change")} value={fmtPct(data.change_pct, locale)} tone={up ? "ok" : "bad"} />

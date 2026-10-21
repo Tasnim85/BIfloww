@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const t = await getTranslations("auth");
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[1fr_1.1fr]">
+    <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <aside className="relative hidden overflow-hidden bg-navy p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div aria-hidden className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary/40 blur-3xl" />
         <div aria-hidden className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />

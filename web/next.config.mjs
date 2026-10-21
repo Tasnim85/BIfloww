@@ -6,6 +6,8 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // the dev-only "N" button sat on top of the sidebar status card
+  devIndicators: { position: "bottom-right" },
   serverExternalPackages: ["better-sqlite3"],
   async headers() {
     return [{

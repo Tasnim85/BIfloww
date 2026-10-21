@@ -8,7 +8,8 @@
     "start": "next start -p 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "types:api": "openapi-typescript ../api/openapi.json --properties-required-by-default -o src/lib/api-types.ts"
+    "types:api": "openapi-typescript ../api/openapi.json --properties-required-by-default -o src/lib/api-types.ts",
+    "check:recaptcha": "node scripts/check-recaptcha.mjs"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",

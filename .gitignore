@@ -3,6 +3,7 @@
 .venv/
 __pycache__/
 data/olist/
-runs/
+# only the runs/ folder at the root (not web/src/app/app/runs/, the analysis page)
+/runs/
 .env
-.env.example
+/.env.example

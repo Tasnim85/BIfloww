@@ -33,7 +33,7 @@ export default async function Landing() {
         <div className="grid-bg pointer-events-none absolute inset-0 -z-10" aria-hidden />
         <div aria-hidden className="pointer-events-none absolute -top-24 right-[-10%] -z-10 h-[420px] w-[420px] rounded-full bg-primary/15 blur-3xl" />
         <div aria-hidden className="pointer-events-none absolute top-40 left-[-10%] -z-10 h-[320px] w-[320px] rounded-full bg-accent/15 blur-3xl" />
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-20 pt-12 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:pt-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-20 pt-12 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:pt-20">
           <Reveal>
             <span className="chip border border-primary/25 bg-primary-soft text-primary">
               <Sparkles className="h-3.5 w-3.5" />{t("hero.eyebrow")}

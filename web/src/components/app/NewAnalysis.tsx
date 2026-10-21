@@ -216,7 +216,7 @@ export function NewAnalysis() {
             <textarea id="q" rows={2} maxLength={500} value={question} onChange={(e) => setQuestion(e.target.value)}
                       placeholder={autoQuestion} className="input h-auto py-3" />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="kpi" className="label">{t("kpi")}</label>
               <select id="kpi" className="input" value={metric} onChange={(e) => { setMetric(e.target.value);
@@ -233,7 +233,7 @@ export function NewAnalysis() {
               </select>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <PeriodInput id="p1" label={t("period")} value={period} onChange={setPeriod} min={ds?.first_day} max={ds?.last_day} />
             <PeriodInput id="p2" label={t("compare_to")} value={compare} onChange={setCompare} min={ds?.first_day} max={ds?.last_day} />
           </div>

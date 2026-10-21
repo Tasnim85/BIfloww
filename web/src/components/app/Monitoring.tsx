@@ -27,7 +27,7 @@ export function Monitoring() {
       </div>
       <section>
         <h2 className="mb-3 text-lg font-semibold">{t("journals")}</h2>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {loading && !data && [0, 1, 2].map((i) => <Skeleton key={i} className="h-36" />)}
           {data?.map((j) => {
             const c = checks[j.id];
