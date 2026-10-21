@@ -1,0 +1,10 @@
+pydantic>=2
+pyyaml
+duckdb
+pandas
+pyarrow
+streamlit
+matplotlib
+fastapi
+uvicorn[standard]
+httpx
