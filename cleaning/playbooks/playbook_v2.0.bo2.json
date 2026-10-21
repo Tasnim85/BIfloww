@@ -1,0 +1,107 @@
+{
+  "name": "cleaning",
+  "version": "2.0",
+  "description": "Espaces, textes vides, nombres, dates et doublons stricts des tables autorisees. Aucun montant ou identifiant manquant invente.",
+  "required_tables": [
+    "customers",
+    "orders",
+    "order_items",
+    "order_payments",
+    "products",
+    "sellers"
+  ],
+  "actions": {
+    "trim_strings": true,
+    "empty_strings_to_null": true,
+    "remove_exact_duplicate_rows": true
+  },
+  "deduplicate_tables": [
+    "customers",
+    "orders",
+    "order_items",
+    "order_payments",
+    "products",
+    "sellers",
+    "product_category_name_translation"
+  ],
+  "numeric_columns": {
+    "order_items": [
+      "order_item_id",
+      "price",
+      "freight_value"
+    ],
+    "order_payments": [
+      "payment_sequential",
+      "payment_installments",
+      "payment_value"
+    ],
+    "products": [
+      "product_name_lenght",
+      "product_description_lenght",
+      "product_photos_qty",
+      "product_weight_g",
+      "product_length_cm",
+      "product_height_cm",
+      "product_width_cm"
+    ],
+    "order_reviews": [
+      "review_score"
+    ],
+    "geolocation": [
+      "geolocation_lat",
+      "geolocation_lng"
+    ]
+  },
+  "date_columns": {
+    "orders": [
+      "order_purchase_timestamp",
+      "order_approved_at",
+      "order_delivered_carrier_date",
+      "order_delivered_customer_date",
+      "order_estimated_delivery_date"
+    ],
+    "order_items": [
+      "shipping_limit_date"
+    ],
+    "order_reviews": [
+      "review_creation_date",
+      "review_answer_timestamp"
+    ]
+  },
+  "critical_nonnegative_columns": {
+    "order_items": [
+      "price",
+      "freight_value"
+    ],
+    "order_payments": [
+      "payment_value"
+    ]
+  },
+  "required_values": {
+    "orders": [
+      "order_id",
+      "customer_id",
+      "order_purchase_timestamp",
+      "order_status"
+    ],
+    "order_items": [
+      "order_id",
+      "order_item_id",
+      "product_id",
+      "seller_id"
+    ],
+    "order_payments": [
+      "order_id",
+      "payment_sequential"
+    ],
+    "customers": [
+      "customer_id"
+    ],
+    "products": [
+      "product_id"
+    ],
+    "sellers": [
+      "seller_id"
+    ]
+  }
+}

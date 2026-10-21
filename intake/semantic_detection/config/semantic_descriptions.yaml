@@ -1,0 +1,1337 @@
+# semantic_descriptions.yaml — Step 3 Hybrid Embedding Descriptions
+# Owner  : Malek (BIFlow Semantic Detection — Step 3)
+# Purpose: Natural-language descriptions for each taxonomy type.
+#          Used by the hybrid classifier to build embedding vectors for
+#          semantic type-level similarity comparison.
+#
+# Schema per entry:
+#   <TYPE_ID>:
+#     semantic_group:       taxonomy group_id (must match semantic_types.yaml)
+#     description_en:       rich natural-language description for embedding
+#     synonyms:             alternative column name patterns (for embedding corpus)
+#     examples:             concrete column name examples from real datasets
+#     related_but_distinct: list of type_ids that are semantically close but different
+
+semantic_descriptions_version: "1.0.0"
+compatible_taxonomy_version: "1.1.0"
+created_by: "Malek"
+last_updated: "2026-10-21"
+
+types:
+
+  # ── PERSONAL_DATA ──────────────────────────────────────────────────────────
+
+  EMAIL:
+    semantic_group: PERSONAL_DATA
+    description_en: >
+      An email address column contains the electronic mail address of a person or entity.
+      It follows the standard format user@domain.extension. It is personally identifiable
+      information (PII) and must be treated with privacy protection. Common in customer
+      registration tables, communication logs, and user profiles.
+    synonyms:
+      - email
+      - email_address
+      - mail
+      - e_mail
+      - courriel
+      - customer_email
+      - user_email
+      - contact_email
+      - adresse_mail
+    examples:
+      - customer_email
+      - user_email
+      - contact_email
+      - buyer_email
+      - email_client
+    related_but_distinct:
+      - PHONE
+      - PERSON_NAME
+
+  PHONE:
+    semantic_group: PERSONAL_DATA
+    description_en: >
+      A phone number column stores the telephone number of a person, fixed line or mobile.
+      It can be formatted in national or international format (+33...). It is personally
+      identifiable information (PII). Found in customer tables, delivery tables, and contact records.
+    synonyms:
+      - phone
+      - phone_number
+      - telephone
+      - mobile
+      - tel
+      - contact_number
+      - customer_phone
+      - numero_tel
+      - mobile_number
+    examples:
+      - customer_phone
+      - phone_number
+      - mobile_contact
+      - telephone_client
+    related_but_distinct:
+      - EMAIL
+      - PERSONAL_ADDRESS
+
+  PERSON_NAME:
+    semantic_group: PERSONAL_DATA
+    description_en: >
+      A person name column contains the full name, first name, last name or display name
+      of a person. It is personally identifiable information (PII). Typically found in
+      customer tables, employee tables, delivery address tables, and user account records.
+    synonyms:
+      - name
+      - full_name
+      - first_name
+      - last_name
+      - customer_name
+      - employee_name
+      - person_name
+      - prenom
+      - nom
+      - nom_complet
+      - display_name
+    examples:
+      - customer_name
+      - employee_name
+      - full_name
+      - first_name
+      - last_name
+    related_but_distinct:
+      - PERSON_ID
+      - EMAIL
+
+  PERSON_ID:
+    semantic_group: PERSONAL_DATA
+    description_en: >
+      A person identifier column contains a unique identifier assigned to a specific person
+      such as a customer ID, user ID, or employee ID. It is personally identifiable
+      information because it can be used to re-identify an individual. Distinct from
+      system identifiers which refer to non-personal records.
+    synonyms:
+      - customer_id
+      - client_id
+      - user_id
+      - employee_id
+      - person_id
+      - cust_id
+      - emp_id
+      - customer_unique_id
+      - client_unique_id
+      - member_id
+      - subscriber_id
+    examples:
+      - customer_id
+      - customer_unique_id
+      - user_id
+      - employee_id
+      - client_id
+    related_but_distinct:
+      - SYSTEM_ID
+      - PERSON_NAME
+
+  AGE:
+    semantic_group: PERSONAL_DATA
+    description_en: >
+      An age column stores the age of a person in years as an integer (0-120). It is
+      context-dependent PII — by itself not identifying, but in combination with other
+      attributes it can help identify a person. Common in demographic analysis and
+      customer segmentation tables.
+    synonyms:
+      - age
+      - customer_age
+      - years_old
+      - age_client
+      - age_years
+    examples:
+      - customer_age
+      - age
+      - age_of_customer
+    related_but_distinct:
+      - BIRTH_DATE
+      - DURATION
+
+  BIRTH_DATE:
+    semantic_group: PERSONAL_DATA
+    description_en: >
+      A birth date column stores the date of birth of a person. It is sensitive personally
+      identifiable information (PII). Typically found in KYC (Know Your Customer) tables,
+      HR tables, and government-facing forms.
+    synonyms:
+      - birth_date
+      - date_of_birth
+      - dob
+      - birthdate
+      - date_naissance
+      - birthday
+    examples:
+      - birth_date
+      - date_of_birth
+      - dob
+    related_but_distinct:
+      - DATE
+      - AGE
+
+  PERSONAL_ADDRESS:
+    semantic_group: PERSONAL_DATA
+    description_en: >
+      A personal address column stores the postal address of a person, including street,
+      apartment number, or building. It is personally identifiable information (PII).
+      Distinct from geographical region or city columns which refer to non-personal locations.
+    synonyms:
+      - address
+      - street
+      - personal_address
+      - home_address
+      - billing_address
+      - shipping_address
+      - delivery_address
+      - adresse
+    examples:
+      - customer_address
+      - billing_address
+      - home_address
+    related_but_distinct:
+      - CITY
+      - POSTAL_CODE
+      - COUNTRY
+
+  # ── FINANCIAL_DATA ─────────────────────────────────────────────────────────
+
+  PRICE:
+    semantic_group: FINANCIAL_DATA
+    description_en: >
+      A price column stores the unit price of a product or service, expressed as a
+      decimal monetary amount. It is non-personal. Common in product catalogues, e-commerce
+      order lines, and retail price lists.
+    synonyms:
+      - price
+      - unit_price
+      - prix
+      - prix_unitaire
+      - tarif
+      - msrp
+      - list_price
+      - sale_price
+    examples:
+      - price
+      - unit_price
+      - product_price
+      - prix_unitaire
+    related_but_distinct:
+      - PAYMENT_AMOUNT
+      - COST
+      - REVENUE
+
+  PAYMENT_AMOUNT:
+    semantic_group: FINANCIAL_DATA
+    description_en: >
+      A payment amount column stores the total monetary amount paid in a transaction.
+      It may include taxes and fees. Different from unit price (pre-purchase) and from
+      revenue (aggregate). Found in payment tables and transaction ledgers.
+    synonyms:
+      - payment_value
+      - payment_amount
+      - montant_paiement
+      - amount_paid
+      - transaction_amount
+      - total_paid
+    examples:
+      - payment_value
+      - payment_amount
+      - amount_paid
+    related_but_distinct:
+      - PRICE
+      - REVENUE
+      - FREIGHT_COST
+
+  REVENUE:
+    semantic_group: FINANCIAL_DATA
+    description_en: >
+      A revenue column stores total revenue or turnover of a business, product line, or
+      period. It is an aggregated financial metric. Found in financial reports, sales
+      aggregation tables, and KPI dashboards.
+    synonyms:
+      - revenue
+      - total_revenue
+      - chiffre_affaires
+      - turnover
+      - sales
+      - gross_revenue
+    examples:
+      - total_revenue
+      - revenue
+      - annual_revenue
+    related_but_distinct:
+      - PAYMENT_AMOUNT
+      - PROFIT
+      - COST
+
+  COST:
+    semantic_group: FINANCIAL_DATA
+    description_en: >
+      A cost column stores an expense or cost amount, such as production cost, operating
+      expense, or supply cost. Found in financial P&L tables and cost accounting records.
+    synonyms:
+      - cost
+      - expense
+      - cout
+      - charge
+      - depense
+      - operating_cost
+    examples:
+      - cost
+      - total_cost
+      - production_cost
+    related_but_distinct:
+      - PRICE
+      - PROFIT
+      - FREIGHT_COST
+
+  DISCOUNT:
+    semantic_group: FINANCIAL_DATA
+    description_en: >
+      A discount column stores a discount amount or rate applied to a price or order total.
+      It may be a flat amount or a percentage. Found in retail, e-commerce, and B2B pricing tables.
+    synonyms:
+      - discount
+      - remise
+      - reduction
+      - rebate
+      - discount_amount
+      - discount_value
+    examples:
+      - discount
+      - order_discount
+      - remise_client
+    related_but_distinct:
+      - PRICE
+      - PERCENTAGE
+
+  TAX:
+    semantic_group: FINANCIAL_DATA
+    description_en: >
+      A tax column stores a tax amount or tax rate (VAT, sales tax, GST) applied to a
+      transaction. Found in invoicing tables, e-commerce checkout data, and financial records.
+    synonyms:
+      - tax
+      - vat
+      - tva
+      - tax_amount
+      - taxe
+      - sales_tax
+    examples:
+      - tax_amount
+      - vat_amount
+      - tva
+    related_but_distinct:
+      - PAYMENT_AMOUNT
+      - PERCENTAGE
+
+  FREIGHT_COST:
+    semantic_group: FINANCIAL_DATA
+    description_en: >
+      A freight cost column stores the shipping or delivery cost for an order or item.
+      It is a specific financial metric related to logistics. Found in order tables,
+      logistics tables, and e-commerce datasets.
+    synonyms:
+      - freight_value
+      - shipping_cost
+      - freight_cost
+      - delivery_cost
+      - cout_livraison
+      - transport_cost
+    examples:
+      - freight_value
+      - shipping_cost
+      - delivery_charge
+    related_but_distinct:
+      - PAYMENT_AMOUNT
+      - COST
+
+  PROFIT:
+    semantic_group: FINANCIAL_DATA
+    description_en: >
+      A profit column stores the profit or margin amount, calculated as revenue minus cost.
+      It is a key financial performance indicator. Found in financial reporting tables and
+      management dashboards.
+    synonyms:
+      - profit
+      - margin
+      - benefice
+      - marge
+      - net_profit
+      - gross_margin
+    examples:
+      - profit
+      - net_margin
+      - gross_profit
+    related_but_distinct:
+      - REVENUE
+      - COST
+
+  # ── TEMPORAL_DATA ──────────────────────────────────────────────────────────
+
+  DATE:
+    semantic_group: TEMPORAL_DATA
+    description_en: >
+      A date column stores a calendar date without a time component. Typically formatted
+      as YYYY-MM-DD (ISO 8601) or DD/MM/YYYY. Found in order tables, event tables, and
+      reporting period tables. Distinct from datetime which includes a time component.
+    synonyms:
+      - date
+      - order_date
+      - purchase_date
+      - created_date
+      - report_date
+      - delivery_date
+      - event_date
+      - invoice_date
+    examples:
+      - order_date
+      - created_date
+      - report_date
+      - purchase_date
+    related_but_distinct:
+      - DATETIME
+      - BIRTH_DATE
+      - PERIOD
+
+  DATETIME:
+    semantic_group: TEMPORAL_DATA
+    description_en: >
+      A datetime column stores a full timestamp including date and time, typically in
+      ISO 8601 format (YYYY-MM-DD HH:MM:SS). Found in transaction logs, event tracking
+      tables, order lifecycle tables (approved_at, delivered_at, shipped_at).
+    synonyms:
+      - datetime
+      - timestamp
+      - created_at
+      - updated_at
+      - order_purchase_timestamp
+      - order_delivered_timestamp
+      - order_approved_at
+      - order_estimated_delivery_date
+      - shipped_at
+      - processed_at
+    examples:
+      - order_purchase_timestamp
+      - created_at
+      - updated_at
+      - delivered_at
+    related_but_distinct:
+      - DATE
+      - PERIOD
+
+  TIME:
+    semantic_group: TEMPORAL_DATA
+    description_en: >
+      A time column stores the time of day (HH:MM or HH:MM:SS) without a date component.
+      Found in scheduling tables, operational logs, and shift management records.
+    synonyms:
+      - time
+      - hour
+      - heure
+      - time_of_day
+    examples:
+      - event_time
+      - start_time
+      - end_time
+    related_but_distinct:
+      - DATETIME
+      - DURATION
+
+  YEAR:
+    semantic_group: TEMPORAL_DATA
+    description_en: >
+      A year column stores a four-digit calendar year (e.g. 2024). Found in financial
+      reporting tables, annual summaries, and time-series datasets.
+    synonyms:
+      - year
+      - annee
+      - fiscal_year
+      - year_value
+    examples:
+      - year
+      - fiscal_year
+      - report_year
+    related_but_distinct:
+      - DATE
+      - PERIOD
+      - MONTH
+
+  MONTH:
+    semantic_group: TEMPORAL_DATA
+    description_en: >
+      A month column stores a month number (1-12) or month name. Found in period
+      aggregation tables, monthly KPI reports, and seasonal analysis datasets.
+    synonyms:
+      - month
+      - mois
+      - month_number
+      - month_name
+    examples:
+      - month
+      - report_month
+      - order_month
+    related_but_distinct:
+      - YEAR
+      - PERIOD
+
+  DURATION:
+    semantic_group: TEMPORAL_DATA
+    description_en: >
+      A duration column stores a time interval expressed in days, hours, minutes, or
+      another time unit. Found in delivery time tables, SLA tracking, and process efficiency reports.
+    synonyms:
+      - duration
+      - duration_days
+      - delivery_duration
+      - processing_time
+      - tenure
+      - lead_time
+      - time_elapsed
+    examples:
+      - delivery_duration
+      - processing_time
+      - duration_days
+    related_but_distinct:
+      - DATE
+      - TIME
+
+  PERIOD:
+    semantic_group: TEMPORAL_DATA
+    description_en: >
+      A period column stores a named time period such as Q1, Q2, Semester 1, or FY2024.
+      It is a categorical label representing a time window. Found in financial reporting,
+      planning tables, and seasonal analysis.
+    synonyms:
+      - period
+      - quarter
+      - semester
+      - trimestre
+      - fiscal_period
+      - reporting_period
+    examples:
+      - period
+      - quarter
+      - fiscal_period
+    related_but_distinct:
+      - YEAR
+      - MONTH
+
+  # ── GEOGRAPHICAL_DATA ──────────────────────────────────────────────────────
+
+  COUNTRY:
+    semantic_group: GEOGRAPHICAL_DATA
+    description_en: >
+      A country column stores the name or ISO alpha-2/alpha-3 code of a country.
+      Non-personal geographical data. Found in address tables, sales region tables,
+      and geolocation datasets.
+    synonyms:
+      - country
+      - pays
+      - country_code
+      - nation
+      - iso_country
+      - country_name
+    examples:
+      - country
+      - customer_country
+      - seller_country
+      - country_code
+    related_but_distinct:
+      - STATE
+      - CITY
+      - REGION
+
+  STATE:
+    semantic_group: GEOGRAPHICAL_DATA
+    description_en: >
+      A state or region column stores the name or abbreviation of an administrative
+      division such as a US state, Brazilian state, or French region. Found in
+      customer address tables, seller tables, and logistics data.
+    synonyms:
+      - state
+      - region
+      - province
+      - customer_state
+      - seller_state
+      - gouvernorat
+      - estado
+    examples:
+      - customer_state
+      - seller_state
+      - state
+      - region
+    related_but_distinct:
+      - COUNTRY
+      - CITY
+      - REGION
+
+  CITY:
+    semantic_group: GEOGRAPHICAL_DATA
+    description_en: >
+      A city column stores the name of a city or town. Non-personal geographical data.
+      Found in customer address tables, seller location tables, and delivery zone tables.
+    synonyms:
+      - city
+      - ville
+      - town
+      - customer_city
+      - seller_city
+      - municipalite
+    examples:
+      - customer_city
+      - seller_city
+      - city
+      - ville
+    related_but_distinct:
+      - STATE
+      - POSTAL_CODE
+
+  REGION:
+    semantic_group: GEOGRAPHICAL_DATA
+    description_en: >
+      A region column stores a broader geographical area that may span multiple states
+      or administrative divisions. Used for sales territory, distribution zones, or
+      marketing regions. Broader than STATE, more abstract than COUNTRY.
+    synonyms:
+      - region
+      - area
+      - zone
+      - district
+      - territory
+      - sales_region
+    examples:
+      - region
+      - area
+      - sales_zone
+    related_but_distinct:
+      - STATE
+      - COUNTRY
+
+  POSTAL_CODE:
+    semantic_group: GEOGRAPHICAL_DATA
+    description_en: >
+      A postal code or ZIP code column stores the alphanumeric code identifying a
+      postal delivery zone. Found in customer address tables and logistics data.
+    synonyms:
+      - postal_code
+      - zip
+      - zip_code
+      - postcode
+      - customer_zip_code_prefix
+      - code_postal
+      - cep
+    examples:
+      - postal_code
+      - zip_code
+      - customer_zip_code_prefix
+    related_but_distinct:
+      - CITY
+      - STATE
+      - PERSONAL_ADDRESS
+
+  LATITUDE:
+    semantic_group: GEOGRAPHICAL_DATA
+    description_en: >
+      A latitude column stores the geographic latitude coordinate in decimal degrees
+      (WGS-84 standard, range -90 to 90). Found in geolocation tables, mapping
+      datasets, and logistics routing tables.
+    synonyms:
+      - latitude
+      - lat
+      - geolocation_lat
+      - latitude_deg
+    examples:
+      - latitude
+      - geolocation_lat
+      - lat
+    related_but_distinct:
+      - LONGITUDE
+      - POSTAL_CODE
+
+  LONGITUDE:
+    semantic_group: GEOGRAPHICAL_DATA
+    description_en: >
+      A longitude column stores the geographic longitude coordinate in decimal degrees
+      (WGS-84 standard, range -180 to 180). Found in geolocation tables, mapping
+      datasets, and logistics routing tables.
+    synonyms:
+      - longitude
+      - lng
+      - lon
+      - geolocation_lng
+      - longitude_deg
+    examples:
+      - longitude
+      - geolocation_lng
+      - lng
+    related_but_distinct:
+      - LATITUDE
+      - POSTAL_CODE
+
+  # ── BUSINESS_ENTITY_DATA ───────────────────────────────────────────────────
+
+  ORDER_ID:
+    semantic_group: BUSINESS_ENTITY_DATA
+    description_en: >
+      An order identifier column contains the unique reference code of a purchase order.
+      It is a non-personal business entity identifier used to track orders through
+      the fulfilment lifecycle. Found in order tables, payment tables, and delivery tables.
+    synonyms:
+      - order_id
+      - order_ref
+      - order_number
+      - commande_id
+      - order_key
+      - purchase_id
+    examples:
+      - order_id
+      - order_number
+      - commande_id
+    related_but_distinct:
+      - TRANSACTION_ID
+      - INVOICE_ID
+      - SYSTEM_ID
+
+  PRODUCT_ID:
+    semantic_group: BUSINESS_ENTITY_DATA
+    description_en: >
+      A product identifier column contains the unique reference of a product or SKU.
+      It is used to link product details across tables. Found in product catalogues,
+      order item tables, and inventory tables.
+    synonyms:
+      - product_id
+      - item_id
+      - sku
+      - article_id
+      - reference
+      - product_key
+    examples:
+      - product_id
+      - item_id
+      - sku
+    related_but_distinct:
+      - ORDER_ID
+      - SYSTEM_ID
+
+  SELLER_ID:
+    semantic_group: BUSINESS_ENTITY_DATA
+    description_en: >
+      A seller identifier column contains the unique reference of a seller, vendor, or
+      supplier. Used in marketplace and B2B datasets to link seller attributes.
+    synonyms:
+      - seller_id
+      - vendor_id
+      - supplier_id
+      - merchant_id
+      - vendeur_id
+    examples:
+      - seller_id
+      - vendor_id
+      - supplier_id
+    related_but_distinct:
+      - PRODUCT_ID
+      - ORGANIZATION_ID
+
+  INVOICE_ID:
+    semantic_group: BUSINESS_ENTITY_DATA
+    description_en: >
+      An invoice identifier column stores the unique reference of an invoice or billing
+      document. Found in accounting systems, ERP data exports, and financial tables.
+    synonyms:
+      - invoice_id
+      - invoice_number
+      - facture_id
+      - invoice_ref
+    examples:
+      - invoice_id
+      - invoice_number
+      - facture_id
+    related_but_distinct:
+      - ORDER_ID
+      - TRANSACTION_ID
+
+  TRANSACTION_ID:
+    semantic_group: BUSINESS_ENTITY_DATA
+    description_en: >
+      A transaction identifier column stores the unique reference of a financial or
+      operational transaction. Used in payment tables, ledgers, and event logs.
+    synonyms:
+      - transaction_id
+      - txn_id
+      - payment_id
+      - transaction_ref
+      - operation_id
+    examples:
+      - transaction_id
+      - payment_id
+      - txn_id
+    related_but_distinct:
+      - ORDER_ID
+      - INVOICE_ID
+
+  ORGANIZATION_ID:
+    semantic_group: BUSINESS_ENTITY_DATA
+    description_en: >
+      An organization identifier column stores the unique reference of a company,
+      organization, or legal entity. Found in B2B datasets, ERP systems, and
+      directory tables.
+    synonyms:
+      - organization_id
+      - company_id
+      - org_id
+      - enterprise_id
+      - company_ref
+    examples:
+      - organization_id
+      - company_id
+      - org_id
+    related_but_distinct:
+      - SELLER_ID
+      - SYSTEM_ID
+
+  # ── CATEGORICAL_DATA ───────────────────────────────────────────────────────
+
+  STATUS:
+    semantic_group: CATEGORICAL_DATA
+    description_en: >
+      A status column stores the state or status of an entity such as an order, account,
+      or process. Values are typically from a fixed enumeration (active, delivered, pending,
+      cancelled). Found in order tables, user tables, and workflow tracking tables.
+    synonyms:
+      - status
+      - order_status
+      - account_status
+      - etat
+      - statut
+      - state
+      - delivery_status
+      - approval_status
+    examples:
+      - order_status
+      - account_status
+      - delivery_status
+    related_but_distinct:
+      - BOOLEAN_FLAG
+      - PRIORITY
+
+  PRODUCT_CATEGORY:
+    semantic_group: CATEGORICAL_DATA
+    description_en: >
+      A product category column stores the category or classification of a product.
+      Values come from a defined taxonomy (e.g. electronics, clothing, furniture).
+      Found in product tables and e-commerce catalogues.
+    synonyms:
+      - product_category_name
+      - category
+      - categorie
+      - product_type
+      - product_category_name_english
+      - product_class
+    examples:
+      - product_category_name
+      - category
+      - product_type
+    related_but_distinct:
+      - LABEL
+      - STATUS
+
+  PAYMENT_METHOD:
+    semantic_group: CATEGORICAL_DATA
+    description_en: >
+      A payment method column stores the method used for payment such as credit card,
+      debit card, bank transfer, cash, or digital wallet. Values are categorical.
+      Found in payment and transaction tables.
+    synonyms:
+      - payment_type
+      - payment_method
+      - mode_paiement
+      - payment_mode
+      - pay_type
+    examples:
+      - payment_type
+      - payment_method
+      - mode_paiement
+    related_but_distinct:
+      - STATUS
+      - LABEL
+
+  CUSTOMER_SEGMENT:
+    semantic_group: CATEGORICAL_DATA
+    description_en: >
+      A customer segment column classifies customers into groups based on behaviour,
+      value, or demographics (e.g. VIP, Standard, At-Risk). Found in CRM tables and
+      marketing analytics tables.
+    synonyms:
+      - segment
+      - customer_segment
+      - customer_type
+      - customer_class
+      - client_type
+    examples:
+      - customer_segment
+      - customer_type
+      - segment
+    related_but_distinct:
+      - STATUS
+      - LABEL
+
+  PRIORITY:
+    semantic_group: CATEGORICAL_DATA
+    description_en: >
+      A priority column stores a priority or urgency level (high, medium, low, critical).
+      Found in ticketing systems, task management tables, and SLA tracking tables.
+    synonyms:
+      - priority
+      - priorite
+      - urgency
+      - severity
+      - importance
+    examples:
+      - priority
+      - urgency_level
+      - severity
+    related_but_distinct:
+      - STATUS
+      - RATING
+
+  BOOLEAN_FLAG:
+    semantic_group: CATEGORICAL_DATA
+    description_en: >
+      A boolean flag column stores a binary true/false, yes/no, or 0/1 indicator.
+      Found in configuration tables, feature flag tables, and entity attribute tables.
+    synonyms:
+      - is_active
+      - is_deleted
+      - active
+      - enabled
+      - flag
+      - has_discount
+      - is_fraud
+      - is_premium
+    examples:
+      - is_active
+      - is_deleted
+      - has_discount
+      - enabled
+    related_but_distinct:
+      - STATUS
+      - PRIORITY
+
+  # ── QUANTITATIVE_DATA ──────────────────────────────────────────────────────
+
+  QUANTITY:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A quantity column stores the number of units, items, or occurrences of something.
+      It is always a non-negative integer. Found in order item tables (quantity ordered),
+      inventory tables, and logistics tables. Also applies to payment installments count.
+    synonyms:
+      - quantity
+      - qty
+      - count
+      - nb_items
+      - units
+      - payment_installments
+      - num_installments
+      - parcelas
+      - nb_echeances
+      - item_count
+      - order_qty
+    examples:
+      - quantity
+      - qty
+      - order_item_qty
+      - payment_installments
+    related_but_distinct:
+      - COUNT
+      - NUMERIC_MEASURE
+      - RATING
+
+  COUNT:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A count column stores a frequency or occurrence count of distinct records or events.
+      Typically an aggregate. Found in aggregated reporting tables and KPI summaries.
+    synonyms:
+      - count
+      - total_count
+      - num_orders
+      - frequency
+      - nb
+      - total_records
+      - occurrence_count
+    examples:
+      - total_count
+      - num_orders
+      - frequency
+    related_but_distinct:
+      - QUANTITY
+      - NUMERIC_MEASURE
+
+  WEIGHT:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A weight column stores a mass measurement in grams, kilograms, or pounds.
+      Found in product tables (product weight), shipping tables, and logistics data.
+    synonyms:
+      - weight
+      - product_weight_g
+      - poids
+      - mass
+      - weight_kg
+      - net_weight
+    examples:
+      - product_weight_g
+      - weight
+      - poids
+    related_but_distinct:
+      - LENGTH
+      - VOLUME
+
+  LENGTH:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A length column stores a physical length, height, or width measurement in centimetres,
+      metres, or inches. Found in product dimension tables and logistics packaging tables.
+    synonyms:
+      - length
+      - product_length_cm
+      - longueur
+      - height
+      - product_height_cm
+      - width
+      - product_width_cm
+      - dimension
+    examples:
+      - product_length_cm
+      - product_height_cm
+      - product_width_cm
+    related_but_distinct:
+      - WEIGHT
+      - VOLUME
+
+  VOLUME:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A volume column stores a volumetric measurement such as litres, cubic centimetres,
+      or cubic metres. Found in product tables, chemical inventory, and logistics tables.
+    synonyms:
+      - volume
+      - capacity
+      - contenance
+      - volume_ml
+      - cubic_volume
+    examples:
+      - volume
+      - capacity
+      - volume_litre
+    related_but_distinct:
+      - LENGTH
+      - WEIGHT
+
+  PERCENTAGE:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A percentage column stores a value expressed as a percentage (0-100 or 0.0-1.0).
+      Used for rates, proportions, discount rates, and efficiency metrics.
+    synonyms:
+      - percentage
+      - rate
+      - ratio
+      - taux
+      - pct
+      - discount_rate
+      - tax_rate
+    examples:
+      - discount_rate
+      - tax_rate
+      - percentage
+    related_but_distinct:
+      - RATE
+      - RATING
+      - DISCOUNT
+
+  RATE:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A rate or ratio column stores a computed rate such as conversion rate, churn rate,
+      or click-through rate. Different from PERCENTAGE in that it may be an arbitrary
+      decimal ratio (not necessarily 0-100).
+    synonyms:
+      - rate
+      - ratio
+      - conversion_rate
+      - churn_rate
+      - ctr
+      - open_rate
+    examples:
+      - conversion_rate
+      - churn_rate
+      - click_rate
+    related_but_distinct:
+      - PERCENTAGE
+      - NUMERIC_MEASURE
+
+  RATING:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A rating or score column stores a user-assigned evaluation on a discrete scale,
+      typically 1-5 stars or 0-10. Found in review tables, customer satisfaction surveys,
+      and product rating tables.
+    synonyms:
+      - review_score
+      - rating
+      - score
+      - note
+      - satisfaction_score
+      - star_rating
+      - customer_rating
+    examples:
+      - review_score
+      - rating
+      - satisfaction_score
+    related_but_distinct:
+      - PERCENTAGE
+      - QUANTITY
+      - PRIORITY
+
+  NUMERIC_MEASURE:
+    semantic_group: QUANTITATIVE_DATA
+    description_en: >
+      A generic numeric measure column stores a numeric value that does not fit a more
+      specific quantitative type. It may represent a generic indicator, index, or metric
+      without a clear business semantics. Used as a fallback for numeric columns.
+    synonyms:
+      - value
+      - measure
+      - metric
+      - indicator
+      - nombre_photos
+      - product_photos_qty
+      - product_name_lenght
+      - product_description_lenght
+    examples:
+      - metric_value
+      - product_photos_qty
+      - nombre_photos
+    related_but_distinct:
+      - QUANTITY
+      - COUNT
+      - RATE
+
+  # ── TEXTUAL_DATA ───────────────────────────────────────────────────────────
+
+  DESCRIPTION:
+    semantic_group: TEXTUAL_DATA
+    description_en: >
+      A description column stores free-form text describing an entity such as a product,
+      service, or event. It is unstructured and typically long-form. Found in product
+      catalogues, CMS tables, and knowledge base records.
+    synonyms:
+      - description
+      - detail
+      - details
+      - product_description
+      - item_description
+      - desc
+    examples:
+      - product_description
+      - description
+      - detail
+    related_but_distinct:
+      - COMMENT
+      - TITLE
+
+  COMMENT:
+    semantic_group: TEXTUAL_DATA
+    description_en: >
+      A comment column stores user-written text such as a review comment, feedback, or
+      remark. It is free-form and may contain personal opinions. Context-dependent PII
+      risk. Found in customer review tables, support ticket tables, and feedback tables.
+    synonyms:
+      - comment
+      - review_comment_message
+      - review_comment_title
+      - feedback
+      - remarks
+      - observation
+      - commentaire
+    examples:
+      - review_comment_message
+      - feedback
+      - comment
+    related_but_distinct:
+      - DESCRIPTION
+      - FREE_TEXT
+
+  TITLE:
+    semantic_group: TEXTUAL_DATA
+    description_en: >
+      A title column stores the name or title of an entity such as a product, document,
+      or job role. It is typically a short, structured string. Found in product tables,
+      content tables, and HR tables.
+    synonyms:
+      - title
+      - titre
+      - product_name
+      - name
+      - label
+      - job_title
+      - article_title
+    examples:
+      - product_name
+      - title
+      - job_title
+    related_but_distinct:
+      - DESCRIPTION
+      - LABEL
+
+  FREE_TEXT:
+    semantic_group: TEXTUAL_DATA
+    description_en: >
+      A free text column stores unstructured text that does not match any specific
+      semantic type. It is a fallback for textual columns that cannot be further
+      classified. May require manual inspection.
+    synonyms:
+      - text
+      - free_text
+      - notes
+      - info
+      - content
+      - body
+    examples:
+      - notes
+      - additional_info
+      - text
+    related_but_distinct:
+      - DESCRIPTION
+      - COMMENT
+
+  LABEL:
+    semantic_group: TEXTUAL_DATA
+    description_en: >
+      A label or code column stores a short alphanumeric code, tag, or reference label.
+      It is typically from a controlled vocabulary or code system. Found in classification
+      tables, product tagging systems, and reference data tables.
+    synonyms:
+      - label
+      - code
+      - ref
+      - tag
+      - product_category_name_english
+      - short_code
+    examples:
+      - label
+      - code
+      - ref
+    related_but_distinct:
+      - TITLE
+      - STATUS
+
+  # ── TECHNICAL_DATA ─────────────────────────────────────────────────────────
+
+  SYSTEM_ID:
+    semantic_group: TECHNICAL_DATA
+    description_en: >
+      A system identifier column stores an internal technical identifier such as a UUID,
+      auto-increment integer, or surrogate key. It uniquely identifies a record in a
+      database but does not directly identify a person. Found in any table as a primary key.
+    synonyms:
+      - id
+      - uid
+      - uuid
+      - record_id
+      - system_id
+      - unique_id
+      - pk
+      - surrogate_key
+      - review_id
+      - order_item_id
+    examples:
+      - id
+      - uuid
+      - record_id
+      - review_id
+    related_but_distinct:
+      - PERSON_ID
+      - ORDER_ID
+      - HASH_VALUE
+
+  HASH_VALUE:
+    semantic_group: TECHNICAL_DATA
+    description_en: >
+      A hash value column stores a cryptographic hash or checksum (MD5, SHA-256, etc.)
+      typically used for data integrity verification or anonymized identifiers.
+      Found in audit tables, data lineage records, and anonymized datasets.
+    synonyms:
+      - hash
+      - checksum
+      - md5
+      - sha256
+      - fingerprint
+      - hash_value
+    examples:
+      - hash
+      - md5_hash
+      - sha256_checksum
+    related_but_distinct:
+      - SYSTEM_ID
+      - VERSION
+
+  VERSION:
+    semantic_group: TECHNICAL_DATA
+    description_en: >
+      A version column stores a software or data version string, typically following
+      semantic versioning (MAJOR.MINOR.PATCH). Found in metadata tables, API response
+      logs, and configuration records.
+    synonyms:
+      - version
+      - schema_version
+      - api_version
+      - release_version
+      - build_version
+    examples:
+      - version
+      - schema_version
+      - api_version
+    related_but_distinct:
+      - LABEL
+      - SYSTEM_ID
+
+  FILE_REFERENCE:
+    semantic_group: TECHNICAL_DATA
+    description_en: >
+      A file reference column stores a path, URL, or URI referencing an external file
+      or resource. Found in document management tables, media tables, and asset registries.
+    synonyms:
+      - file_path
+      - path
+      - filepath
+      - url
+      - link
+      - document_path
+      - uri
+      - download_url
+    examples:
+      - file_path
+      - document_url
+      - link
+    related_but_distinct:
+      - LABEL
+      - SYSTEM_ID
+
+  # ── UNKNOWN_DATA ───────────────────────────────────────────────────────────
+
+  UNKNOWN:
+    semantic_group: UNKNOWN_DATA
+    description_en: >
+      The unknown type is assigned when the semantic type of a column cannot be determined
+      by any classification rule or embedding similarity. It requires human review.
+      This is the fallback type of last resort.
+    synonyms: []
+    examples: []
+    related_but_distinct: []
