@@ -2,6 +2,28 @@
 
 Compares uploaded column names against known datasets (e.g. Olist sample)
 using both embedding-based cosine similarity (BO1-06) and lexical Jaccard overlap.
+
+BO1-06 Phase 2 — Hungarian Algorithm (Linear Sum Assignment)
+-------------------------------------------------------------
+The optimal bijective column alignment between two column-name sets is computed
+via ``scipy.optimize.linear_sum_assignment`` applied to the pairwise cosine
+similarity matrix of column-name embeddings.
+
+This gives a one-to-one assignment maximising the total match quality, rather
+than simply averaging all best-match scores, which would double-count shared
+vocabulary.  The Hungarian method is the same algorithm used in the local
+prototype ``BO1/biflow/core/embeddings.py`` (lines 9, 68).
+
+The overall dataset similarity score is::
+
+    S = sum(sim[i, assignment[i]] for i in rows) / max(|A|, |B|)
+
+where the denominator penalises schema width mismatches.
+
+References
+----------
+* Kuhn (1955) "The Hungarian Method for the assignment problem."
+* STEP2_INTEGRATION_PROPOSAL.md §Unification Step 0 + Step 4.
 """
 from __future__ import annotations
 
@@ -68,30 +90,146 @@ def _normalize(name: str) -> str:
     return name.lower().replace("_", " ").strip()
 
 
+# ── Hungarian-based similarity (BO1-06 Phase 2) ─────────────────────────────
+
+def compute_hungarian_similarity(
+    cols_a: list[str] | set[str],
+    cols_b: list[str] | set[str],
+) -> dict[str, Any]:
+    """Compute optimal bijective column alignment via the Hungarian algorithm.
+
+    Uses the pairwise cosine similarity matrix of column-name embeddings as the
+    cost matrix, then calls ``scipy.optimize.linear_sum_assignment`` to find the
+    assignment of maximum total similarity.
+
+    Args:
+        cols_a: Column names from dataset A.
+        cols_b: Column names from dataset B.
+
+    Returns:
+        A dict with keys:
+          ``score``        — overall similarity ∈ [0, 1].
+          ``assignment``   — list of (col_a, col_b, sim_score) triples.
+          ``method``       — ``"hungarian_embedding"`` or ``"hungarian_tfidf"``.
+          ``warning``      — str or None, set when the model was unavailable.
+    """
+    import numpy as np
+
+    list_a = [_normalize(c) for c in cols_a if c]
+    list_b = [_normalize(c) for c in cols_b if c]
+    n_a, n_b = len(list_a), len(list_b)
+
+    if n_a == 0 or n_b == 0:
+        return {"score": 0.0, "assignment": [], "method": "empty", "warning": None}
+
+    # Build pairwise similarity matrix
+    model = _get_embedding_model()
+    sim_matrix: np.ndarray
+    method: str
+    warning: str | None = None
+
+    if model is not None:
+        try:
+            emb_a = model.encode(list_a, convert_to_numpy=True, normalize_embeddings=True)
+            emb_b = model.encode(list_b, convert_to_numpy=True, normalize_embeddings=True)
+            sim_matrix = np.clip(np.dot(emb_a, emb_b.T), 0.0, 1.0)
+            method = "hungarian_embedding"
+        except Exception as exc:
+            warning = f"Embedding failed ({exc}); falling back to TF-IDF."
+            model = None
+
+    if model is None:
+        try:
+            from sklearn.feature_extraction.text import TfidfVectorizer
+            from sklearn.metrics.pairwise import cosine_similarity as sk_cosine
+            vec = TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5))
+            all_terms = list(set(list_a + list_b))
+            vec.fit(all_terms)
+            tf_a = vec.transform(list_a).toarray()
+            tf_b = vec.transform(list_b).toarray()
+            sim_matrix = np.clip(sk_cosine(tf_a, tf_b), 0.0, 1.0)
+            method = "hungarian_tfidf"
+        except Exception as exc2:
+            # Ultimate fallback: identity matching on normalised names
+            set_a, set_b = set(list_a), set(list_b)
+            overlap = len(set_a & set_b) / max(len(set_a | set_b), 1)
+            return {
+                "score": float(overlap),
+                "assignment": [],
+                "method": "jaccard_fallback",
+                "warning": f"TF-IDF also failed ({exc2}); Jaccard used.",
+            }
+
+    # Apply Hungarian algorithm (maximise total similarity)
+    from scipy.optimize import linear_sum_assignment
+
+    row_idx, col_idx = linear_sum_assignment(-sim_matrix)  # negate → maximise
+
+    # Build named assignment list
+    orig_a = list(cols_a) if not isinstance(cols_a, list) else cols_a
+    orig_b = list(cols_b) if not isinstance(cols_b, list) else cols_b
+    assignment = [
+        {
+            "col_a": orig_a[i] if i < len(orig_a) else list_a[i],
+            "col_b": orig_b[j] if j < len(orig_b) else list_b[j],
+            "sim": round(float(sim_matrix[i, j]), 4),
+        }
+        for i, j in zip(row_idx, col_idx)
+    ]
+
+    # Score = sum of matched similarities / max schema width (penalise width mismatch)
+    total_sim = float(sum(sim_matrix[i, j] for i, j in zip(row_idx, col_idx)))
+    score = round(total_sim / max(n_a, n_b), 4)
+    score = max(0.0, min(1.0, score))
+
+    return {
+        "score": score,
+        "assignment": assignment,
+        "method": method,
+        "warning": warning,
+    }
+
+
 def compute_embedding_similarity(cols_a: list[str] | set[str], cols_b: list[str] | set[str]) -> float:
     """Compute semantic vector similarity between two column sets using embeddings.
-    
-    Uses SentenceTransformer cosine similarity when available, falling back to
-    character n-gram TF-IDF cosine similarity.
+
+    Uses ``compute_hungarian_similarity`` for an optimal bijective alignment, then
+    falls back to bidirectional-best-match average if scipy is unavailable.
+
+    Args:
+        cols_a: Column names from dataset A.
+        cols_b: Column names from dataset B.
+
+    Returns:
+        Similarity score ∈ [0, 1].
     """
     list_a = [_normalize(c) for c in cols_a if c]
     list_b = [_normalize(c) for c in cols_b if c]
     if not list_a or not list_b:
         return 0.0
-    
+
     # Identical sets check
     if set(list_a) == set(list_b):
         return 1.0
 
+    # Try Hungarian first (optimal bijective alignment)
+    try:
+        result = compute_hungarian_similarity(cols_a, cols_b)
+        if result["method"] not in ("empty", "jaccard_fallback"):
+            return result["score"]
+        if result["method"] == "jaccard_fallback":
+            return result["score"]
+    except Exception as exc:
+        logger.warning("Hungarian similarity failed, falling back to bidirectional: %s", exc)
+
+    # Fallback: bidirectional best-match average (original implementation)
     model = _get_embedding_model()
     if model is not None:
         try:
             import numpy as np
             emb_a = model.encode(list_a, convert_to_numpy=True, normalize_embeddings=True)
             emb_b = model.encode(list_b, convert_to_numpy=True, normalize_embeddings=True)
-            # Pairwise cosine similarities: shape (len(a), len(b))
             sim_matrix = np.dot(emb_a, emb_b.T)
-            # Bidirectional best match average:
             max_a_to_b = sim_matrix.max(axis=1).mean()
             max_b_to_a = sim_matrix.max(axis=0).mean()
             score = float((max_a_to_b + max_b_to_a) / 2.0)
@@ -132,18 +270,26 @@ def run(ctx: RunContext) -> AgentResult:
                 header = next(reader, [])
                 uploaded_cols.update(c.lower().strip() for c in header)
 
-    # Score against known datasets using both Jaccard and Embeddings
+    # Score against known datasets using Hungarian + Jaccard
     matches: list[DatasetMatch] = []
     evidence_scores: dict[str, Any] = {}
 
     for ds_name, ref_cols in _KNOWN_DATASETS.items():
         jaccard_score = _jaccard(uploaded_cols, {c.lower().strip() for c in ref_cols})
-        emb_score = compute_embedding_similarity(uploaded_cols, ref_cols)
-        # Use embedding score as primary if available, combined with jaccard
+
+        # Hungarian optimal alignment (BO1-06 Phase 2)
+        hungarian_result = compute_hungarian_similarity(uploaded_cols, ref_cols)
+        emb_score = hungarian_result["score"]
+        assignment_detail = hungarian_result["assignment"]
+
+        # Final score: max(jaccard, hungarian) — keep Jaccard as lower bound
         final_score = max(jaccard_score, emb_score)
         evidence_scores[ds_name] = {
             "jaccard": round(jaccard_score, 4),
-            "embedding_cosine": round(emb_score, 4),
+            "hungarian_embedding": round(emb_score, 4),
+            "hungarian_method": hungarian_result["method"],
+            "hungarian_warning": hungarian_result.get("warning"),
+            "top_assignments": assignment_detail[:5],   # only top-5 for audit log
             "final": round(final_score, 4),
         }
         if final_score >= THRESHOLD:
@@ -156,7 +302,8 @@ def run(ctx: RunContext) -> AgentResult:
     matches.sort(key=lambda m: m.score, reverse=True)
     best = matches[0] if matches else None
 
-    method_name = "embedding-cosine+jaccard@1.1" if _get_embedding_model() else "char-tfidf+jaccard@1.1"
+    active_method = "hungarian-embedding@2.0" if _get_embedding_model() else "hungarian-tfidf@2.0"
+    method_name = f"{active_method}+jaccard"
 
     report = SimilarityReport(
         method=method_name,

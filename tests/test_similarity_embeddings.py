@@ -39,6 +39,14 @@ def test_olist_identical_scores():
     assert emb_score == 1.0
 
 
+try:
+    import sentence_transformers  # noqa: F401
+    _HAS_ST = True
+except ImportError:
+    _HAS_ST = False
+
+
+@pytest.mark.skipif(not _HAS_ST, reason='Requires sentence-transformers for semantic embeddings')
 def test_olist_renamed_embedding_beats_jaccard():
     jaccard_score = _jaccard(set(OLIST_COLS), set(OLIST_RENAMED))
     emb_score = compute_embedding_similarity(OLIST_COLS, OLIST_RENAMED)
