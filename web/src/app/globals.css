@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Askboard palette (logo "Ocean & Amber"). Values are "R G B" so Tailwind can add opacity. */
+:root {
+  --bg: 246 250 251;
+  --surface: 255 255 255;
+  --surface-2: 238 244 246;
+  --line: 220 230 234;
+  --ink: 15 42 61;          /* #0F2A3D navy */
+  --muted: 74 98 114;
+  --subtle: 120 140 152;
+  --primary: 14 116 144;    /* #0E7490 teal */
+  --primary-fg: 255 255 255;
+  --primary-soft: 224 242 246;
+  --accent: 245 158 11;     /* #F59E0B amber */
+  --accent-fg: 15 42 61;
+  --accent-soft: 254 243 219;
+  --navy: 15 42 61;
+  --ok: 21 128 61;
+  --ok-soft: 220 252 231;
+  --warn: 180 83 9;
+  --warn-soft: 254 243 199;
+  --bad: 185 28 28;
+  --bad-soft: 254 226 226;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: 7 19 28;
+  --surface: 12 31 44;
+  --surface-2: 18 41 57;
+  --line: 32 58 76;
+  --ink: 230 241 245;
+  --muted: 150 175 189;
+  --subtle: 110 135 150;
+  --primary: 34 166 195;    /* lighter teal for contrast on dark */
+  --primary-fg: 7 19 28;
+  --primary-soft: 16 52 66;
+  --accent: 251 191 36;
+  --accent-fg: 7 19 28;
+  --accent-soft: 60 44 10;
+  --navy: 15 42 61;
+  --ok: 74 222 128;
+  --ok-soft: 16 52 33;
+  --warn: 251 191 36;
+  --warn-soft: 60 44 10;
+  --bad: 248 113 113;
+  --bad-soft: 69 20 20;
+  color-scheme: dark;
+}
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-bg text-ink font-sans antialiased; }
+  h1, h2, h3, h4 { @apply font-display tracking-tight; }
+  ::selection { background: rgb(var(--accent) / 0.35); }
+  :focus-visible { outline: 2px solid rgb(var(--primary)); outline-offset: 2px; border-radius: 6px; }
+}
+
+@layer components {
+  .card { @apply rounded-2xl border border-line bg-surface shadow-card; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 h-11 text-sm font-semibold transition
+         disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]; }
+  .btn-primary { @apply btn bg-primary text-primary-fg hover:brightness-110; }
+  .btn-accent { @apply btn bg-accent text-accent-fg hover:brightness-105; }
+  .btn-ghost { @apply btn bg-transparent text-ink hover:bg-surface-2; }
+  .btn-outline { @apply btn border border-line bg-surface text-ink hover:bg-surface-2; }
+  .input { @apply h-11 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-subtle
+           focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15; }
+  .label { @apply mb-1.5 block text-sm font-medium text-ink; }
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.14em] text-primary; }
+  .grid-bg {
+    background-image:
+      linear-gradient(rgb(var(--line) / 0.55) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--line) / 0.55) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

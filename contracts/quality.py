@@ -75,6 +75,8 @@ class AnomalyReport(Artifact):
     model_version: str                # e.g. "iforest@1.0"
     params: dict                      # e.g. {"n_estimators": 100, "contamination": 0.03, ...}
     features: list[str]
+    feature_labels: dict[str, str] = Field(default_factory=dict)  # feature -> words for users (optional)
+    feature_units: dict[str, str] = Field(default_factory=dict)   # feature -> unit, e.g. "BRL" (optional)
     model_file: str = "anomaly_model.joblib"     # joblib.dump of the fitted sklearn model
     scores_file: str = "anomaly_scores.parquet"
     n_rows: int

@@ -8,7 +8,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
-CONTRACTS_VERSION = "1.1"   # 1.1: coverage profile, BO4-12 scale check + justified fixes
+CONTRACTS_VERSION = "1.6"   # 1.6: *_parts fields (texts in any language, contracts/i18n.py)
 
 
 class Contract(BaseModel):
@@ -17,7 +17,10 @@ class Contract(BaseModel):
     extra="forbid": a misspelled or unknown field raises an error immediately,
     instead of silently disappearing between two agents.
     """
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid",
+                              # in API responses every field is present (defaults included): the
+                              # generated TypeScript types (web/) then mark them as required
+                              json_schema_serialization_defaults_required=True)
 
 
 class Artifact(Contract):

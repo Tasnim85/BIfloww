@@ -1,0 +1,548 @@
+{
+ "common": {
+  "theme": "Theme",
+  "theme_light": "Light",
+  "theme_dark": "Dark",
+  "theme_system": "System",
+  "language": "Language",
+  "lang_en": "English",
+  "lang_fr": "French",
+  "menu": "Menu",
+  "loading": "Loading…",
+  "retry": "Try again",
+  "back": "Back",
+  "close": "Close",
+  "or": "or",
+  "live": "Live",
+  "demo": "Demo",
+  "error": "Something went wrong."
+ },
+ "landing": {
+  "nav": {
+   "how": "How it works",
+   "agents": "Agents",
+   "trust": "Trust",
+   "objectives": "Objectives",
+   "get_started": "Get started",
+   "open_app": "Open the app"
+  },
+  "hero": {
+   "eyebrow": "Autonomous multi-agent business intelligence",
+   "title_1": "Drop a CSV.",
+   "title_2": "Ask a question.",
+   "title_3": "Get your dashboard.",
+   "subtitle": "Six AI agents clean your data, model it, define your KPIs and build your dashboard. Every number comes with its proof, and you can always ask why.",
+   "cta": "Get started free",
+   "secondary": "See how it works",
+   "points": {
+    "no_engineer": "No data engineer needed",
+    "languages": "English & French",
+    "proof": "Every decision journaled"
+   }
+  },
+  "demo": {
+   "aria": "Animated example: a question, the agents at work, a misleading comparison caught and the honest answer.",
+   "question": "Revenue by state: August vs July?",
+   "agents_at_work": "Agents at work",
+   "agent_profile": "Profile",
+   "agent_clean": "Clean",
+   "agent_model": "Model",
+   "agent_kpi": "KPIs",
+   "agent_analyze": "Analyze",
+   "agent_check": "Check",
+   "agent_audit": "Audit",
+   "waiting": "Waiting for your question…",
+   "working": "Preparing your data…",
+   "caught_title": "Misleading comparison caught",
+   "caught_text": "August data stops on the 23rd: comparing it with a full July would be unfair.",
+   "as_asked": "as asked",
+   "answer_label": "Same days (1–23), August vs July",
+   "verified": "Verified",
+   "footer": "Real figures from the Olist dataset · 16 decisions in the audit journal"
+  },
+  "stats": {
+   "agents": {
+    "value": "6",
+    "label": "specialized AI agents"
+   },
+   "checks": {
+    "value": "5",
+    "label": "comparability checks"
+   },
+   "journal": {
+    "value": "100%",
+    "label": "decisions journaled"
+   },
+   "languages": {
+    "value": "2",
+    "label": "languages, light & dark"
+   }
+  },
+  "how": {
+   "eyebrow": "How it works",
+   "title": "From raw file to trusted insight in three steps",
+   "subtitle": "No SQL, no pipeline to build, no modeling to learn. You bring the data and the question.",
+   "steps": {
+    "drop": {
+     "title": "Drop your CSV",
+     "text": "Askboard profiles your file, detects personal data, missing values and outliers, and cleans it with versioned rules."
+    },
+    "ask": {
+     "title": "Ask in plain words",
+     "text": "“Revenue by state, August vs July?” The agents understand your business vocabulary and pick the right KPI."
+    },
+    "trust": {
+     "title": "Get a dashboard you can trust",
+     "text": "Misleading comparisons are caught before you see them, and every figure links back to its source."
+    }
+   }
+  },
+  "agents": {
+   "eyebrow": "The team behind each answer",
+   "title": "Six agents, one orchestrator",
+   "subtitle": "Each agent does one job well, writes its decisions in a shared journal, and hands its work to the next.",
+   "list": {
+    "quality": {
+     "title": "Data quality",
+     "text": "Profiles the data, flags anomalies and personal data, cleans with a versioned playbook."
+    },
+    "etl": {
+     "title": "Data engineering",
+     "text": "Ingests and transforms the file into a clean, typed warehouse."
+    },
+    "semantic": {
+     "title": "Semantics & KPIs",
+     "text": "Understands business terms and defines dimensions, measures and KPIs."
+    },
+    "analyst": {
+     "title": "Analyst",
+     "text": "Computes the answer and finds the insight behind it."
+    },
+    "dashboard": {
+     "title": "Dashboards",
+     "text": "Chooses the right chart and refuses misleading comparisons."
+    },
+    "auditor": {
+     "title": "Auditor & explainability",
+     "text": "Explains every decision, keeps a tamper-proof journal and watches for drift."
+    }
+   },
+   "orchestrator_title": "The orchestrator",
+   "orchestrator_text": "runs the agents in the right order, in parallel when it can, and stops when a human must decide."
+  },
+  "trust": {
+   "eyebrow": "Trust by design",
+   "title": "Numbers you can question",
+   "subtitle": "A dashboard is only useful if you can believe it. Askboard shows its work.",
+   "compare": {
+    "title": "Honest comparisons",
+    "text": "Incomplete periods, different lengths or populations are detected and a justified fix is proposed. You decide.",
+    "asked": "August vs July, as asked",
+    "fixed": "Same days 1–23"
+   },
+   "explain": {
+    "title": "Explained decisions",
+    "text": "Why was this payment flagged? SHAP shows what pushed the model, in plain words.",
+    "f1": "Payment value",
+    "f2": "Number of installments"
+   },
+   "journal": {
+    "title": "Tamper-proof journal",
+    "text": "Every decision is chained with SHA-256. Change one line and the chain breaks."
+   }
+  },
+  "objectives": {
+   "eyebrow": "Business objectives",
+   "title": "Built for four goals",
+   "bo1": {
+    "title": "Faster time-to-insight",
+    "text": "From raw data to a usable answer in minutes, not weeks."
+   },
+   "bo2": {
+    "title": "Automated governance",
+    "text": "Deterministic rules and agent supervision remove routine human errors."
+   },
+   "bo3": {
+    "title": "Explainability & audit",
+    "text": "A natural-language rationale and a log entry for every transformation and KPI."
+   },
+   "bo4": {
+    "title": "BI for everyone",
+    "text": "Managers get their own dashboards without waiting for an engineer."
+   }
+  },
+  "cta": {
+   "title": "Ready to ask your data?",
+   "text": "Create your account and run your first analysis on a prepared dataset in under a minute.",
+   "button": "Create my account"
+  },
+  "footer": {
+   "text": "BIFlow project · Askboard 2026 · English & Français"
+  }
+ },
+ "auth": {
+  "signin": "Sign in",
+  "signup": "Sign up",
+  "signout": "Sign out",
+  "signin_title": "Welcome back",
+  "signin_subtitle": "Sign in to continue to your dashboards.",
+  "signup_title": "Create your account",
+  "signup_subtitle": "Start asking your data in plain words.",
+  "google": "Continue with Google",
+  "google_off": "Google sign-in is not configured on this server.",
+  "name": "Full name",
+  "email": "Email",
+  "password": "Password",
+  "password_hint": "At least 8 characters, with a letter and a digit.",
+  "submit_signin": "Sign in",
+  "submit_signup": "Create account",
+  "no_account": "No account yet?",
+  "have_account": "Already have an account?",
+  "create_one": "Create one",
+  "signin_link": "Sign in",
+  "captcha_notice": "Protected by reCAPTCHA: the Google Privacy Policy and Terms of Service apply.",
+  "captcha_off": "reCAPTCHA is not configured: checks are skipped (development only).",
+  "panel_title": "Every number, with its proof.",
+  "panel_points": {
+   "p1": "Misleading comparisons caught before you see them",
+   "p2": "Every decision explained and journaled",
+   "p3": "Ask “why?” about any figure"
+  },
+  "errors": {
+   "invalid_credentials": "Wrong email or password.",
+   "too_many_attempts": "Too many attempts. Wait a minute and try again.",
+   "email_taken": "An account already exists with this email.",
+   "invalid_form": "Please check the form.",
+   "captcha_missing": "Please tick the “I'm not a robot” box.",
+   "captcha_invalid": "Security check failed. Please try again.",
+   "captcha_low_score": "Security check failed. Please try again.",
+   "captcha_unreachable": "The server could not reach Google to verify the security check (internet, firewall or antivirus).",
+   "captcha_not_configured": "Security check not configured on the server.",
+   "AccessDenied": "Access denied.",
+   "OAuthAccountNotLinked": "This email is already used with another sign-in method.",
+   "default": "Sign-in failed. Please try again.",
+   "captcha_widget_error": "The security check could not start. Check that the reCAPTCHA keys are of type “v2 checkbox” and that localhost is an allowed domain."
+  }
+ },
+ "app": {
+  "nav": {
+   "label": "Main navigation",
+   "overview": "Overview",
+   "new": "New analysis",
+   "history": "History",
+   "monitoring": "Audit & monitoring",
+   "open": "Open the menu",
+   "close": "Close the menu"
+  },
+  "side": {
+   "title": "Every number, with its proof.",
+   "text": "Live: comparison checks and the auditor. Other stages: demo until each agent is plugged in."
+  },
+  "status": {
+   "running": "Running",
+   "needs_review": "Needs your decision",
+   "completed": "Completed",
+   "failed": "Failed",
+   "api_ok": "Pipeline API online",
+   "api_down": "Pipeline API offline",
+   "llm_ok": "LLM ready · {model}",
+   "llm_off": "LLM key missing: template answers"
+  },
+  "mode": {
+   "live": "Live",
+   "demo": "Demo"
+  },
+  "overview": {
+   "hello": "Hello {name}",
+   "title": "What do you want to know today?",
+   "subtitle": "Drop a file, ask a question in plain words, and get a dashboard where every number is checked and explained.",
+   "cta": "New analysis",
+   "stats": {
+    "total": "Analyses",
+    "review": "Waiting for your decision",
+    "done": "Completed"
+   },
+   "recent": "Recent analyses",
+   "see_all": "See all",
+   "empty_title": "No analysis yet",
+   "empty_text": "Run your first analysis on a prepared dataset: it takes less than a minute.",
+   "pipeline": "The pipeline",
+   "pipeline_text": "Live stages run for real; demo stages are placeholders until each teammate plugs in their agent."
+  },
+  "datasets": {
+   "olist": {
+    "name": "Olist e-commerce · Brazil",
+    "text": "100k real orders, payments and customers (2016–2018), in BRL."
+   },
+   "clinics": {
+    "name": "Clinic network · Tunisia",
+    "text": "Synthetic visits and fees of 9 clinics (2023–2024), in TND."
+   }
+  },
+  "pipeline": {
+   "title": "Pipeline",
+   "subtitle": "{live} live stages, {total} in total",
+   "running": "Working…",
+   "step": "step {n}",
+   "details": "Show each stage's output",
+   "compact": "Compact view"
+  },
+  "stages": {
+   "upload": {
+    "name": "Intake",
+    "out": "File received.",
+    "file": "{name}: {rows} rows, {cols} columns profiled in your browser.",
+    "dataset": "Prepared dataset: {name}."
+   },
+   "similarity": {
+    "name": "Similarity detection",
+    "out": "No similar dataset found: a new pipeline is built."
+   },
+   "column_types": {
+    "name": "Column semantic types",
+    "out": "Columns classified: IDs, amounts, dates, places.",
+    "file": "{n} columns classified (amount, date, ID, place…)."
+   },
+   "pii": {
+    "name": "Personal data masking",
+    "out": "Customer identifiers pseudonymized before any analysis."
+   },
+   "profiling": {
+    "name": "Profiling & anomalies",
+    "out": "Missing values, duplicates and outliers detected.",
+    "real": "{n} anomalous rows flagged by the profiler."
+   },
+   "cleaning": {
+    "name": "Cleaning",
+    "out": "Versioned playbook applied: missing values filled, duplicates removed."
+   },
+   "etl": {
+    "name": "ETL & warehouse",
+    "out": "Warehouse built: one fact table and its dimensions."
+   },
+   "request": {
+    "name": "Question understanding",
+    "out": "Business terms mapped to the KPI catalog.",
+    "real": "Understood as KPI “{kpi}” by {dim}."
+   },
+   "analysis": {
+    "name": "Analysis",
+    "out": "KPI computed for both periods."
+   },
+   "comparisons": {
+    "name": "Comparison check (BO4-12)",
+    "out": "5 comparability checks.",
+    "blocked": "Misleading as asked ({kinds}): a justified fix is proposed.",
+    "warning": "Valid, with warnings ({kinds}).",
+    "valid": "Valid comparison: 5 checks passed."
+   },
+   "dashboard": {
+    "name": "Dashboard",
+    "out": "Charts drawn for the periods you validate."
+   },
+   "lineage": {
+    "name": "Lineage",
+    "out": "KPI → transformations → source columns traced."
+   },
+   "auditor": {
+    "name": "Auditor & XAI",
+    "out": "Decisions explained and journaled.",
+    "real": "{n} anomalies explained with SHAP · journal {intact, select, ok {intact} other {BROKEN}} ({entries} entries) · drift: {drift}."
+   }
+  },
+  "new": {
+   "title": "New analysis",
+   "subtitle": "Three steps: your file, the data to answer on, your question.",
+   "s1_title": "Your file",
+   "s1_text": "Optional: drop a CSV to see how Askboard reads it.",
+   "drop": "Drop a CSV file here",
+   "drop_hint": "CSV, TSV or TXT · up to 50 MB · read only in your browser",
+   "browse": "Choose a file",
+   "file_type": "Please choose a .csv, .tsv or .txt file.",
+   "file_big": "Large file: only the first 50 MB are previewed.",
+   "file_meta": "{rows} rows · {cols} columns · {kb} KB",
+   "remove_file": "Remove the file",
+   "types": {
+    "number": "number",
+    "date": "date",
+    "text": "text",
+    "empty": "empty"
+   },
+   "file_note": "Until the ingestion agents (intake, PII, profiling, cleaning, ETL) are plugged in, your file is profiled in your browser and the analysis runs on the prepared dataset you choose below.",
+   "s2_title": "Data to answer on",
+   "s2_text": "Prepared by the data agents: cleaned, modeled, with a KPI catalog.",
+   "err_datasets": "The pipeline API is not reachable.",
+   "s3_title": "Your question",
+   "s3_text": "Write it in your words, then check the KPI and the periods to compare.",
+   "question": "Question",
+   "auto_question": "{kpi} by {dim}: {p1} vs {p2}?",
+   "overall": "overall",
+   "kpi": "KPI",
+   "dimension": "Broken down by",
+   "period": "Period studied",
+   "compare_to": "Compared with",
+   "period_hint": "Pre-filled with an example question. Change the periods freely: the comparison agent checks that the comparison is fair.",
+   "llm": "Summary written by the LLM",
+   "llm_hint": "Every number it writes is checked against the facts; otherwise the template is kept.",
+   "run": "Run the agents",
+   "err_pipeline": "The pipeline could not answer. Is the Python API running?",
+   "err_generic": "Something went wrong. Please try again.",
+   "working_title": "The agents are at work",
+   "working_text": "Checking that your comparison is fair, then preparing the dashboard…"
+  },
+  "run": {
+   "not_found": "This analysis does not exist or is not yours.",
+   "back": "History",
+   "vs": "vs",
+   "failed": "The pipeline could not complete this analysis. Check that the Python API is running, then try a new analysis.",
+   "wait_pipeline": "The results appear when the pipeline is done.",
+   "tabs_label": "Results",
+   "tabs": {
+    "dashboard": "Dashboard",
+    "checks": "Checks",
+    "explanations": "Explanations",
+    "journal": "Audit journal",
+    "drift": "Drift",
+    "why": "Ask why"
+   },
+   "no_run": "No result for this analysis."
+  },
+  "cmp": {
+   "source_llm": "Written by the LLM, fact-checked",
+   "source_template": "Deterministic template",
+   "adjusted": "Adjusted comparison applied",
+   "review": "Review this choice",
+   "kept": "Comparison kept as asked, despite the warning",
+   "valid": "Valid comparison",
+   "misleading": "This comparison is misleading as asked",
+   "adjustable": "An adjustment is possible",
+   "recommended": "Recommended",
+   "alternative": "Alternative",
+   "accept": "Use this comparison",
+   "as_asked": "As asked",
+   "as_asked_text": "Show the comparison you asked for, knowing it is biased.",
+   "keep": "Keep as asked",
+   "journaled": "Your choice is written in the audit journal. Nothing is applied without it.",
+   "waiting_title": "Waiting for your decision",
+   "waiting_text": "The dashboard is not drawn while the comparison is misleading. Choose an option above.",
+   "chart_error": "The dashboard could not be loaded.",
+   "change": "Change",
+   "previous": "Compared period",
+   "current": "Studied period",
+   "chart_note": "{kpi} by {dim} · computed in SQL from the KPI catalog · periods: {source}. Temporary chart: Samar's dashboard agent replaces it.",
+   "more": "Show the full explanation",
+   "less": "Show less"
+  },
+  "checks": {
+   "kind": {
+    "coverage": "Coverage",
+    "population": "Population",
+    "unit": "Unit",
+    "scale": "Scale",
+    "grain": "Aggregation level"
+   },
+   "status": {
+    "ok": "OK",
+    "warning": "Warning",
+    "blocking": "Blocking"
+   },
+   "what": {
+    "coverage": "Are both periods complete?",
+    "population": "Same scope on both sides?",
+    "unit": "Same unit?",
+    "scale": "Same length, for totals?",
+    "grain": "Same row meaning, no duplicates?"
+   },
+   "evidence": "Evidence"
+  },
+  "shap": {
+   "none": "No SHAP explanation for this data.",
+   "intro": "Why did the profiler flag these rows? Each bar shows how much a variable pushed the model toward an anomaly (amber) or toward normal (teal).",
+   "count": "{n} anomalies · {model}",
+   "error": "The explanations could not be loaded.",
+   "score": "score",
+   "toward_normal": "toward normal",
+   "toward_anomaly": "toward anomaly",
+   "prev": "Previous",
+   "next": "Next",
+   "page": "{from}–{to} of {total}"
+  },
+  "journal": {
+   "rule": "Rule",
+   "evidence": "Evidence",
+   "chain_title": "Append-only journal, chained with SHA-256",
+   "chain_text": "Each entry contains the hash of the previous one: changing or deleting any line breaks the chain.",
+   "verify": "Verify the chain",
+   "intact": "Chain intact: {n} entries verified.",
+   "tampered": "Tampering detected:",
+   "this_analysis": "Decisions of this analysis",
+   "empty": "No entry.",
+   "data_prep": "Decisions of the data preparation",
+   "data_prep_text": "Written by the other agents when the dataset was prepared."
+  },
+  "drift": {
+   "this_data": "Drift of this dataset",
+   "none": "No drift report.",
+   "status": {
+    "stable": "Stable",
+    "data_drift": "The data changed",
+    "data_drift_only": "Data changed, decisions stable",
+    "agent_changed": "An agent changed",
+    "not_available": "No reference yet",
+    "reference": "Reference"
+   },
+   "monitor_title": "Monthly monitoring",
+   "monitor_text": "Each month is compared with 6 reference months to tell “the data changed” from “an agent changed”.",
+   "monitor_empty": "Run the drift simulation on the Python side to see the monthly monitoring."
+  },
+  "why": {
+   "title": "Ask why",
+   "subtitle": "The auditor agent investigates the journal and the reports, then answers with its sources. Every number is checked.",
+   "s1": "Why was the comparison blocked?",
+   "s2": "Where does the figure “{kpi}” come from?",
+   "s3": "Which decisions were made on this analysis?",
+   "thinking": "Investigating the journal…",
+   "error": "The agent could not answer. Please try again.",
+   "verified_llm": "LLM answer, verified",
+   "template": "Automatic answer from the journal",
+   "sources": "Sources {ids}",
+   "tools": "{n} tool calls",
+   "placeholder": "Ask a question about these figures…",
+   "not_owner": "Only the owner of this analysis can ask.",
+   "send": "Send"
+  },
+  "history": {
+   "title": "History",
+   "subtitle": "All your analyses, with their status and your decisions.",
+   "search": "Search a question, a KPI…",
+   "filter": "Filter by status",
+   "all": "All",
+   "no_match": "No analysis matches.",
+   "confirm": "Remove this analysis from your history? The audit journal keeps its decisions.",
+   "remove": "Remove from history",
+   "note": "Removing an analysis only hides it from your history: the audit journal is append-only and keeps every decision.",
+   "decision": {
+    "accepted": "Fix accepted",
+    "rejected": "Kept as asked"
+   }
+  },
+  "monitoring": {
+   "title": "Audit & monitoring",
+   "subtitle": "The integrity of every audit journal and the behaviour of the agents over time (BO3).",
+   "journals": "Audit journals",
+   "names": {
+    "demo": "Demo run (Olist)",
+    "drift": "Monthly drift",
+    "clinics": "Clinics (2nd dataset)",
+    "ui": "Analyses from the app",
+    "real": "Production journal"
+   },
+   "meta": "{n} entries · {runs} runs",
+   "intact": "Chain intact at last read.",
+   "broken": "Chain broken!",
+   "intact_now": "Verified now: {n} entries, chain intact.",
+   "verify": "Verify now",
+   "drift": "Drift"
+  }
+ }
+}
