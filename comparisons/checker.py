@@ -69,9 +69,18 @@ def run(ctx: RunContext) -> AgentResult:
                               proposed_fix=rec, alternatives=alts, summary=summary,
                               summary_source=source, summary_parts=parts,
                               summary_lang=lang if source.startswith("llm:") else None)
+    kept = _previous_decision(out_path, report)
+    if kept:                       # the orchestrator re-runs this step after Sarra decided: keep her choice
+        report = report.model_copy(update={"user_decision": kept.user_decision, "chosen_fix": kept.chosen_fix})
+        ctx.log("user_decision_kept", kept.user_decision.value + (f": {kept.chosen_fix.value}" if kept.chosen_fix else ""),
+                outputs=[str(out_path)], evidence={"chosen_fix": kept.chosen_fix.value if kept.chosen_fix else None})
     save(report, out_path)
 
     blocking = [c.kind.value for c in checks if c.status == CheckStatus.BLOCKING]
+    if kept:
+        return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS, outputs={"report": out_path},
+                           message=f"Decision already taken: {kept.user_decision.value}"
+                                   + (f" ({kept.chosen_fix.value})" if kept.chosen_fix else ""))
     status = AgentStatus.NEEDS_REVIEW if blocking else AgentStatus.SUCCESS
     message = (f"Blocking: {', '.join(blocking)}. " + ("Fix proposed, waiting for the user."
                                                         if rec else "No valid fix: do not show.")
@@ -80,6 +89,20 @@ def run(ctx: RunContext) -> AgentResult:
             evidence={"blocking": blocking, "fix": rec.method.value if rec else None})
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=status,
                        outputs={"report": out_path}, message=message)
+
+
+def _previous_decision(path, new: ComparisonReport) -> ComparisonReport | None:
+    """The decision already recorded in this run's report, if it still applies to the same offer."""
+    try:
+        old = load(ComparisonReport, path)
+    except (OSError, ValueError):
+        return None
+    if old.user_decision == UserDecision.PENDING:
+        return None
+    offered = {f.method for f in ([new.proposed_fix] if new.proposed_fix else []) + new.alternatives}
+    if old.chosen_fix is not None and old.chosen_fix not in offered:
+        return None
+    return old
 
 
 def record_decision(run_id: str, decision: UserDecision | str,

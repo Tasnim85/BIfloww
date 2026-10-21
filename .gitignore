@@ -17,43 +17,37 @@ build/
 *.db
 *.duckdb
 *.duckdb.wal
-*.joblib
-*.parquet
+output/
+outputs/
+Dataset/
+data/olist/
 
-# Environment & secrets
+# Environment and secrets
 .env
 .env.*
 !.env.example
 
-# Datasets
-Dataset/
-test-work/
-data/*
-!data/sample/
-data/olist/
-
-# Frontend / Web
+# Node / Web UI
+web/.next/
+web/node_modules/
 node_modules/
-.next/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Coverage & logs
+# Streamlit
+.streamlit/
+
+# Testing & Coverage
 *.log
 .coverage
 .coverage.*
 htmlcov/
 coverage.xml
 
-# Documentation & temporary files
+# OS
+.DS_Store
 Thumbs.db
 Desktop.ini
-.streamlit/
-README_LOCAL_STACK.md
-convertir_parquet_csv.py
-lancer_pii.cmd
-README_CLEANING.md
-README_PII_GENERIC.md
-README_STREAMLIT_PII.md
-README_ETL.md
-README_PROFILING.md
-README_LINEAGE.md
-pytest.ini
+*.swp
+*~

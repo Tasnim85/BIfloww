@@ -32,15 +32,15 @@ def build_report(anomalies: Path, model: Path, scores: Path,
                                         random_state=seed).index
     rows = flagged.append(normal)
 
-    X_all = prof.X
+    X_all = prof.X_model          # what the trees see (after the profiler's preprocessing, if any)
     medians = X_all.median()
     explainer = build_explainer(prof.model)
     explanations = explain_rows(explainer, X_all.loc[rows])
 
     out = []
-    for exp in explanations:
-        decision = bool(s.at[exp.row_key, "is_anomaly"])
-        score = float(s.at[exp.row_key, "anomaly_score"])
+    for key, exp in zip(rows, explanations):          # the original key: row keys can be integers
+        decision = bool(s.at[key, "is_anomaly"])
+        score = float(s.at[key, "anomaly_score"])
         out.append(AnomalyExplanation(
             row_key=exp.row_key, is_anomaly=decision, anomaly_score=round(score, 6),
             base_value=round(exp.base_value, 6), model_output=round(exp.model_output, 6),
@@ -52,7 +52,7 @@ def build_report(anomalies: Path, model: Path, scores: Path,
             narrative_parts=parts))
 
     # Guarantee: SHAP explains EXACTLY the score that took the decision
-    rebuilt = np.array([path_length_to_score(e.model_output, prof.model.max_samples_)
+    rebuilt = np.array([path_length_to_score(e.model_output, prof.estimator.max_samples_)
                         for e in explanations])
     actual = s.loc[rows, "anomaly_score"].to_numpy()
     worst = float(np.max(np.abs(rebuilt - actual)))

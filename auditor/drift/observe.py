@@ -16,7 +16,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from auditor.xai.shap_explainer import build_explainer
+from auditor.xai.shap_explainer import build_explainer, model_matrix
 from contracts.common import load
 from contracts.pipeline import RUNS_ROOT, output_path
 from contracts.quality import AnomalyReport
@@ -48,7 +48,7 @@ def observe_profiling(run_id: str, runs_root: Path, obs: Observation) -> None:
 
     model = joblib.load(output_path(run_id, "profiling", "model", runs_root))
     sample = scores[report.features].sample(min(SHAP_SAMPLE, len(scores)), random_state=0)
-    importance = np.abs(np.atleast_2d(build_explainer(model).shap_values(sample))).mean(axis=0)
+    importance = np.abs(np.atleast_2d(build_explainer(model).shap_values(model_matrix(model, sample)))).mean(axis=0)
     for f, share in zip(report.features, importance / importance.sum()):
         obs.metrics[("profiling", f"shap_share_{f}")] = Metric(float(share), 0.02)
 
