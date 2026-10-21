@@ -82,7 +82,7 @@ class TestYAMLStructure:
                 assert t.get("description"), f"Type {t['type_id']} has no description"
 
     def test_t06_version_exists(self, raw_data):
-        assert raw_data.get("taxonomy_version") == "1.0.0"
+        assert raw_data.get("taxonomy_version") == "1.1.0"
 
     def test_t06b_upper_snake_case(self, raw_data):
         for g in raw_data["groups"]:
@@ -115,10 +115,11 @@ class TestLoaderAPI:
         assert loader.type_id_from_alias("product_weight_g") == "WEIGHT"
 
     def test_t11_privacy_hints(self, loader):
-        assert loader.privacy_hint_for("EMAIL") == "HIGH"
-        assert loader.privacy_hint_for("PRICE") == "LOW"
-        assert loader.privacy_hint_for("AGE") == "MEDIUM"
-        assert loader.privacy_hint_for("UNKNOWN") == "LOW"
+        # Migrated to PrivacyHint enum values (taxonomy v1.1.0)
+        assert loader.privacy_hint_for("EMAIL") == "LIKELY_PII"
+        assert loader.privacy_hint_for("PRICE") == "NO_DIRECT_PII_INDICATOR"
+        assert loader.privacy_hint_for("AGE") == "CONTEXT_DEPENDENT"
+        assert loader.privacy_hint_for("UNKNOWN") == "NO_DIRECT_PII_INDICATOR"
 
     def test_t12_group_for_type(self, loader):
         assert loader.group_for_type("EMAIL") == "PERSONAL_DATA"
