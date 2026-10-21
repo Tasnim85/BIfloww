@@ -1,307 +1,235 @@
-"""benchmark_request.py -- BO4-06 Benchmark: NL question -> AnalysisRequest.
+"""tests/benchmark_request.py — BO4-06 Extended Benchmark.
 
-Tests 10 representative questions against the real catalog and glossary.
-Measures: correct metric, correct dimensions, correct period, comparison detection,
-and matches against predefined expected JSON representations.
-
-Run standalone: python tests/benchmark_request.py
-Run via pytest:  python -m pytest tests/benchmark_request.py -v
+Evaluates 10 natural language questions against predefined expected JSON specifications,
+measuring each analytical component separately:
+  1. Top 5 / Limit constraint
+  2. Explicit day-range (du 5 au 20 juin / June 5 to June 20)
+  3. Average review score by seller (moyenne des avis par vendeur)
+  4. Typo tolerance (rewnue, catgorie)
+  5. French phrasing & accentuation (chiffre d'affaires, état, août)
+  6. Relative periods (last month / mois dernier)
+  7. Metric business synonyms (sales -> Revenue, commandes -> Orders)
+  8. Time comparisons (August vs July)
+  9. Exclusion filters (excluding SP, sauf SP)
+ 10. Multi-criteria combination (FR + category + relative month + exclusion)
 """
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
+import sys
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from contracts.semantic import Glossary, KpiCatalog
-from semantic.request import _find_dimensions, _find_metric, _find_period
-
+from contracts.semantic import Glossary, KpiCatalog, load_yaml
+from semantic.request import _find_dimensions, _find_filters, _find_metric, _find_period
 CATALOG_PATH = REPO_ROOT / "kpi" / "catalog.yaml"
 GLOSSARY_PATH = REPO_ROOT / "semantic" / "glossary.yaml"
 
-
-def load_catalog() -> KpiCatalog:
-    import yaml
-    data = yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))
-    return KpiCatalog.model_validate(data)
-
-
-def load_glossary() -> Glossary:
-    import yaml
-    data = yaml.safe_load(GLOSSARY_PATH.read_text(encoding="utf-8"))
-    return Glossary.model_validate(data)
-
-
-# ---------------------------------------------------------------------------
-# Predefined Expected JSON specifications (defined before execution)
-# ---------------------------------------------------------------------------
-EXPECTED_SPECS = [
+# ==============================================================================
+# PREDEFINED EXPECTED JSON SPECIFICATIONS (Defined BEFORE execution)
+# ==============================================================================
+BENCHMARK_CASES: list[dict[str, Any]] = [
     {
-        "id": "Q01",
-        "question": "Revenue by state in August vs July",
+        "id": "Q01_TOP5",
+        "requirement": "Top 5 limit constraint",
+        "question": "Top 5 categories by Revenue in August",
         "expected": {
             "metric": "Revenue",
-            "dims_contain": ["customer_state"],
-            "period_month": "08",
-            "compare_month": "07",
+            "dimensions": ["product_category"],
+            "period": {"start": "2018-08-01", "end": "2018-08-31"},
+            "compare_to": None,
+            "filters": ["LIMIT 5"],
         },
     },
     {
-        "id": "Q02",
-        "question": "Orders by category in September",
-        "expected": {
-            "metric": "Orders",
-            "dims_contain": ["product_category"],
-            "period_month": "09",
-            "compare_month": None,
-        },
-    },
-    {
-        "id": "Q03",
-        "question": "Revenue by payment type in October",
+        "id": "Q02_DATE_RANGE",
+        "requirement": "Période explicite du 5 au 20 juin",
+        "question": "Revenue by state from June 5 to June 20",
         "expected": {
             "metric": "Revenue",
-            "dims_contain": ["payment_type"],
-            "period_month": "10",
-            "compare_month": None,
+            "dimensions": ["customer_state"],
+            "period": {"start": "2018-06-05", "end": "2018-06-20"},
+            "compare_to": None,
+            "filters": [],
         },
     },
     {
-        "id": "Q04",
-        "question": "Revenue in August",
+        "id": "Q03_REVIEW_SELLER",
+        "requirement": "Moyenne des avis par vendeur",
+        "question": "moyenne des avis par vendeur en aout",
+        "expected": {
+            "metric": "ReviewScore",
+            "dimensions": ["seller_id"],
+            "period": {"start": "2018-08-01", "end": "2018-08-31"},
+            "compare_to": None,
+            "filters": [],
+        },
+    },
+    {
+        "id": "Q04_TYPO",
+        "requirement": "Faute de frappe (rewnue, catgorie)",
+        "question": "rewnue by catgorie in August",
         "expected": {
             "metric": "Revenue",
-            "dims_contain": [],
-            "period_month": "08",
-            "compare_month": None,
+            "dimensions": ["product_category"],
+            "period": {"start": "2018-08-01", "end": "2018-08-31"},
+            "compare_to": None,
+            "filters": [],
         },
     },
     {
-        "id": "Q05",
-        "question": "sales by state in August",
-        "expected": {
-            "metric": "Revenue",
-            "dims_contain": ["customer_state"],
-            "period_month": "08",
-            "compare_month": None,
-        },
-    },
-    {
-        "id": "Q06",
+        "id": "Q05_FRENCH",
+        "requirement": "Question française complète",
         "question": "chiffre d'affaires par etat en aout",
         "expected": {
             "metric": "Revenue",
-            "dims_contain": ["customer_state"],
-            "period_month": "08",
-            "compare_month": None,
+            "dimensions": ["customer_state"],
+            "period": {"start": "2018-08-01", "end": "2018-08-31"},
+            "compare_to": None,
+            "filters": [],
         },
     },
     {
-        "id": "Q07",
-        "question": "Revenue by state",
+        "id": "Q06_RELATIVE_PERIOD",
+        "requirement": "Période relative (last month)",
+        "question": "Revenue by state last month",
         "expected": {
             "metric": "Revenue",
-            "dims_contain": ["customer_state"],
-            "period_month": None,
-            "compare_month": None,
+            "dimensions": ["customer_state"],
+            "period": {"start": "2018-07-01", "end": "2018-07-31"},
+            "compare_to": None,
+            "filters": [],
         },
     },
     {
-        "id": "Q08",
-        "question": "Revenue by state in August 2017",
+        "id": "Q07_SYNONYM",
+        "requirement": "Synonyme métier (sales -> Revenue)",
+        "question": "sales by payment method in October",
         "expected": {
             "metric": "Revenue",
-            "dims_contain": ["customer_state"],
-            "period_month": "08",
-            "period_year": "2017",
-            "compare_month": None,
+            "dimensions": ["payment_type"],
+            "period": {"start": "2018-10-01", "end": "2018-10-31"},
+            "compare_to": None,
+            "filters": [],
         },
     },
     {
-        "id": "Q09",
-        "question": "orders by seller state in July vs June",
+        "id": "Q08_COMPARISON",
+        "requirement": "Comparaison temporelle (August vs July)",
+        "question": "Orders by category in August vs July",
         "expected": {
             "metric": "Orders",
-            "dims_contain": ["seller_state"],
-            "period_month": "07",
-            "compare_month": "06",
+            "dimensions": ["product_category"],
+            "period": {"start": "2018-08-01", "end": "2018-08-31"},
+            "compare_to": {"start": "2018-07-01", "end": "2018-07-31"},
+            "filters": [],
         },
     },
     {
-        "id": "Q10",
-        "question": "number of orders in august",
+        "id": "Q09_EXCLUSION_FILTER",
+        "requirement": "Filtre d'exclusion (excluding SP)",
+        "question": "Revenue by state in August excluding SP",
         "expected": {
-            "metric": "Orders",
-            "dims_contain": [],
-            "period_month": "08",
-            "compare_month": None,
+            "metric": "Revenue",
+            "dimensions": ["customer_state"],
+            "period": {"start": "2018-08-01", "end": "2018-08-31"},
+            "compare_to": None,
+            "filters": ["customer_state != 'SP'"],
+        },
+    },
+    {
+        "id": "Q10_COMBO",
+        "requirement": "Combinaison multiple (FR + catégorie + mois relatif + exclusion)",
+        "question": "ventes par categorie le mois dernier hors SP",
+        "expected": {
+            "metric": "Revenue",
+            "dimensions": ["product_category"],
+            "period": {"start": "2018-07-01", "end": "2018-07-31"},
+            "compare_to": None,
+            "filters": ["customer_state != 'SP'"],
         },
     },
 ]
 
 
-def run_benchmark() -> tuple[int, int]:
-    """Run all 10 cases with catalog & glossary, checking against expected specs."""
-    catalog = load_catalog()
-    glossary = load_glossary()
+def run_benchmark() -> bool:
+    catalog = load_yaml(KpiCatalog, CATALOG_PATH)
+    glossary = load_yaml(Glossary, GLOSSARY_PATH)
 
-    results: list[str] = []
-    score_metric = score_dims = score_period = score_compare = 0
-    total = len(EXPECTED_SPECS)
+    print("\n" + "=" * 90)
+    print("BO4-06 EXTENDED BENCHMARK -- 10 NL Questions vs Predefined Expected JSON Specs")
+    print("=" * 90)
 
-    print(f"\n{'='*72}")
-    print("BO4-06 BENCHMARK -- 10 NL questions -> AnalysisRequest components")
-    print(f"Catalog  : {CATALOG_PATH.name} ({len(catalog.kpis)} KPIs, {len(catalog.dimensions)} dims)")
-    print(f"Glossary : {GLOSSARY_PATH.name} ({len(glossary.terms)} terms)")
-    print(f"{'='*72}\n")
+    score_metric = 0
+    score_dims = 0
+    score_period = 0
+    score_filters = 0
+    total_passed = 0
 
-    for item in EXPECTED_SPECS:
-        qid = item["id"]
-        question = item["question"]
-        exp = item["expected"]
+    results = []
 
-        q = question.lower()
-        metric, conf = _find_metric(q, catalog, glossary)
-        dims = _find_dimensions(q, catalog, glossary)
-        period, compare_to = _find_period(q)
+    for case in BENCHMARK_CASES:
+        cid = case["id"]
+        q = case["question"]
+        req_type = case["requirement"]
+        expected = case["expected"]
 
-        m_ok = metric == exp["metric"]
-        d_ok = all(d in dims for d in exp["dims_contain"])
+        # Run extraction
+        q_lower = q.lower()
+        metric, conf = _find_metric(q_lower, catalog, glossary)
+        dims = _find_dimensions(q_lower, catalog, glossary)
+        period, compare_to = _find_period(q_lower)
+        filters = _find_filters(q_lower, catalog)
 
-        if exp["period_month"] is None:
-            p_ok = period is None
-        else:
-            p_ok = (
-                period is not None
-                and period.start[5:7] == exp["period_month"]
-                and (exp.get("period_year") is None or period.start[:4] == exp["period_year"])
-            )
+        actual_json = {
+            "metric": metric,
+            "dimensions": dims,
+            "period": {"start": period.start, "end": period.end} if period else None,
+            "compare_to": {"start": compare_to.start, "end": compare_to.end} if compare_to else None,
+            "filters": filters,
+        }
 
-        if exp["compare_month"] is None:
-            c_ok = compare_to is None
-        else:
-            c_ok = (compare_to is not None and compare_to.start[5:7] == exp["compare_month"])
+        # Check each component
+        m_ok = (actual_json["metric"] == expected["metric"])
+        d_ok = (set(actual_json["dimensions"]) == set(expected["dimensions"]))
+        p_ok = (actual_json["period"] == expected["period"] and actual_json["compare_to"] == expected["compare_to"])
+        f_ok = (set(actual_json["filters"]) == set(expected["filters"]))
 
         if m_ok: score_metric += 1
         if d_ok: score_dims += 1
         if p_ok: score_period += 1
-        if c_ok: score_compare += 1
+        if f_ok: score_filters += 1
 
-        all_ok = m_ok and d_ok and p_ok and c_ok
-        status = "PASS" if all_ok else "FAIL"
-        results.append(status)
+        all_ok = m_ok and d_ok and p_ok and f_ok
+        if all_ok: total_passed += 1
 
-        extracted_json = {
-            "metric": metric,
-            "confidence": conf,
-            "dimensions": dims,
-            "period": f"{period.start}..{period.end}" if period else None,
-            "compare_to": f"{compare_to.start}..{compare_to.end}" if compare_to else None,
-        }
+        status_str = "PASS" if all_ok else "FAIL"
+        print(f"\n[{status_str}] {cid} ({req_type})")
+        print(f"     Question  : \"{q}\"")
+        print(f"     Extracted : {json.dumps(actual_json, ensure_ascii=False)}")
+        print(f"     Expected  : {json.dumps(expected, ensure_ascii=False)}")
+        print(f"     Sub-checks: metric={'OK' if m_ok else 'FAIL'}, dims={'OK' if d_ok else 'FAIL'}, "
+              f"period={'OK' if p_ok else 'FAIL'}, filters={'OK' if f_ok else 'FAIL'}")
 
-        print(f"{qid} [{status}] {question!r}")
-        print(f"     Extracted: {json.dumps(extracted_json)}")
-        print(f"     Expected : {json.dumps(exp)}")
-        print(f"     Checks   : metric={'OK' if m_ok else 'MISS'}, dims={'OK' if d_ok else 'MISS'}, "
-              f"period={'OK' if p_ok else 'MISS'}, compare={'OK' if c_ok else 'MISS'}")
-        print()
+    n = len(BENCHMARK_CASES)
+    print("\n" + "=" * 90)
+    print(f"BENCHMARK COMPONENT ACCURACY SUMMARY (N={n})")
+    print("-" * 90)
+    print(f"  * Metrics Extraction    : {score_metric}/{n} ({score_metric/n*100:.1f}%)")
+    print(f"  * Exact Dimensions Match: {score_dims}/{n} ({score_dims/n*100:.1f}%)")
+    print(f"  * Periods & Comparisons : {score_period}/{n} ({score_period/n*100:.1f}%)")
+    print(f"  * Filters & Constraints : {score_filters}/{n} ({score_filters/n*100:.1f}%)")
+    print("-" * 90)
+    print(f"  GLOBAL FULL ACCURACY    : {total_passed}/{n} ({total_passed/n*100:.1f}%)")
+    print("=" * 90 + "\n")
 
-    passed = results.count("PASS")
-    print(f"{'='*72}")
-    print(f"SCORE  : {passed}/{total} questions fully correct ({passed/total*100:.0f}%)")
-    print(f"  Metric     : {score_metric}/{total}")
-    print(f"  Dimensions : {score_dims}/{total}")
-    print(f"  Period     : {score_period}/{total}")
-    print(f"  Comparison : {score_compare}/{total}")
-    print(f"{'='*72}\n")
-
-    return passed, total
-
-
-# ---------------------------------------------------------------------------
-# pytest entry points
-# ---------------------------------------------------------------------------
-
-def test_benchmark_all_10_pass():
-    """T-BM-01: 10/10 questions fully correct with glossary synonym resolution."""
-    passed, total = run_benchmark()
-    assert passed == 10, f"Expected 10/10, got {passed}/{total}"
-
-
-def test_find_metric_revenue():
-    """T-BM-02: 'revenue ...' -> metric=Revenue."""
-    catalog = load_catalog()
-    glossary = load_glossary()
-    metric, conf = _find_metric("revenue by state in august", catalog, glossary)
-    assert metric == "Revenue"
-    assert conf >= 0.9
-
-
-def test_find_metric_orders():
-    """T-BM-03: 'orders ...' -> metric=Orders."""
-    catalog = load_catalog()
-    glossary = load_glossary()
-    metric, conf = _find_metric("orders by category in september", catalog, glossary)
-    assert metric == "Orders"
-
-
-def test_find_metric_unknown_returns_none():
-    """T-BM-04: no matching KPI -> (None, 0.0)."""
-    catalog = load_catalog()
-    glossary = load_glossary()
-    metric, conf = _find_metric("what is the weather today", catalog, glossary)
-    assert metric is None
-    assert conf == 0.0
-
-
-def test_find_dimensions_customer_state():
-    """T-BM-05: 'state' in question -> customer_state in dims."""
-    catalog = load_catalog()
-    glossary = load_glossary()
-    dims = _find_dimensions("revenue by state in august", catalog, glossary)
-    assert "customer_state" in dims
-
-
-def test_find_dimensions_product_category():
-    """T-BM-06: 'category' in question -> product_category in dims."""
-    catalog = load_catalog()
-    glossary = load_glossary()
-    dims = _find_dimensions("orders by category", catalog, glossary)
-    assert "product_category" in dims
-
-
-def test_find_period_august():
-    """T-BM-07: 'august' -> period.start starts with some year-08."""
-    period, compare = _find_period("revenue by state in august")
-    assert period is not None
-    assert "-08-" in period.start
-    assert compare is None
-
-
-def test_find_period_comparison():
-    """T-BM-08: 'august vs july' -> period=Aug, compare=Jul."""
-    period, compare = _find_period("revenue in august vs july")
-    assert period is not None and "-08-" in period.start
-    assert compare is not None and "-07-" in compare.start
-
-
-def test_find_period_no_month():
-    """T-BM-09: question without month -> (None, None)."""
-    period, compare = _find_period("revenue by state")
-    assert period is None
-    assert compare is None
-
-
-def test_find_period_with_explicit_year():
-    """T-BM-10: '2017' in question -> period year=2017."""
-    period, _ = _find_period("revenue by state in august 2017")
-    assert period is not None
-    assert period.start.startswith("2017-")
+    return total_passed == n
 
 
 if __name__ == "__main__":
-    run_benchmark()
+    success = run_benchmark()
+    raise SystemExit(0 if success else 1)

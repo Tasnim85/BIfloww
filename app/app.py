@@ -169,40 +169,40 @@ if st.session_state["done"]:
         st.subheader("📊 Dashboard")
         spec = json.loads(spec_path.read_text(encoding="utf-8"))
 
-        for panel in spec.get("panels", []):
-            st.markdown(f"### {panel.get('title', 'Chart')}")
-            st.caption(f"Chart type: `{panel.get('chart_type')}` · "
-                       f"Metric: `{panel.get('metric')}`")
+        charts = spec.get("charts", spec.get("panels", []))
+        for chart in charts:
+            st.markdown(f"### {chart.get('title', 'Chart')}")
+            chart_type = chart.get("chart_type", "bar")
+            st.caption(f"Chart type: `{chart_type}` · Reason: {chart.get('reason', '')}")
 
-            data_file = panel.get("data_file", "")
-            if data_file and Path(data_file).exists():
+            data_file = chart.get("data_file", "")
+            data_path = Path(data_file)
+            if not data_path.is_absolute():
+                data_path = _REPO_ROOT / data_path
+
+            if data_path.exists() and data_path.is_file():
                 import pandas as pd
-                df = pd.read_parquet(data_file)
-                dims = panel.get("dimensions", [])
-                chart_type = panel.get("chart_type", "bar_chart")
-                if dims and panel.get("metric") in df.columns:
-                    x_col = dims[0]
-                    y_col = panel["metric"]
-                    chart_df = df[[x_col, y_col]].set_index(x_col)
-                    if chart_type == "line_chart":
-                        st.line_chart(chart_df)
-                    elif chart_type == "heatmap":
-                        st.dataframe(chart_df)
+                try:
+                    df = pd.read_parquet(data_path)
+                    x_col = chart.get("x")
+                    y_col = chart.get("y")
+                    if chart_type == "kpi_card":
+                        val = df[y_col].iloc[0] if (y_col and y_col in df.columns) else df.iloc[0, 0]
+                        st.metric(label=chart.get("title", "KPI"), value=f"{val:,.2f}" if isinstance(val, (int, float)) else str(val))
+                    elif chart_type == "line" and x_col and y_col and x_col in df.columns and y_col in df.columns:
+                        st.line_chart(df[[x_col, y_col]].set_index(x_col))
+                    elif chart_type == "bar" and x_col and y_col and x_col in df.columns and y_col in df.columns:
+                        st.bar_chart(df[[x_col, y_col]].set_index(x_col))
                     else:
-                        st.bar_chart(chart_df)
-                else:
-                    st.dataframe(df.head(20))
+                        st.dataframe(df)
+                except Exception as ex:
+                    st.warning(f"Could not render chart data: {ex}")
             else:
-                st.info("Result data not available yet.")
+                st.info(f"Chart data file ({chart.get('data_file')}) is waiting for Analyst execution.")
 
         for warning in spec.get("warnings", []):
-            level = warning.get("level", "warning")
-            msg   = warning.get("message", "")
-            fix   = warning.get("fix")
-            if level == "error":
-                st.error(f"⚠️ {msg}" + (f"\n\n**Proposed fix:** {fix}" if fix else ""))
-            else:
-                st.warning(f"⚠️ {msg}" + (f"\n\n**Proposed fix:** {fix}" if fix else ""))
+            msg = warning.get("message", str(warning)) if isinstance(warning, dict) else str(warning)
+            st.warning(f"⚠️ {msg}")
     else:
         st.info("Dashboard spec not yet available. The pipeline may still be running or some steps failed.")
 
