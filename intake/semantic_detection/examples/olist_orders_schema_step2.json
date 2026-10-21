@@ -1,0 +1,15 @@
+{
+  "_comment": "Step 2 example — JSON schema (Flavour B) for the Olist orders table.",
+  "table": "olist_orders",
+  "source": "Brazilian E-Commerce Olist Dataset",
+  "columns": [
+    {"name": "order_id",                      "dtype": "string",  "nullable": false,  "samples": ["00010242fe8c5a6d1ba2dd792cb16214"]},
+    {"name": "customer_id",                   "dtype": "string",  "nullable": false,  "samples": ["3ce436f183e68e07877b285a838db11a"]},
+    {"name": "order_status",                  "dtype": "string",  "nullable": false,  "samples": ["delivered", "shipped", "canceled"]},
+    {"name": "order_purchase_timestamp",      "dtype": "datetime","nullable": false,  "samples": ["2017-10-02 10:56:33"]},
+    {"name": "order_approved_at",             "dtype": "datetime","nullable": true,   "samples": ["2017-10-02 11:07:15"]},
+    {"name": "order_delivered_carrier_date",  "dtype": "datetime","nullable": true,   "samples": ["2017-10-04 19:55:00"]},
+    {"name": "order_delivered_customer_date", "dtype": "datetime","nullable": true,   "samples": ["2017-10-10 21:25:13"]},
+    {"name": "order_estimated_delivery_date", "dtype": "date",    "nullable": false,  "samples": ["2017-10-18"]}
+  ]
+}

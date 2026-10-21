@@ -1,0 +1,518 @@
+# classification_rules.yaml — Step 2 Rule-Based Classification Rules
+# Owner : Samar / Malek (BIFlow Step 2)
+# Format: list of rule dicts; loaded by RuleBasedClassifier
+#
+# Each rule:
+#   rule_id:    unique identifier (SCREAMING_SNAKE_CASE)
+#   priority:   integer — lower = higher priority (1 = highest)
+#   group_id:   taxonomy group_id (must match semantic_types.yaml)
+#   type_id:    taxonomy type_id (must match semantic_types.yaml)
+#   match:
+#     keywords:       list of strings matched against normalized tokens or column name
+#     table_hints:    (optional) only apply if table name contains one of these
+#     value_patterns: (optional) regex patterns applied to sample values
+#   confidence: float in [0, 1]
+#   notes:      human-readable description
+
+rules:
+
+  # ── IDENTITY DATA ──────────────────────────────────────────────────────────
+
+  - rule_id: EMAIL_RULE
+    priority: 1
+    group_id: PERSONAL_DATA
+    type_id:  EMAIL
+    match:
+      keywords: [email, mail, e_mail, courriel, email_address]
+      value_patterns:
+        - "^[\\w.+-]+@[\\w-]+\\.[a-z]{2,}$"
+    confidence: 0.92
+    notes: "Email address columns"
+
+  - rule_id: PHONE_RULE
+    priority: 2
+    group_id: PERSONAL_DATA
+    type_id:  PHONE
+    match:
+      keywords: [phone, telephone, mobile, tel, fax, gsm, handphone, cellphone]
+      value_patterns:
+        - "^[+]?[0-9 \\-().]{7,20}$"
+    confidence: 0.90
+    notes: "Phone/mobile number columns"
+
+  - rule_id: PERSON_NAME_RULE
+    priority: 3
+    group_id: PERSONAL_DATA
+    type_id:  PERSON_NAME
+    match:
+      keywords: [first_name, last_name, full_name, firstname, lastname, surname, prenom, nom_client]
+    confidence: 0.90
+    notes: "Full or partial personal name columns"
+
+  - rule_id: PERSON_ID_RULE
+    priority: 4
+    group_id: PERSONAL_DATA
+    type_id:  PERSON_ID
+    match:
+      keywords: [customer_id, client_id, user_id, person_id, buyer_id, account_id, member_id, subscriber_id]
+    confidence: 0.90
+    notes: "Person/customer identifier columns"
+
+  - rule_id: AGE_RULE
+    priority: 5
+    group_id: PERSONAL_DATA
+    type_id:  AGE
+    match:
+      keywords: [age, years_old, client_age]
+      value_patterns:
+        - "^(1[0-2][0-9]|[1-9][0-9]|[0-9])$"
+    confidence: 0.88
+    notes: "Age in years"
+
+  - rule_id: ADDRESS_RULE
+    priority: 6
+    group_id: PERSONAL_DATA
+    type_id:  PERSONAL_ADDRESS
+    match:
+      keywords: [address, addr, street, rue, adresse, domicile, residence]
+    confidence: 0.85
+    notes: "Personal postal address columns"
+
+  # ── FINANCIAL DATA ─────────────────────────────────────────────────────────
+
+  - rule_id: PRICE_RULE
+    priority: 10
+    group_id: FINANCIAL_DATA
+    type_id:  PRICE
+    match:
+      keywords: [price, prix, tarif, msrp, srp, unit_price, selling_price, list_price, base_price]
+      value_patterns:
+        - "^\\d{1,10}(\\.\\d{1,4})?$"
+    confidence: 0.88
+    notes: "Monetary price columns"
+
+  - rule_id: PAYMENT_AMOUNT_RULE
+    priority: 11
+    group_id: FINANCIAL_DATA
+    type_id:  PAYMENT_AMOUNT
+    match:
+      keywords: [amount, payment_value, total_amount, montant, valor, paid_amount, transaction_amount]
+    confidence: 0.88
+    notes: "Payment or transaction amount"
+
+  - rule_id: REVENUE_RULE
+    priority: 12
+    group_id: FINANCIAL_DATA
+    type_id:  REVENUE
+    match:
+      keywords: [revenue, sales, chiffre_affaires, turnover, gross_revenue, net_revenue]
+    confidence: 0.87
+    notes: "Revenue or sales columns"
+
+  - rule_id: COST_RULE
+    priority: 13
+    group_id: FINANCIAL_DATA
+    type_id:  COST
+    match:
+      keywords: [cost, cogs, expense, cout, depense, overhead, operational_cost]
+    confidence: 0.87
+    notes: "Cost or expense columns"
+
+  - rule_id: DISCOUNT_RULE
+    priority: 14
+    group_id: FINANCIAL_DATA
+    type_id:  DISCOUNT
+    match:
+      keywords: [discount, reduction, promo, rebate, markdown, coupon]
+    confidence: 0.85
+    notes: "Discount or reduction columns"
+
+  - rule_id: FREIGHT_RULE
+    priority: 15
+    group_id: FINANCIAL_DATA
+    type_id:  FREIGHT_COST
+    match:
+      keywords: [freight, shipping_cost, shipping_fee, livraison, port, frais_port]
+    confidence: 0.87
+    notes: "Freight / shipping cost"
+
+  - rule_id: TAX_RULE
+    priority: 16
+    group_id: FINANCIAL_DATA
+    type_id:  TAX
+    match:
+      keywords: [tax, vat, tva, taxe, gst, hst, duty]
+    confidence: 0.88
+    notes: "Tax / VAT columns"
+
+  - rule_id: PROFIT_RULE
+    priority: 17
+    group_id: FINANCIAL_DATA
+    type_id:  PROFIT
+    match:
+      keywords: [profit, margin, benefice, gain, net_income, ebit, ebitda]
+    confidence: 0.86
+    notes: "Profit / margin columns"
+
+  # ── TEMPORAL DATA ──────────────────────────────────────────────────────────
+
+  - rule_id: DATETIME_RULE
+    priority: 20
+    group_id: TEMPORAL_DATA
+    type_id:  DATETIME
+    match:
+      keywords: [timestamp, datetime, created_at, updated_at, modified_at, logged_at]
+      value_patterns:
+        - "^\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}"
+    confidence: 0.92
+    notes: "Date+time (timestamp) columns"
+
+  - rule_id: DATE_RULE
+    priority: 21
+    group_id: TEMPORAL_DATA
+    type_id:  DATE
+    match:
+      keywords: [date, delivery_date, order_date, ship_date, purchase_date, invoice_date, due_date]
+      value_patterns:
+        - "^\\d{4}-\\d{2}-\\d{2}$"
+        - "^\\d{2}/\\d{2}/\\d{4}$"
+    confidence: 0.90
+    notes: "Date-only columns"
+
+  - rule_id: YEAR_RULE
+    priority: 22
+    group_id: TEMPORAL_DATA
+    type_id:  YEAR
+    match:
+      keywords: [year, annee, fiscal_year]
+      value_patterns:
+        - "^(19|20)\\d{2}$"
+    confidence: 0.88
+    notes: "Year columns"
+
+  - rule_id: MONTH_RULE
+    priority: 23
+    group_id: TEMPORAL_DATA
+    type_id:  MONTH
+    match:
+      keywords: [month, mois, period_month]
+      value_patterns:
+        - "^(0?[1-9]|1[0-2])$"
+    confidence: 0.85
+    notes: "Month (numeric or name) columns"
+
+  - rule_id: DURATION_RULE
+    priority: 24
+    group_id: TEMPORAL_DATA
+    type_id:  DURATION
+    match:
+      keywords: [duration, elapsed, delivery_time, response_time, time_to_ship, days_to_deliver]
+    confidence: 0.82
+    notes: "Duration / elapsed time columns"
+
+  # ── GEOGRAPHIC DATA ────────────────────────────────────────────────────────
+
+  - rule_id: LATITUDE_RULE
+    priority: 30
+    group_id: GEOGRAPHICAL_DATA
+    type_id:  LATITUDE
+    match:
+      keywords: [latitude, lat, geolat]
+      value_patterns:
+        - "^-?(90(\\.0+)?|[0-8]?\\d(\\.\\d+)?)$"
+    confidence: 0.92
+    notes: "Latitude coordinate"
+
+  - rule_id: LONGITUDE_RULE
+    priority: 31
+    group_id: GEOGRAPHICAL_DATA
+    type_id:  LONGITUDE
+    match:
+      keywords: [longitude, lng, lon, geolon]
+      value_patterns:
+        - "^-?(180(\\.0+)?|1[0-7]\\d(\\.\\d+)?|[0-9]{1,2}(\\.\\d+)?)$"
+    confidence: 0.92
+    notes: "Longitude coordinate"
+
+  - rule_id: POSTAL_CODE_RULE
+    priority: 32
+    group_id: GEOGRAPHICAL_DATA
+    type_id:  POSTAL_CODE
+    match:
+      keywords: [zip, postal, postcode, code_postal, zip_code, cep, pincode]
+      value_patterns:
+        - "^\\d{5}(-\\d{4})?$"
+        - "^[A-Z0-9]{3,8}$"
+    confidence: 0.88
+    notes: "Postal / ZIP code"
+
+  - rule_id: CITY_RULE
+    priority: 33
+    group_id: GEOGRAPHICAL_DATA
+    type_id:  CITY
+    match:
+      keywords: [city, ville, cidade, ciudad, municipio, locality]
+    confidence: 0.85
+    notes: "City name columns"
+
+  - rule_id: STATE_RULE
+    priority: 34
+    group_id: GEOGRAPHICAL_DATA
+    type_id:  STATE
+    match:
+      keywords: [state, province, region, estado, departement, county]
+    confidence: 0.82
+    notes: "State / province / region"
+
+  - rule_id: COUNTRY_RULE
+    priority: 35
+    group_id: GEOGRAPHICAL_DATA
+    type_id:  COUNTRY
+    match:
+      keywords: [country, pays, pais, nation, country_code, iso_country]
+      value_patterns:
+        - "^[A-Z]{2,3}$"
+    confidence: 0.87
+    notes: "Country name or ISO code"
+
+  # ── BUSINESS IDENTIFIERS ──────────────────────────────────────────────────
+
+  - rule_id: ORDER_ID_RULE
+    priority: 40
+    group_id: BUSINESS_ENTITY_DATA
+    type_id:  ORDER_ID
+    match:
+      keywords: [order_id, numero_commande, commande_id, order_number]
+    confidence: 0.92
+    notes: "Order identifier"
+
+  - rule_id: PRODUCT_ID_RULE
+    priority: 41
+    group_id: BUSINESS_ENTITY_DATA
+    type_id:  PRODUCT_ID
+    match:
+      keywords: [product_id, sku, article_id, item_id, produit_id, asin]
+    confidence: 0.92
+    notes: "Product identifier"
+
+  - rule_id: SELLER_ID_RULE
+    priority: 42
+    group_id: BUSINESS_ENTITY_DATA
+    type_id:  SELLER_ID
+    match:
+      keywords: [seller_id, vendor_id, merchant_id, supplier_id, fournisseur_id]
+    confidence: 0.90
+    notes: "Seller / vendor identifier"
+
+  - rule_id: INVOICE_ID_RULE
+    priority: 43
+    group_id: BUSINESS_ENTITY_DATA
+    type_id:  INVOICE_ID
+    match:
+      keywords: [invoice_id, invoice_number, facture_id, bill_id]
+    confidence: 0.90
+    notes: "Invoice identifier"
+
+  - rule_id: TRANSACTION_ID_RULE
+    priority: 44
+    group_id: BUSINESS_ENTITY_DATA
+    type_id:  TRANSACTION_ID
+    match:
+      keywords: [transaction_id, txn_id, payment_id, transfer_id]
+    confidence: 0.90
+    notes: "Transaction / payment identifier"
+
+  - rule_id: ORGANIZATION_ID_RULE
+    priority: 45
+    group_id: BUSINESS_ENTITY_DATA
+    type_id:  ORGANIZATION_ID
+    match:
+      keywords: [organization_id, org_id, company_id, enterprise_id]
+    confidence: 0.88
+    notes: "Organisation identifier"
+
+  # ── CATEGORICAL DATA ──────────────────────────────────────────────────────
+
+  - rule_id: STATUS_RULE
+    priority: 50
+    group_id: CATEGORICAL_DATA
+    type_id:  STATUS
+    match:
+      keywords: [status, etat, statut, order_status, account_status, state]
+    confidence: 0.82
+    notes: "Status or state columns"
+
+  - rule_id: PRODUCT_CATEGORY_RULE
+    priority: 51
+    group_id: CATEGORICAL_DATA
+    type_id:  PRODUCT_CATEGORY
+    match:
+      keywords: [category, categorie, product_category, product_type, department]
+    confidence: 0.85
+    notes: "Product category"
+
+  - rule_id: PAYMENT_METHOD_RULE
+    priority: 52
+    group_id: CATEGORICAL_DATA
+    type_id:  PAYMENT_METHOD
+    match:
+      keywords: [payment_type, payment_method, mode_paiement, moyen_paiement]
+    confidence: 0.87
+    notes: "Payment method type"
+
+  - rule_id: CUSTOMER_SEGMENT_RULE
+    priority: 53
+    group_id: CATEGORICAL_DATA
+    type_id:  CUSTOMER_SEGMENT
+    match:
+      keywords: [segment, customer_segment, customer_type, client_type, tier]
+    confidence: 0.80
+    notes: "Customer segment or classification"
+
+  - rule_id: BOOLEAN_FLAG_RULE
+    priority: 54
+    group_id: CATEGORICAL_DATA
+    type_id:  BOOLEAN_FLAG
+    match:
+      keywords: [is_active, is_deleted, active, enabled, flag, has_discount, is_prime]
+      value_patterns:
+        - "^(true|false|yes|no|oui|non|0|1)$"
+    confidence: 0.85
+    notes: "Binary flag columns"
+
+  # ── QUANTITATIVE DATA ─────────────────────────────────────────────────────
+
+  - rule_id: QUANTITY_RULE
+    priority: 60
+    group_id: QUANTITATIVE_DATA
+    type_id:  QUANTITY
+    match:
+      keywords: [quantity, qty, units, items, nb_items, piece, pieces, stock]
+    confidence: 0.85
+    notes: "Quantity or unit count"
+
+  - rule_id: COUNT_RULE
+    priority: 61
+    group_id: QUANTITATIVE_DATA
+    type_id:  COUNT
+    match:
+      keywords: [count, frequency, num_orders, total_count, occurrences, nb_transactions]
+    confidence: 0.82
+    notes: "Count or frequency"
+
+  - rule_id: WEIGHT_RULE
+    priority: 62
+    group_id: QUANTITATIVE_DATA
+    type_id:  WEIGHT
+    match:
+      keywords: [weight, poids, mass, gramme, kg, pound, product_weight]
+    confidence: 0.85
+    notes: "Weight / mass"
+
+  - rule_id: LENGTH_RULE
+    priority: 63
+    group_id: QUANTITATIVE_DATA
+    type_id:  LENGTH
+    match:
+      keywords: [length, height, width, depth, longueur, hauteur, largeur, dimension]
+    confidence: 0.83
+    notes: "Length / dimension"
+
+  - rule_id: RATING_RULE
+    priority: 64
+    group_id: QUANTITATIVE_DATA
+    type_id:  RATING
+    match:
+      keywords: [rating, review_score, note, score, satisfaction, stars, grade]
+      value_patterns:
+        - "^[1-5](\\.\\d)?$"
+        - "^\\d{1,2}(\\.\\d)?$"
+    confidence: 0.85
+    notes: "Rating or score"
+
+  - rule_id: PERCENTAGE_RULE
+    priority: 65
+    group_id: QUANTITATIVE_DATA
+    type_id:  PERCENTAGE
+    match:
+      keywords: [percentage, pct, taux, rate, ratio, conversion_rate, discount_rate]
+      value_patterns:
+        - "^\\d{1,3}(\\.\\d+)?%?$"
+    confidence: 0.82
+    notes: "Percentage or ratio"
+
+  # ── TEXTUAL DATA ──────────────────────────────────────────────────────────
+
+  - rule_id: DESCRIPTION_RULE
+    priority: 70
+    group_id: TEXTUAL_DATA
+    type_id:  DESCRIPTION
+    match:
+      keywords: [description, detail, details, product_description, overview, about]
+    confidence: 0.80
+    notes: "Free-text description"
+
+  - rule_id: COMMENT_RULE
+    priority: 71
+    group_id: TEXTUAL_DATA
+    type_id:  COMMENT
+    match:
+      keywords: [comment, review, feedback, remark, observation, note, message, opinion]
+    confidence: 0.80
+    notes: "User comment or review"
+
+  - rule_id: TITLE_RULE
+    priority: 72
+    group_id: TEXTUAL_DATA
+    type_id:  TITLE
+    match:
+      keywords: [title, name, label, product_name, nom, intitule, headline]
+    confidence: 0.75
+    notes: "Name or title of an entity"
+
+  # ── TECHNICAL DATA ────────────────────────────────────────────────────────
+
+  - rule_id: SYSTEM_ID_RULE
+    priority: 80
+    group_id: TECHNICAL_DATA
+    type_id:  SYSTEM_ID
+    match:
+      keywords: [uuid, uid, record_id, system_id, unique_id, internal_id]
+      value_patterns:
+        - "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    confidence: 0.88
+    notes: "System-generated technical identifier"
+
+  - rule_id: HASH_RULE
+    priority: 81
+    group_id: TECHNICAL_DATA
+    type_id:  HASH_VALUE
+    match:
+      keywords: [hash, checksum, md5, sha256, fingerprint, digest]
+      value_patterns:
+        - "^[0-9a-f]{32,64}$"
+    confidence: 0.88
+    notes: "Cryptographic hash or checksum"
+
+  - rule_id: VERSION_RULE
+    priority: 82
+    group_id: TECHNICAL_DATA
+    type_id:  VERSION
+    match:
+      keywords: [version, schema_version, api_version, release, build]
+      value_patterns:
+        - "^\\d+\\.\\d+(\\.\\d+)?$"
+    confidence: 0.85
+    notes: "Version string"
+
+  - rule_id: FILE_REFERENCE_RULE
+    priority: 83
+    group_id: TECHNICAL_DATA
+    type_id:  FILE_REFERENCE
+    match:
+      keywords: [url, link, path, filepath, file_path, document_path, href, src]
+      value_patterns:
+        - "^https?://"
+        - "^/[\\w/.-]+"
+    confidence: 0.83
+    notes: "File path or URL"

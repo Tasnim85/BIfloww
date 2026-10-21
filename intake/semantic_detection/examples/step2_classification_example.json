@@ -1,0 +1,124 @@
+{
+  "_comment": "Step 2 example — classification output for Olist orders + products tables.",
+  "model": "step2-rules@1.0",
+  "generated_at": "2026-10-21",
+  "columns": [
+    {
+      "table": "olist_orders",
+      "column": "order_id",
+      "semantic_type": "ORDER_ID",
+      "semantic_group": "BUSINESS_IDENTIFIERS",
+      "confidence": 0.95,
+      "match_tier": "alias",
+      "privacy_hint": "NO_DIRECT_PII_INDICATOR",
+      "pii_candidate": false
+    },
+    {
+      "table": "olist_orders",
+      "column": "customer_id",
+      "semantic_type": "PERSON_ID",
+      "semantic_group": "IDENTITY_DATA",
+      "confidence": 0.92,
+      "match_tier": "keyword",
+      "privacy_hint": "POTENTIAL_PII",
+      "pii_candidate": true
+    },
+    {
+      "table": "olist_orders",
+      "column": "order_status",
+      "semantic_type": "STATUS",
+      "semantic_group": "CATEGORICAL_DATA",
+      "confidence": 0.95,
+      "match_tier": "alias",
+      "privacy_hint": "NO_DIRECT_PII_INDICATOR",
+      "pii_candidate": false
+    },
+    {
+      "table": "olist_orders",
+      "column": "order_purchase_timestamp",
+      "semantic_type": "DATETIME",
+      "semantic_group": "TEMPORAL_DATA",
+      "confidence": 0.92,
+      "match_tier": "keyword",
+      "privacy_hint": "NO_DIRECT_PII_INDICATOR",
+      "pii_candidate": false
+    },
+    {
+      "table": "olist_order_items",
+      "column": "price",
+      "semantic_type": "PRICE",
+      "semantic_group": "FINANCIAL_DATA",
+      "confidence": 0.88,
+      "match_tier": "keyword",
+      "privacy_hint": "NO_DIRECT_PII_INDICATOR",
+      "pii_candidate": false
+    },
+    {
+      "table": "olist_order_items",
+      "column": "freight_value",
+      "semantic_type": "FREIGHT_COST",
+      "semantic_group": "FINANCIAL_DATA",
+      "confidence": 0.87,
+      "match_tier": "keyword",
+      "privacy_hint": "NO_DIRECT_PII_INDICATOR",
+      "pii_candidate": false
+    },
+    {
+      "table": "olist_customers",
+      "column": "customer_unique_id",
+      "semantic_type": "PERSON_ID",
+      "semantic_group": "IDENTITY_DATA",
+      "confidence": 0.95,
+      "match_tier": "alias",
+      "privacy_hint": "POTENTIAL_PII",
+      "pii_candidate": true
+    },
+    {
+      "table": "olist_customers",
+      "column": "customer_zip_code_prefix",
+      "semantic_type": "POSTAL_CODE",
+      "semantic_group": "GEOGRAPHIC_DATA",
+      "confidence": 0.95,
+      "match_tier": "alias",
+      "privacy_hint": "NO_DIRECT_PII_INDICATOR",
+      "pii_candidate": false
+    },
+    {
+      "table": "olist_customers",
+      "column": "customer_city",
+      "semantic_type": "CITY",
+      "semantic_group": "GEOGRAPHIC_DATA",
+      "confidence": 0.85,
+      "match_tier": "keyword",
+      "privacy_hint": "NO_DIRECT_PII_INDICATOR",
+      "pii_candidate": false
+    },
+    {
+      "table": "olist_order_reviews",
+      "column": "review_score",
+      "semantic_type": "RATING",
+      "semantic_group": "QUANTITATIVE_DATA",
+      "confidence": 0.95,
+      "match_tier": "alias",
+      "privacy_hint": "NO_DIRECT_PII_INDICATOR",
+      "pii_candidate": false
+    },
+    {
+      "table": "olist_order_reviews",
+      "column": "review_comment_message",
+      "semantic_type": "COMMENT",
+      "semantic_group": "TEXTUAL_DATA",
+      "confidence": 0.95,
+      "match_tier": "alias",
+      "privacy_hint": "CONTEXT_DEPENDENT",
+      "pii_candidate": true
+    }
+  ],
+  "ambiguity_summary": {
+    "total_columns": 11,
+    "unknown": 0,
+    "low_confidence": 0,
+    "conflicts_resolved": 0,
+    "pending_review": 0
+  }
+}
