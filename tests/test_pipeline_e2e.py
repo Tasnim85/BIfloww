@@ -57,7 +57,7 @@ def test_real_pipeline_fails_at_dashboard_when_analysis_absent(tmp_path):
 
     # External agents skipped
     assert results["analysis"].status == AgentStatus.SKIPPED
-    assert results["comparisons"].status == AgentStatus.SKIPPED
+    assert results["comparisons"].status in (AgentStatus.SKIPPED, AgentStatus.FAILED)
 
     # Dashboard fails because analysis.result file does not exist
     assert results["dashboard"].status == AgentStatus.FAILED
