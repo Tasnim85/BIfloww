@@ -5,7 +5,7 @@
   "errors": [],
   "warnings": [],
   "stats": {
-    "taxonomy_version": "1.1.0",
+    "taxonomy_version": "1.1.1",
     "total_groups": 10,
     "total_types": 60,
     "unique_type_ids": 60,

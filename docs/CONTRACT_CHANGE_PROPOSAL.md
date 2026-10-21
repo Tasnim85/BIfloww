@@ -113,3 +113,36 @@ semantic_type_detail: str | None = Field(
 `python -m contracts.check_contracts` passes on `BO1/Samar+Malek` before and after
 all Tâche 3 changes. Verified with `git diff --stat contracts/` = no output (no
 changes to `contracts/` directory).
+
+
+---
+
+## 5. PERSON_ID Privacy Hint Rule — À valider avec Ikbel
+
+### 5.1 Change (taxonomy v1.1.1)
+
+`PERSON_ID` privacy_hint changed from `LIKELY_PII` → `POTENTIAL_PII`.
+
+**Rationale:** The original prompt specification states:
+> `customer_id -> PERSON_ID -> POTENTIAL_PII`
+
+A person identifier such as `customer_id` is a surrogate key. On its own it does
+not directly reveal personal information — its sensitivity depends on context and
+whether it can be linked to other tables. `POTENTIAL_PII` is therefore more accurate
+than `LIKELY_PII` (which is reserved for directly identifying columns like EMAIL,
+PHONE, PERSON_NAME, PERSONAL_ADDRESS, BIRTH_DATE).
+
+### 5.2 À valider avec Ikbel
+
+> ⚠️ **This rule change requires Ikbel's review before Step 2.** The PII detection
+> module (`privacy/`) may use `privacy_hint` to trigger column-level inspection.
+> Downgrading `PERSON_ID` from `LIKELY_PII` to `POTENTIAL_PII` means it would no
+> longer be in Ikbel's "immediate inspect" tier. Please confirm whether:
+> 1. The PII agent should still flag `PERSON_ID` columns for inspection despite
+>    `POTENTIAL_PII` hint, or
+> 2. `POTENTIAL_PII` is sufficient and the PII agent's own logic handles linkage risk.
+
+### 5.3 Files changed
+
+- `intake/semantic_detection/config/semantic_types.yaml` — `PERSON_ID` hint and `taxonomy_version: "1.1.1"`
+- `intake/semantic_detection/tests/test_taxonomy.py` — `test_t11` updated, `test_t06` updated to `"1.1.1"`
