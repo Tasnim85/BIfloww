@@ -5,3 +5,6 @@ pandas
 pyarrow
 streamlit
 matplotlib
+fastapi
+uvicorn[standard]
+httpx
