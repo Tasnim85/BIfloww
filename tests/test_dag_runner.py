@@ -544,3 +544,53 @@ def test_t13_success_without_outputs_fails_and_skips_downstream(tmp_dirs):
     assert "without producing valid artifact" in results["A"].message.lower() or "missing declared output artifact" in results["A"].message.lower()
     assert results["B"].status == AgentStatus.SKIPPED
     assert not b_executed[0], "B ne doit pas s'exécuter si les artefacts requis de A sont absents"
+
+
+# ???????????????????????????????????????????????????????????????????????????
+# T14 ? Ancien SUCCESS invalid? si une d?pendance amont n?cessite une nouvelle revue
+# ???????????????????????????????????????????????????????????????????????????
+
+def test_t14_resume_invalidated_when_upstream_not_success(tmp_dirs):
+    """Si B ?tait SUCCESS dans la DB, mais que A renvoie maintenant NEEDS_REVIEW,
+    B ne doit PAS ?tre r?utilis? en SUCCESS : il doit ?tre suspendu / SKIPPED."""
+    tmp_path, db, runs = tmp_dirs
+    run_id = _make_run_id()
+
+    step_A = _make_step("A", set(), "ep_a", outputs={"report": "a.json"})
+    step_B = _make_step("B", {"A"}, "ep_b", outputs={"report": "b.json"})
+    steps = {"A": step_A, "B": step_B}
+    dag = {"A": set(), "B": {"A"}}
+
+    init_run(run_id, ["A", "B"], db=db)
+    # Simuler un run pr?c?dent o? B ?tait SUCCESS
+    set_done(run_id, "B", TaskStatus.SUCCESS, "old success", outputs={"report": "b.json"}, db=db)
+    # Cr?er le fichier de sortie de B
+    b_out = runs / run_id / "B" / "b.json"
+    b_out.parent.mkdir(parents=True, exist_ok=True)
+    b_out.write_text('{"status": "old_ok"}', encoding="utf-8")
+
+    import orchestrator.dag_runner as runner
+
+    def review_a(ctx):
+        ctx.output_dir.mkdir(parents=True, exist_ok=True)
+        (ctx.output_dir / "a.json").write_text("{}", encoding="utf-8")
+        return _stub_result(run_id, "A", AgentStatus.NEEDS_REVIEW, "requires review")
+
+    b_executed = [False]
+    def agent_b(ctx):
+        b_executed[0] = True
+        return _stub_result(run_id, "B", AgentStatus.SUCCESS, "new ok")
+
+    def dispatch(ep):
+        return review_a if ep == "ep_a" else agent_b
+
+    with _PipelineContext(steps, dag, runs, run_id):
+        with mock.patch.object(runner, "_import_run", side_effect=dispatch):
+            results = runner.run_pipeline(run_id=run_id, max_workers=2, runs_root=runs, db=db)
+
+    assert results["A"].status == AgentStatus.NEEDS_REVIEW
+    # B NE DOIT PAS ?tre r?utilis? en SUCCESS : il doit ?tre SKIPPED car A n'a pas r?ussi !
+    assert results["B"].status == AgentStatus.SKIPPED, (
+        f"B ne doit pas r?utiliser un ancien SUCCESS si A est NEEDS_REVIEW, got {results['B'].status}"
+    )
+    assert not b_executed[0]
