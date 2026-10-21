@@ -1,0 +1,12 @@
+{
+  "contract_version": "1.6",
+  "schema_version": "1.0.0",
+  "taxonomy_version": "1.1.1",
+  "run_id": "run_001",
+  "dataset_name": "sample",
+  "columns": [],
+  "total_columns": 0,
+  "classified_columns": 0,
+  "unknown_columns": 0,
+  "review_required_columns": 0
+}

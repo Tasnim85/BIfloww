@@ -267,7 +267,8 @@ def compute_column_matches(
 ) -> SemanticMatchesReport:
     """BO1-06 Phase 4: Compute pairwise cross-table column similarity matches.
 
-    Identifies shared business concepts and candidate foreign keys across tables.
+    Identifies shared business concepts and candidate foreign keys across tables
+    using the Hungarian bipartite matching algorithm per table pair.
     Returns a SemanticMatchesReport contract with typed relationships.
     """
     matches: list[SemanticMatch] = []
@@ -280,58 +281,71 @@ def compute_column_matches(
         for j in range(i + 1, len(table_names)):
             t2 = table_names[j]
             cols2 = tables_cols[t2]
-            for c1 in cols1:
+            if not cols1 or not cols2:
+                continue
+
+            total_comparisons += len(cols1) * len(cols2)
+
+            # Global Hungarian bipartite alignment between table cols1 and cols2
+            sim_res = compute_hungarian_similarity(cols1, cols2)
+            assignments = sim_res.get("assignment", [])
+
+            for item in assignments:
+                if isinstance(item, dict):
+                    c1 = item.get("col_a", "")
+                    c2 = item.get("col_b", "")
+                    score = float(item.get("sim", 0.0))
+                else:
+                    c1, c2, score = item[0], item[1], float(item[2])
                 norm1 = _normalize(c1)
-                for c2 in cols2:
-                    norm2 = _normalize(c2)
-                    total_comparisons += 1
+                norm2 = _normalize(c2)
 
-                    # 1. Exact match on normalized names
-                    if norm1 == norm2:
-                        is_key = c1.lower().endswith("_id") or c1.lower() == "id"
-                        rel_type = RelationshipType.SAME_CONCEPT_CANDIDATE
-                        score = 1.0
-                        evidence_str = (
-                            f"Identical column '{c1}' across tables {t1} and {t2} (candidate join key)"
-                            if is_key else f"Identical column '{c1}' across tables {t1} and {t2}"
-                        )
-                        matches.append(SemanticMatch(
-                            source_table=t1,
-                            source_column=c1,
-                            target_table=t2,
-                            target_column=c2,
-                            relationship_type=rel_type,
-                            similarity_score=score,
-                            evidence=[evidence_str],
-                            review_required=False,
-                        ))
-                        continue
+                # Homonym differentiation: generic 'id' across different tables are distinct concepts
+                if norm1 == "id" and norm2 == "id" and t1.lower() != t2.lower():
+                    continue
 
-                    # 2. Similarity comparison (Embeddings / TF-IDF Hungarian on 1-to-1)
-                    sim_res = compute_hungarian_similarity([c1], [c2])
-                    score = sim_res.get("score", 0.0)
+                if norm1 == norm2:
+                    is_key = c1.lower().endswith("_id") or c1.lower() == "id"
+                    rel_type = RelationshipType.SAME_CONCEPT_CANDIDATE
+                    score = 1.0
+                    evidence_str = (
+                        f"Identical column '{c1}' across tables {t1} and {t2} (candidate join key)"
+                        if is_key else f"Identical column '{c1}' across tables {t1} and {t2}"
+                    )
+                    matches.append(SemanticMatch(
+                        source_table=t1,
+                        source_column=c1,
+                        target_table=t2,
+                        target_column=c2,
+                        relationship_type=rel_type,
+                        similarity_score=score,
+                        evidence=[evidence_str],
+                        review_required=False,
+                    ))
+                elif score >= threshold:
+                    rel_type = (
+                        RelationshipType.SAME_CONCEPT_CANDIDATE
+                        if score >= 0.85
+                        else RelationshipType.RELATED_CONCEPT
+                    )
+                    review_req = score < 0.90
+                    matches.append(SemanticMatch(
+                        source_table=t1,
+                        source_column=c1,
+                        target_table=t2,
+                        target_column=c2,
+                        relationship_type=rel_type,
+                        similarity_score=round(float(score), 4),
+                        evidence=[f"Bipartite Hungarian alignment ({c1} <-> {c2}) with score {score:.4f} via {sim_res.get('method')}"],
+                        review_required=review_req,
+                    ))
 
-                    if score >= threshold:
-                        rel_type = (
-                            RelationshipType.SAME_CONCEPT_CANDIDATE
-                            if score >= 0.88
-                            else RelationshipType.RELATED_CONCEPT
-                        )
-                        review_req = score < 0.90
-                        matches.append(SemanticMatch(
-                            source_table=t1,
-                            source_column=c1,
-                            target_table=t2,
-                            target_column=c2,
-                            relationship_type=rel_type,
-                            similarity_score=round(score, 4),
-                            evidence=[f"Similarity score {score:.4f} via {sim_res.get('method')}"],
-                            review_required=review_req,
-                        ))
+    from intake.semantic_detection.src.taxonomy_loader import TaxonomyLoader
+    tax_ver = TaxonomyLoader().version
 
     return SemanticMatchesReport(
         schema_version="1.0.0",
-        taxonomy_version="1.1.0",
+        taxonomy_version=tax_ver,
         run_id=run_id,
         method="hungarian-cross-table@2.0",
         threshold=threshold,
@@ -353,7 +367,7 @@ def run(ctx: RunContext) -> AgentResult:
         csv_path = tables_dir / csv_name
         if csv_path.exists():
             import csv as csv_mod
-            with open(csv_path, encoding="utf-8", newline="") as fh:
+            with open(csv_path, encoding="utf-8-sig", newline="") as fh:
                 reader = csv_mod.reader(fh)
                 header = next(reader, [])
                 tables_cols[table_name] = header
@@ -418,6 +432,7 @@ def run(ctx: RunContext) -> AgentResult:
 
     outputs_dict: dict[str, Path] = {
         "report": out_path,
+        "matches": col_matches_path,
         "column_matches": col_matches_path,
     }
 

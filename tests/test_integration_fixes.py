@@ -75,6 +75,7 @@ def test_pii_review_can_be_settled_by_a_human(tmp_path, monkeypatch):
 def test_steps_after_a_needs_review_wait_instead_of_crashing(tmp_path):
     """PII stops for a human: profiling and everything after it must wait (not run on missing files)."""
     from unittest import mock
+    from pathlib import Path
     import orchestrator.dag_runner as runner
     from contracts import AgentResult, AgentStatus
 
@@ -87,9 +88,14 @@ def test_steps_after_a_needs_review_wait_instead_of_crashing(tmp_path):
                 if f.endswith("/"):
                     p.mkdir(parents=True, exist_ok=True)
                 elif f.endswith(".parquet"):
-                    p.write_bytes(b"PAR1testparquetdataPAR1")
+                    import pandas as pd
+                    pd.DataFrame([{"dummy": 1}]).to_parquet(p)
                 else:
-                    p.write_text("{}", encoding="utf-8")
+                    example_p = Path(__file__).resolve().parent.parent / "contracts" / "examples" / "run_001" / ctx.agent / f
+                    if example_p.exists():
+                        p.write_bytes(example_p.read_bytes())
+                    else:
+                        p.write_text('{"status": "ok"}', encoding="utf-8")
             return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=status, message="")
         return agent
 
