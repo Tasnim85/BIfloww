@@ -32,12 +32,13 @@ from typing import Callable
 
 from contracts.agent import AgentResult, AgentStatus, RunContext
 from contracts.audit import DEFAULT_JOURNAL
-from contracts.pipeline import RUNS_ROOT, STEPS, context_for, graph
+from contracts.pipeline import RUNS_ROOT, STEPS, context_for, graph, output_path
 
 from orchestrator.task_store import (
     DEFAULT_DB,
     TaskStatus,
     get_run_summary,
+    get_status,
     init_run,
     set_done,
     set_running,
@@ -94,10 +95,10 @@ def _execute_step(
         )
 
     task_status = {
-        AgentStatus.SUCCESS:     TaskStatus.SUCCESS,
-        AgentStatus.FAILED:      TaskStatus.FAILED,
-        AgentStatus.NEEDS_REVIEW: TaskStatus.SUCCESS,   # needs_review still continues
-        AgentStatus.SKIPPED:     TaskStatus.SKIPPED,
+        AgentStatus.SUCCESS:      TaskStatus.SUCCESS,
+        AgentStatus.FAILED:       TaskStatus.FAILED,
+        AgentStatus.NEEDS_REVIEW: TaskStatus.NEEDS_REVIEW,
+        AgentStatus.SKIPPED:      TaskStatus.SKIPPED,
     }.get(result.status, TaskStatus.FAILED)
 
     set_done(run_id, step_name, task_status, result.message,
@@ -160,30 +161,65 @@ def run_pipeline(
         futures: dict[Future, str] = {}
 
         while sorter.is_active():
-            # Submit all newly-ready steps
-            for step_name in sorter.get_ready():
-                # Check if any dependency failed
-                if stop_on_failure and any(
-                    dep in failed_steps for dep in STEPS[step_name].depends_on
-                ):
-                    msg = f"Skipped — upstream failure in: {STEPS[step_name].depends_on & failed_steps}"
-                    log.warning("Skipping step %s: %s", step_name, msg)
-                    set_done(run_id, step_name, TaskStatus.SKIPPED, msg, db=db)
-                    results[step_name] = AgentResult(
-                        run_id=run_id, agent=step_name,
-                        status=AgentStatus.SKIPPED, message=msg,
-                    )
-                    if callback:
-                        callback(step_name, "SKIPPED", msg)
-                    sorter.done(step_name)
-                    continue
+            # Submit all newly-ready steps (including any unblocked by skipped steps)
+            newly_ready = list(sorter.get_ready())
+            while newly_ready:
+                for step_name in newly_ready:
+                    # Resume support: skip steps already SUCCESS whose output files exist
+                    step_def = STEPS[step_name]
+                    prev_status = get_status(run_id, step_name, db=db)
+                    if prev_status == TaskStatus.SUCCESS:
+                        outputs_exist = (
+                            all(
+                                output_path(run_id, step_name, key, runs_root=runs_root).exists()
+                                for key in step_def.outputs
+                            )
+                            if step_def.outputs
+                            else True
+                        )
+                        if outputs_exist:
+                            msg = f"Reused existing SUCCESS outputs from {run_id}"
+                            log.info("Step %s already SUCCESS, skipping execution", step_name)
+                            outputs = {
+                                k: output_path(run_id, step_name, k, runs_root=runs_root)
+                                for k in step_def.outputs
+                            }
+                            results[step_name] = AgentResult(
+                                run_id=run_id,
+                                agent=step_name,
+                                status=AgentStatus.SUCCESS,
+                                outputs=outputs,
+                                message=msg,
+                            )
+                            if callback:
+                                callback(step_name, TaskStatus.SUCCESS.value, msg)
+                            sorter.done(step_name)
+                            continue
 
-                future = pool.submit(
-                    _execute_step,
-                    step_name, run_id, runs_root, journal, db,
-                    params or {}, callback,
-                )
-                futures[future] = step_name
+                    # Check if any dependency failed
+                    if stop_on_failure and any(
+                        dep in failed_steps for dep in STEPS[step_name].depends_on
+                    ):
+                        msg = f"Skipped — upstream failure in: {STEPS[step_name].depends_on & failed_steps}"
+                        log.warning("Skipping step %s: %s", step_name, msg)
+                        set_done(run_id, step_name, TaskStatus.SKIPPED, msg, db=db)
+                        results[step_name] = AgentResult(
+                            run_id=run_id, agent=step_name,
+                            status=AgentStatus.SKIPPED, message=msg,
+                        )
+                        if callback:
+                            callback(step_name, "SKIPPED", msg)
+                        sorter.done(step_name)
+                        continue
+
+                    future = pool.submit(
+                        _execute_step,
+                        step_name, run_id, runs_root, journal, db,
+                        params or {}, callback,
+                    )
+                    futures[future] = step_name
+
+                newly_ready = list(sorter.get_ready()) if sorter.is_active() else []
 
             if not futures:
                 break   # nothing running and nothing ready → DAG complete

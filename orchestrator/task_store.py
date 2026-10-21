@@ -33,11 +33,12 @@ CREATE INDEX IF NOT EXISTS tasks_run ON tasks(run_id);
 
 
 class TaskStatus(str, Enum):
-    PENDING  = "PENDING"
-    RUNNING  = "RUNNING"
-    SUCCESS  = "SUCCESS"
-    FAILED   = "FAILED"
-    SKIPPED  = "SKIPPED"
+    PENDING      = "PENDING"
+    RUNNING      = "RUNNING"
+    SUCCESS      = "SUCCESS"
+    FAILED       = "FAILED"
+    SKIPPED      = "SKIPPED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
 
 
 def _connect(db: Path) -> sqlite3.Connection:
