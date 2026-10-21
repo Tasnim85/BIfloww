@@ -25,12 +25,8 @@ PLAYBOOKS = {
 
 
 def current_folder(root):
-    pointer = root / "cleaning_current_test.json"
-    if pointer.exists():
-        name = json.loads(pointer.read_text(encoding="utf-8")).get("folder", "")
-        if re.fullmatch(r"cleaning_tests/[0-9a-f]{32}/cleaning", name):
-            return root / name
-    return root / "cleaning"
+    from bo2.run_paths import selected_folder
+    return selected_folder(root, "cleaning")
 
 
 def new_test(root):

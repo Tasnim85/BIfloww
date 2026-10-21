@@ -1,4 +1,4 @@
-"""A simple upload-and-protect page backed by the project's PII agent."""
+"""Interface BO2 : protection, profilage, nettoyage, entrepôt et lignage."""
 import json
 import io
 import logging
@@ -16,7 +16,7 @@ from bo2.config import load_local
 from bo2.local_llm import local_base_url
 from bo2.pii_ui import MAX_DOWNLOAD_BYTES, JobManager, table_preview
 
-st.set_page_config(page_title="BIFlow · Mes données", page_icon="🔒", layout="centered")
+st.set_page_config(page_title="BIFlow · BO2", page_icon="🔒", layout="centered")
 load_local()
 
 LABELS = {"keep": "Conservée", "hmac_sha256": "Protégée", "redact_text": "Masquée", "generalize_coordinate": "Localisation simplifiée"}
@@ -147,8 +147,14 @@ def show_results(run_id):
             csv = folder / "csv" / f"{selected}.csv"
             if csv.exists() and csv.stat().st_size <= MAX_DOWNLOAD_BYTES:
                 st.download_button("Télécharger ce fichier", csv.read_bytes(), file_name=csv.name, mime="text/csv")
+    from bo2.profiling_ui import show as show_profiling
+    show_profiling(jobs.run_dir(run_id))
     from bo2.cleaning_ui import show as show_cleaning
     show_cleaning(jobs.run_dir(run_id))
+    from bo2.etl_ui import show as show_etl
+    show_etl(jobs.run_dir(run_id))
+    from bo2.lineage_ui import show as show_lineage
+    show_lineage(jobs.run_dir(run_id))
     st.button("Protéger d’autres fichiers", on_click=start_over)
 
 

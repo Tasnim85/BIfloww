@@ -18,11 +18,14 @@ def main():
     step.add_argument("--runs", type=Path, default=Path("runs"))
     step.add_argument("--run-id", required=True)
     step.add_argument("--schema", choices=["llm", "star", "snowflake", "constellation"], default="llm")
+    step.add_argument("--warehouse-mode", choices=["dimensional", "generic", "auto", "olist"], default="dimensional")
+    step.add_argument("--etl-approval", help="SHA256 of the reviewed warehouse_proposal.json")
     step.add_argument("--lineage-backend", choices=["neo4j", "json"], default="neo4j")
     step.add_argument("--pii-uncertain", choices=["review", "redact"], default="review")
     step.add_argument("--proposal", type=Path, help="Cleaning rules to review/apply")
     step.add_argument("--approval", type=Path, help="Human approval for the exact cleaning proposal")
     step.add_argument("--playbook", type=Path, help="Explicit cleaning playbook (otherwise select latest compatible)")
+    step.add_argument("--profiling-task", choices=["all", "coverage", "anomalies"], default="all")
     sample = commands.add_parser("sample")
     sample.add_argument("--dataset", type=Path, default=Path("Dataset"))
     sample.add_argument("--output", type=Path, default=Path("data/sample"))
@@ -54,7 +57,7 @@ def main():
         print(f"Local configuration initialized: {initialize()} (secrets not displayed)")
     elif args.command == "step":
         from .steps import run_step
-        result = run_step(args.task, args.dataset, args.runs, args.run_id, schema_mode=args.schema, backend=args.lineage_backend, pii_uncertain=args.pii_uncertain, proposal=args.proposal, approval=args.approval, playbook=args.playbook)
+        result = run_step(args.task, args.dataset, args.runs, args.run_id, schema_mode=args.schema, backend=args.lineage_backend, pii_uncertain=args.pii_uncertain, proposal=args.proposal, approval=args.approval, playbook=args.playbook, profiling_task=args.profiling_task, warehouse_mode=args.warehouse_mode, etl_approval=args.etl_approval)
         print(result.model_dump_json(indent=2))
         raise SystemExit(0 if result.status.value == "success" else 2)
     elif args.command == "sample":

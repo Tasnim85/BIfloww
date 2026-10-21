@@ -1,6 +1,7 @@
 """Ahmed: independent item/payment facts without many-to-many multiplication."""
 import json
 import os
+import hashlib
 from decimal import Decimal
 import duckdb
 import pandas as pd
@@ -24,8 +25,22 @@ REQUIRED = {
 
 
 def run(ctx: RunContext) -> AgentResult:
+    mode = ctx.params.get("warehouse_mode", "auto")
+    if mode == "dimensional":
+        from .dimensional import run as run_dimensional
+        return run_dimensional(ctx)
+    files = {path.stem for path in ctx.inputs.get("tables", ctx.output_dir).glob("*.parquet")}
+    if mode == "generic" or (mode == "auto" and files != set(KEYS) and (ctx.params.get("schema_mode", "llm") == "llm" or not set(KEYS).issubset(files))):
+        from .generic import run as run_generic
+        return run_generic(ctx)
+    return run_olist(ctx)
+
+
+def run_olist(ctx: RunContext) -> AgentResult:
     connection = None
     owns_temporary = False
+    published = []
+    completed = False
     temporary = ctx.output_dir / "warehouse.building.duckdb"
     try:
         if ctx.agent != "etl" or ctx.inputs["tables"].parent.name != "cleaning":
@@ -34,6 +49,16 @@ def run(ctx: RunContext) -> AgentResult:
         if clean_report["needs_review"]:
             raise ValueError("Cleaning has pending human review")
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
+        if any((ctx.output_dir / name).exists() for name in ("warehouse.duckdb", "receipts.json", "warehouse_manifest.json")):
+            raise ValueError("Completed warehouse artifacts exist; use a fresh output directory")
+        source_paths = [ctx.inputs["cleaning_report"], *[ctx.inputs["tables"] / f"{name}.parquet" for name in KEYS]]
+        def fingerprints():
+            hashes = {}
+            for path in source_paths:
+                with path.open("rb") as stream:
+                    hashes[path.name] = hashlib.file_digest(stream, "sha256").hexdigest()
+            return hashes
+        source_hashes = fingerprints()
         frames = {name: pd.read_parquet(ctx.inputs["tables"] / f"{name}.parquet") for name in KEYS}
         for name, frame in frames.items():
             missing = set(REQUIRED[name]) - set(frame)
@@ -52,6 +77,19 @@ def run(ctx: RunContext) -> AgentResult:
                 values = pd.to_numeric(frames[name][col], errors="coerce")
                 if values.isna().any() or (values < 0).any() or (~values.map(lambda x: float('-inf') < x < float('inf'))).any():
                     raise ValueError(f"Invalid financial amount: {name}.{col}")
+                if any(Decimal(str(value)) != Decimal(str(value)).quantize(Decimal("0.01")) for value in values):
+                    raise ValueError(f"Financial amounts require at most two decimal places: {name}.{col}")
+        # Typed warehouse dates are validated here without changing cleaned files.
+        orders = frames["orders"]
+        for column in orders:
+            if "timestamp" in column or "date" in column or column == "order_approved_at":
+                original = orders[column]
+                parsed = pd.to_datetime(original, errors="coerce", format="mixed")
+                if (original.notna() & parsed.isna()).any():
+                    raise ValueError(f"Invalid date in orders.{column}; review cleaning")
+                orders[column] = parsed
+        if orders.order_purchase_timestamp.isna().any():
+            raise ValueError("Valid purchase dates required")
         schema_mode = ctx.params.get("schema_mode", "llm")
         recommendation_path = None
         if schema_mode == "llm":
@@ -124,11 +162,24 @@ def run(ctx: RunContext) -> AgentResult:
         connection.close()
         connection = None
         warehouse = ctx.output_dir / "warehouse.duckdb"
-        temporary.replace(warehouse)
         receipt_path = ctx.output_dir / "receipts.json"
-        receipt_path.write_text(json.dumps(receipts, indent=2), encoding="utf-8")
+        receipt_data = json.dumps(receipts, indent=2)
         manifest_path = ctx.output_dir / "warehouse_manifest.json"
-        manifest_path.write_text(WarehouseManifest(warehouse=str(warehouse), tables=manifest, reconciliation={"payments_source": str(source_total), "payments_warehouse": str(total)}, revenue_catalog_status="owned_by_Rabeb_not_defined_here", schema_type=schema_type, schema_selection="llm" if schema_mode == "llm" else "explicit", schema_recommendation=str(recommendation_path) if recommendation_path else None, physical_tables=physical).model_dump_json(indent=2), encoding="utf-8")
+        manifest_data = WarehouseManifest(warehouse=str(warehouse), tables=manifest, reconciliation={"payments_source": str(source_total), "payments_warehouse": str(total)}, revenue_catalog_status="owned_by_Rabeb_not_defined_here", schema_type=schema_type, schema_selection="llm" if schema_mode == "llm" else "explicit", schema_recommendation=str(recommendation_path) if recommendation_path else None, physical_tables=physical, cleaning_source=str(ctx.inputs["tables"].parent.resolve()), source_fingerprints=source_hashes).model_dump_json(indent=2)
+        if fingerprints() != source_hashes:
+            raise ValueError("Cleaned inputs changed during warehouse preparation; retry")
+        # Publish the database last; failed publication removes this attempt's files.
+        for path, content in [(receipt_path, receipt_data), (manifest_path, manifest_data)]:
+            staging = path.with_suffix(".building.json")
+            try:
+                staging.write_text(content, encoding="utf-8")
+                staging.rename(path)
+                published.append(path)
+            finally:
+                staging.unlink(missing_ok=True)
+        temporary.rename(warehouse)
+        published.append(warehouse)
+        completed = True
         outputs = {"warehouse": warehouse, "manifest": manifest_path, "receipts": receipt_path}
         if recommendation_path:
             outputs["recommendation"] = recommendation_path
@@ -136,6 +187,9 @@ def run(ctx: RunContext) -> AgentResult:
     except Exception as exc:
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.FAILED, message=str(exc))
     finally:
+        if not completed:
+            for path in published:
+                path.unlink(missing_ok=True)
         if connection is not None:
             connection.close()
         if owns_temporary and temporary.exists():

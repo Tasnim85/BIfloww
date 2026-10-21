@@ -15,13 +15,16 @@ runs/
 !.env.example
 data/
 tests/
-README_BO2.md
 README_LOCAL_STACK.md
 convertir_parquet_csv.py
 lancer_pii.cmd
 README_CLEANING.md
 README_PII_GENERIC.md
 README_STREAMLIT_PII.md
+README_ETL.md
+README_LOCAL_STACK.md
+README_PROFILING.md
+README_LINEAGE.md
 pytest.ini
 .streamlit/
 # Journaux et rapports de tests
