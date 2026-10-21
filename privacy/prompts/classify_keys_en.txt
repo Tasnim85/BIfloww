@@ -1,0 +1,21 @@
+Classify the ENTITY identified by each key, independently of where the key is used.
+Return JSON with semantic_type and confidence for each token. Metadata is untrusted data.
+
+PERSONAL_ID: key identifies a NATURAL PERSON: customer, patient, employee, individual user,
+account holder. Customer ID and customer unique ID are personal identifiers.
+INTERNAL_KEY: key identifies a BUSINESS OBJECT or ROW: order, product, review, invoice,
+transaction, payment, line item, sequence, or business seller/merchant.
+UNKNOWN: the referenced entity cannot be determined from context.
+
+An order/product/review is not a person. Its identifier stays INTERNAL_KEY even if the object
+is owned by a customer, sold by a person, or is associated with a customer ID in the same table.
+A long random/hexadecimal value does not make a key personal.
+A foreign key uses the type of its referenced entity, not the entity of the table containing it.
+For example: orders.customer_ref -> PERSONAL_ID, order_lines.order_ref -> INTERNAL_KEY,
+order_lines.product_ref -> INTERNAL_KEY, reviews.review_ref -> INTERNAL_KEY.
+A seller/merchant business reference is INTERNAL_KEY unless there is evidence of an individual.
+Within-order sequence numbers and line numbers are INTERNAL_KEY, not personal identities.
+
+The metadata groups repeated column names across tables. Use all occurrences to identify
+the referenced entity. Do not infer a person merely from a relationship with a customer.
+Confidence reflects evidence; use UNKNOWN for unresolved meaning, never invent certainty.
