@@ -126,6 +126,13 @@ def run(ctx: RunContext) -> AgentResult:
                 prediction = ColumnPrediction.model_validate(predictions[table][column])
                 prediction, origin = detection.enforce_contact_signals(frame[column], prediction)
                 effective[f"{table}.{column}"] = [prediction, origin]
+        # A human reviewer can settle columns the model was unsure about (needs_review), without
+        # weakening the policy for the others: params["pii_overrides"] = {"customers.customer_state": "CATEGORY"}.
+        # Each override is journaled below with classification_source "human_review".
+        for key, kind in (ctx.params.get("pii_overrides") or {}).items():
+            if key not in effective:
+                raise ValueError("pii_overrides must name existing table.column entries")
+            effective[key] = [ColumnPrediction(semantic_type=kind, confidence=1.0), "human_review"]
         # Postal columns may have different names across tables. Share a semantic
         # domain so equal postal values remain joinable without publishing them.
         # Keep exact strings (including leading zeroes), with no lossy normalization.

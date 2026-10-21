@@ -211,3 +211,27 @@ def test_llm_text_hiding_an_option_is_rejected():
 def test_no_ollama_falls_back_to_template():
     summary, source = summarize(TEMPLATE, [], [], llm=FakeLLM(error=LLMUnavailable("down")))
     assert (summary, source) == (TEMPLATE, "template")
+
+
+def test_rerun_after_the_decision_keeps_it(tmp_path):
+    """The orchestrator resumes the run after Sarra decided: the comparison step must not forget her choice."""
+    _, _, ctx = check(tmp_path, request(AUG, JUL))
+    record_decision("test", "accepted", "same_days", runs_root=tmp_path / "runs", journal=ctx.journal)
+    again = run(ctx)
+    rep = load(ComparisonReport, again.outputs["report"])
+    assert again.status == AgentStatus.SUCCESS
+    assert rep.user_decision == UserDecision.ACCEPTED and rep.chosen_fix == FixMethod.SAME_DAYS
+    assert read_events(ctx.journal)[-1].step == "user_decision_kept"
+
+
+def test_kpi_the_warehouse_cannot_compute_gets_a_clear_message():
+    from comparisons.data import missing_kpi_columns
+    from contracts.semantic import KpiDefinition
+    from contracts.warehouse import TableKind, WarehouseManifest, WarehouseTable
+    kpi = KpiDefinition(name="Revenue", version="2.0", description="d", expression="SUM(payment_value)",
+                        table="fact_payments", grain="payment", date_column="order_purchase_date", unit="BRL",
+                        filters=["order_status = 'delivered'"], population="p")
+    lost_link = WarehouseManifest(tables=[WarehouseTable(
+        name="fact_payments", kind=TableKind.FACT, grain="payment", primary_key=["order_id"], row_count=1,
+        columns=["order_id", "payment_value"])])
+    assert missing_kpi_columns(kpi, lost_link) == ["order_purchase_date", "order_status"]

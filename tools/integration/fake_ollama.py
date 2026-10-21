@@ -1,7 +1,8 @@
 """TEST DOUBLE for a local Ollama (llama3) — integration testing only, never a real model.
 Answers BO2's PII prompts deterministically from Malek's column types, so the data flow
 pii -> profiling -> cleaning -> etl -> analysis -> comparisons -> auditor can be checked here."""
-import json
+import json, os
+SCENARIO = os.environ.get("FAKE_SCENARIO", "ideal")   # ideal | orders_fact | star | drop_links | pii_unsure
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 MAP = {"ID": "INTERNAL_KEY", "EMAIL": "EMAIL", "PHONE": "PHONE", "PERSON_NAME": "PERSON_NAME", "AGE": "AGE",
        "AMOUNT": "MEASURE", "QUANTITY": "MEASURE", "NUMBER": "MEASURE", "DATE": "TIMESTAMP", "DATETIME": "TIMESTAMP",
@@ -27,7 +28,8 @@ def column_answer(desc):
     elif col in PERSON_KEYS: kind = "PERSONAL_ID"
     elif hint: kind = MAP.get(hint.get("semantic_type", "OTHER"), "UNKNOWN")
     else: kind = by_name(col, desc.get("examples_local_only", []))
-    return {"semantic_type": kind, "confidence": 0.95}
+    conf = 0.6 if SCENARIO == "pii_unsure" and kind in ("CATEGORY", "MEASURE") and "state" in col else 0.95
+    return {"semantic_type": kind, "confidence": conf}
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_POST(self):
@@ -42,15 +44,22 @@ class H(BaseHTTPRequestHandler):
             def role(name, info):
                 src = str(info.get("source", name)).lower()
                 if "translation" in src: return "reference"
+                if SCENARIO == "orders_fact" and src == "orders": return "fact"
                 if any(k in src for k in ("payment", "item", "review")): return "fact"
                 return "dimension"
             out = {"tables": [{"table": n, "role": role(n, i), "grain": "une ligne par enregistrement",
                                "reason": "rôle déduit des colonnes et des références"} for n, i in meta["tables"].items()]}
         elif body["format"].get("title") == "RelationshipDecisions":   # ETL: keep every verified link
-            out = {k: True for k in body["format"]["properties"]}
+            keys = list(body["format"]["properties"])
+            # drop_links: a cautious model refuses some verified links (here: every second one)
+            out = {k: (i % 2 == 0 if SCENARIO == "drop_links" else True) for i, k in enumerate(keys)}
+            if SCENARIO == "drop_payment_link":       # the model refuses payments -> orders
+                cands = meta["candidates"]
+                out = {c["id"]: not ("payment" in c.get("child_source", "") and c.get("parent_source") == "orders") for c in cands}
         elif body["format"].get("title") == "LayoutDecision":          # ETL: layout
             allowed = body["format"]["$defs"]["SupportedLayout"]["enum"]
-            out = {"schema_type": "constellation" if "constellation" in allowed else allowed[0],
+            want = "star" if SCENARIO == "star" else "constellation"
+            out = {"schema_type": want if want in allowed else allowed[0],
                    "rationale": "Dimensions partagées entre faits, grain des lignes préservé."}
         else:
             self.send_response(500); self.end_headers(); self.wfile.write(b'{"error":"fake ollama: unknown prompt"}'); return

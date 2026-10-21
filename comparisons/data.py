@@ -114,17 +114,40 @@ def _keys_of(manifest: WarehouseManifest, table: str) -> list[str]:
     return next(t.primary_key for t in manifest.tables if t.name == table)
 
 
+_SQL_WORDS = {"sum", "count", "distinct", "avg", "min", "max", "case", "when", "then", "else", "end", "and", "or",
+              "not", "null", "is", "in", "as", "between", "like", "coalesce", "nullif", "cast", "double", "integer"}
+
+
+def missing_kpi_columns(kpi, manifest: WarehouseManifest) -> list[str]:
+    """Columns the KPI needs on its fact table (formula, date, filters) that the warehouse does not have.
+    Empty = computable. Typical cause: the ETL plan dropped a link (e.g. payments -> orders), so the fact
+    view lost order_status or the purchase date."""
+    table = next((t for t in manifest.tables if t.name == kpi.table), None)
+    if table is None:
+        return [f"table {kpi.table}"]
+    text = " ".join([kpi.expression, kpi.date_column, *kpi.filters])
+    text = re.sub(r"'[^']*'", " ", text)                                   # drop string literals
+    needed = {w for w in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", text) if w.lower() not in _SQL_WORDS}
+    return sorted(needed - set(table.columns))
+
+
 def load_inputs(paths: dict[str, Path]) -> Inputs:
     """paths = ctx.inputs. The analysis result is optional (recomputed anyway)."""
     request = load(AnalysisRequest, paths["request"])
     catalog = load_yaml(KpiCatalog, paths["catalog"])
+    manifest = load(WarehouseManifest, paths["manifest"])
+    kpi = catalog.kpi(request.metric)
+    if missing := missing_kpi_columns(kpi, manifest):
+        raise ValueError(f"the warehouse cannot compute {kpi.ref}: {kpi.table} has no {', '.join(missing)}. "
+                         "The approved ETL plan probably dropped a relationship: check it with "
+                         "python -m tools.integration.check_warehouse <run_id>")
     result_path = Path(paths["result"])
     return Inputs(
         request=request,
         result=load(AnalysisResult, result_path) if result_path.exists() else None,
-        catalog=catalog, kpi=catalog.kpi(request.metric),
+        catalog=catalog, kpi=kpi,
         coverage=load(CoverageProfile, paths["coverage"]),
-        manifest=load(WarehouseManifest, paths["manifest"]),
+        manifest=manifest,
         receipts=load(TransformationReceipts, paths["receipts"]),
         warehouse=Path(paths["warehouse"]),
     )
