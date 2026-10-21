@@ -42,7 +42,7 @@ def train(frame, output, *, table="order_payments", features=None, id_column="or
     transformed=model.named_steps["imputer"].transform(values)
     scores=pd.DataFrame({"source_row":np.arange(len(frame),dtype=np.int64)})
     for column in dict.fromkeys([id_column,"payment_sequential"]):
-        if column and column in frame and column not in scores:
+        if column and column in frame and column not in scores and column not in features:
             scores[column]=frame[column].to_numpy()
     scores["anomaly_score"]=-model.score_samples(values)
     scores["is_model_anomaly"]=model.predict(values)==-1
@@ -62,6 +62,9 @@ def train(frame, output, *, table="order_payments", features=None, id_column="or
         feature_columns.append(feature_column)
         scores[f"input__{column}"]=values[column].to_numpy()
         scores[feature_column]=transformed[:,i]
+        if column in scores:
+            raise ValueError("ANOMALY_COLUMNS: feature conflicts with an output column")
+        scores[column]=transformed[:,i]
     model_path=output/"anomaly_model.joblib"
     joblib.dump(model,model_path)
     scores_path=output/"anomaly_scores.parquet"

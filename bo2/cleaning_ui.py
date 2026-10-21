@@ -11,7 +11,8 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from cleaning.agent import run
+from cleaning.cleaner import run
+from bo2.artifact_io import read_artifact_text
 from cleaning.llm_rules import Proposal, approve
 from contracts.agent import RunContext
 from bo2.pii_ui import MAX_DOWNLOAD_BYTES, table_preview
@@ -57,8 +58,19 @@ class CleaningJobs:
             if pii_result.get("status") != "success":
                 raise ValueError("Protection must finish first")
             if reviewer is not None:
-                inputs["proposal"] = folder / "proposed_rules.json"
-                inputs["approval"] = approve(inputs["proposal"], reviewer, folder / "approval.json")
+                previous=read(folder/'agent_result.json')
+                shared=previous.get('outputs',{}).get('playbook')
+                if shared and not (folder/'proposed_rules.json').exists():
+                    from contracts.quality import Playbook
+                    from contracts import save
+                    from datetime import datetime,timezone
+                    book=Playbook.model_validate_json(Path(shared).read_text(encoding='utf-8'))
+                    approved=book.model_copy(update={'approved_by':reviewer.strip(),'approved_at':datetime.now(timezone.utc)})
+                    save(approved,Path(shared))
+                    playbook=Path(shared)
+                else:
+                    inputs["proposal"] = folder / "proposed_rules.json"
+                    inputs["approval"] = approve(inputs["proposal"], reviewer, folder / "approval.json")
             params = {"playbook": str(playbook)} if playbook else {"playbook_mode": "generate"}
             params["runs_dir"] = str(root.parent)
             # Keep the original selection when approving or retrying this test.
@@ -68,7 +80,7 @@ class CleaningJobs:
             else:
                 folder.mkdir(parents=True, exist_ok=True)
                 selection_file.write_text(json.dumps(params), encoding="utf-8")
-            if reviewer is not None:
+            if reviewer is not None and 'proposal' in inputs:
                 # Approval applies only the displayed generated rules, even if a
                 # previously missing selected file appears during human review.
                 params = {"playbook_mode": "generate", "runs_dir": str(root.parent)}
@@ -96,7 +108,7 @@ def follow(root):
 
 
 def read(path):
-    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    return json.loads(read_artifact_text(path)) if path.exists() else {}
 
 
 def show(root):
@@ -149,6 +161,15 @@ def show(root):
         reasons = {item["reason"] for item in report.get("needs_review", [])}
         if reasons == {"human_approval_required"}:
             st.info("De nouvelles règles ont été proposées. Vérifiez-les avant de les appliquer.")
+            if not (folder/'proposed_rules.json').exists() and result.get('outputs',{}).get('playbook'):
+                from contracts.quality import Playbook
+                book=Playbook.model_validate_json(Path(result['outputs']['playbook']).read_text(encoding='utf-8'))
+                st.dataframe([{'Fichier':r.table,'Information':r.column or 'Ensemble du fichier','Modification proposée':r.description} for r in book.rules],hide_index=True,width='stretch')
+                reviewer=st.text_input('Votre nom pour confirmer la validation',key='cleaning_reviewer')
+                if st.button('Valider et appliquer ces règles',disabled=not reviewer.strip(),key='approve_cleaning'):
+                    jobs().start(root,reviewer=reviewer)
+                    st.rerun()
+                return
             proposal = Proposal.model_validate_json((folder / "proposed_rules.json").read_text(encoding="utf-8"))
             labels = {"trim": "Enlever les espaces inutiles", "numeric": "Reconnaître les nombres", "datetime": "Reconnaître les dates", "fill_constant": "Compléter les cases vides"}
             rows = [{"Fichier": rule.table, "Information": rule.column,

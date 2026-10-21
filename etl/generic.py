@@ -10,9 +10,10 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field
 from bo2.local_llm import request_json
 from contracts.agent import AgentResult, AgentStatus
-from contracts.artifacts import TransformationReceipt
+from contracts.warehouse import TransformationReceipt
 from contracts.audit import AuditEvent, log_event
 from .models import WarehouseManifest
+from bo2.artifact_io import read_artifact_text
 
 
 class TableAdvice(BaseModel):
@@ -43,7 +44,7 @@ def inventory(ctx):
     source = ctx.inputs["tables"]
     if ctx.agent != "etl" or source.parent.name != "cleaning":
         raise ValueError("ETL requires cleaned tables")
-    report = json.loads(ctx.inputs["cleaning_report"].read_text(encoding="utf-8"))
+    report = json.loads(read_artifact_text(ctx.inputs["cleaning_report"]))
     if report.get("needs_review", True):
         raise ValueError("Cleaning requires review")
     paths = sorted(source.glob("*.parquet"))
@@ -237,7 +238,7 @@ def run(ctx):
                 staged.unlink(missing_ok=True)
         temporary.rename(warehouse); published.append(warehouse)
         log_event(AuditEvent(run_id=ctx.run_id, agent="etl", step="build_generic_warehouse", decision="success",
-            rule_version="etl-generic@1.0", evidence={"tables":len(frames),"approved_proposal_sha256":approval}), ctx.output_dir.parent/"audit_journal.jsonl")
+            rule_version="etl-generic@1.0", evidence={"tables":len(frames),"approved_proposal_sha256":approval}), ctx.journal)
         success = True
         return AgentResult(run_id=ctx.run_id, agent="etl", status=AgentStatus.SUCCESS, outputs=outputs,
             message="Built reviewed warehouse; all input tables and values preserved")

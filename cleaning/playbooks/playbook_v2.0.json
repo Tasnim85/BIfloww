@@ -1,107 +1,329 @@
 {
   "name": "cleaning",
   "version": "2.0",
-  "description": "Espaces, textes vides, nombres, dates et doublons stricts des tables autorisees. Aucun montant ou identifiant manquant invente.",
-  "required_tables": [
-    "customers",
-    "orders",
-    "order_items",
-    "order_payments",
-    "products",
-    "sellers"
-  ],
-  "actions": {
-    "trim_strings": true,
-    "empty_strings_to_null": true,
-    "remove_exact_duplicate_rows": true
-  },
-  "deduplicate_tables": [
-    "customers",
-    "orders",
-    "order_items",
-    "order_payments",
-    "products",
-    "sellers",
-    "product_category_name_translation"
-  ],
-  "numeric_columns": {
-    "order_items": [
-      "order_item_id",
-      "price",
-      "freight_value"
-    ],
-    "order_payments": [
-      "payment_sequential",
-      "payment_installments",
-      "payment_value"
-    ],
-    "products": [
-      "product_name_lenght",
-      "product_description_lenght",
-      "product_photos_qty",
-      "product_weight_g",
-      "product_length_cm",
-      "product_height_cm",
-      "product_width_cm"
-    ],
-    "order_reviews": [
-      "review_score"
-    ],
-    "geolocation": [
-      "geolocation_lat",
-      "geolocation_lng"
-    ]
-  },
-  "date_columns": {
-    "orders": [
-      "order_purchase_timestamp",
-      "order_approved_at",
-      "order_delivered_carrier_date",
-      "order_delivered_customer_date",
-      "order_estimated_delivery_date"
-    ],
-    "order_items": [
-      "shipping_limit_date"
-    ],
-    "order_reviews": [
-      "review_creation_date",
-      "review_answer_timestamp"
-    ]
-  },
-  "critical_nonnegative_columns": {
-    "order_items": [
-      "price",
-      "freight_value"
-    ],
-    "order_payments": [
-      "payment_value"
-    ]
-  },
-  "required_values": {
-    "orders": [
-      "order_id",
-      "customer_id",
-      "order_purchase_timestamp",
-      "order_status"
-    ],
-    "order_items": [
-      "order_id",
-      "order_item_id",
-      "product_id",
-      "seller_id"
-    ],
-    "order_payments": [
-      "order_id",
-      "payment_sequential"
-    ],
-    "customers": [
-      "customer_id"
-    ],
-    "products": [
-      "product_id"
-    ],
-    "sellers": [
-      "seller_id"
-    ]
-  }
+  "source": "manual",
+  "approved_by": "ikbel",
+  "approved_at": "2026-10-21T14:15:49.269328Z",
+  "rules": [
+    {
+      "rule_id": "text:customers",
+      "table": "customers",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "customer_id"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "duplicates:customers",
+      "table": "customers",
+      "column": null,
+      "action": "drop_duplicates",
+      "params": {},
+      "description": "Retirer les doublons strictement identiques"
+    },
+    {
+      "rule_id": "text:orders",
+      "table": "orders",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "order_id",
+          "customer_id",
+          "order_purchase_timestamp",
+          "order_status"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "date:orders.order_purchase_timestamp",
+      "table": "orders",
+      "column": "order_purchase_timestamp",
+      "action": "cast",
+      "params": {
+        "dtype": "datetime64[ns]"
+      },
+      "description": "Reconnaître les dates sans inventer de valeur"
+    },
+    {
+      "rule_id": "date:orders.order_approved_at",
+      "table": "orders",
+      "column": "order_approved_at",
+      "action": "cast",
+      "params": {
+        "dtype": "datetime64[ns]"
+      },
+      "description": "Reconnaître les dates sans inventer de valeur"
+    },
+    {
+      "rule_id": "date:orders.order_delivered_carrier_date",
+      "table": "orders",
+      "column": "order_delivered_carrier_date",
+      "action": "cast",
+      "params": {
+        "dtype": "datetime64[ns]"
+      },
+      "description": "Reconnaître les dates sans inventer de valeur"
+    },
+    {
+      "rule_id": "date:orders.order_delivered_customer_date",
+      "table": "orders",
+      "column": "order_delivered_customer_date",
+      "action": "cast",
+      "params": {
+        "dtype": "datetime64[ns]"
+      },
+      "description": "Reconnaître les dates sans inventer de valeur"
+    },
+    {
+      "rule_id": "date:orders.order_estimated_delivery_date",
+      "table": "orders",
+      "column": "order_estimated_delivery_date",
+      "action": "cast",
+      "params": {
+        "dtype": "datetime64[ns]"
+      },
+      "description": "Reconnaître les dates sans inventer de valeur"
+    },
+    {
+      "rule_id": "duplicates:orders",
+      "table": "orders",
+      "column": null,
+      "action": "drop_duplicates",
+      "params": {},
+      "description": "Retirer les doublons strictement identiques"
+    },
+    {
+      "rule_id": "text:order_items",
+      "table": "order_items",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "order_id",
+          "order_item_id",
+          "product_id",
+          "seller_id"
+        ],
+        "nonnegative": [
+          "price",
+          "freight_value"
+        ]
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "number:order_items.price",
+      "table": "order_items",
+      "column": "price",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "number:order_items.freight_value",
+      "table": "order_items",
+      "column": "freight_value",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "date:order_items.shipping_limit_date",
+      "table": "order_items",
+      "column": "shipping_limit_date",
+      "action": "cast",
+      "params": {
+        "dtype": "datetime64[ns]"
+      },
+      "description": "Reconnaître les dates sans inventer de valeur"
+    },
+    {
+      "rule_id": "duplicates:order_items",
+      "table": "order_items",
+      "column": null,
+      "action": "drop_duplicates",
+      "params": {},
+      "description": "Retirer les doublons strictement identiques"
+    },
+    {
+      "rule_id": "text:order_payments",
+      "table": "order_payments",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "order_id",
+          "payment_sequential"
+        ],
+        "nonnegative": [
+          "payment_value"
+        ]
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "number:order_payments.payment_installments",
+      "table": "order_payments",
+      "column": "payment_installments",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "number:order_payments.payment_value",
+      "table": "order_payments",
+      "column": "payment_value",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "duplicates:order_payments",
+      "table": "order_payments",
+      "column": null,
+      "action": "drop_duplicates",
+      "params": {},
+      "description": "Retirer les doublons strictement identiques"
+    },
+    {
+      "rule_id": "text:products",
+      "table": "products",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "product_id"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "number:products.product_name_lenght",
+      "table": "products",
+      "column": "product_name_lenght",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "number:products.product_description_lenght",
+      "table": "products",
+      "column": "product_description_lenght",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "number:products.product_photos_qty",
+      "table": "products",
+      "column": "product_photos_qty",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "number:products.product_weight_g",
+      "table": "products",
+      "column": "product_weight_g",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "number:products.product_length_cm",
+      "table": "products",
+      "column": "product_length_cm",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "number:products.product_height_cm",
+      "table": "products",
+      "column": "product_height_cm",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "number:products.product_width_cm",
+      "table": "products",
+      "column": "product_width_cm",
+      "action": "cast",
+      "params": {
+        "dtype": "float64"
+      },
+      "description": "Reconnaître les nombres sans inventer de valeur"
+    },
+    {
+      "rule_id": "duplicates:products",
+      "table": "products",
+      "column": null,
+      "action": "drop_duplicates",
+      "params": {},
+      "description": "Retirer les doublons strictement identiques"
+    },
+    {
+      "rule_id": "text:sellers",
+      "table": "sellers",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "seller_id"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "duplicates:sellers",
+      "table": "sellers",
+      "column": null,
+      "action": "drop_duplicates",
+      "params": {},
+      "description": "Retirer les doublons strictement identiques"
+    }
+  ]
 }

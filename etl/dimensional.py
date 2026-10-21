@@ -6,7 +6,7 @@ import unicodedata
 import pandas as pd
 import duckdb
 from contracts.agent import AgentResult, AgentStatus
-from contracts.artifacts import TransformationReceipt
+from contracts.warehouse import TransformationReceipt
 from contracts.audit import AuditEvent, log_event
 from .generic import inventory, relationships, quote, digest
 from .dimensional_design import Plan, profile, propose, validate, reachable
@@ -275,7 +275,7 @@ def run(ctx):
                 staging.unlink(missing_ok=True)
         temporary.rename(warehouse);published.append(warehouse)
         log_event(AuditEvent(run_id=ctx.run_id,agent='etl',step='build_dimensional_warehouse',decision=plan.schema_type,
-            rule_version='etl-dimensional@2.0',evidence={'roles':built['table_roles'],'approved_proposal_sha256':ctx.params['etl_approval']}),ctx.output_dir.parent/'audit_journal.jsonl')
+            rule_version='etl-dimensional@2.0',evidence={'roles':built['table_roles'],'approved_proposal_sha256':ctx.params['etl_approval']}),ctx.journal)
         success=True
         return AgentResult(run_id=ctx.run_id,agent='etl',status=AgentStatus.SUCCESS,outputs=outputs,message='Built validated dimensional layout '+plan.schema_type)
     except Exception as exc:

@@ -15,6 +15,7 @@ import pyarrow.parquet as pq
 
 from convertir_parquet_csv import convertir
 from privacy.models import PiiReport
+from bo2.artifact_io import read_artifact_text
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_UPLOAD_BYTES = 512 * 1024 * 1024
@@ -60,7 +61,7 @@ def local_dataset(value, root=ROOT):
 
 def read_json(path):
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = json.loads(read_artifact_text(path))
         return value if isinstance(value, dict) else None
     except (FileNotFoundError, json.JSONDecodeError):
         return None

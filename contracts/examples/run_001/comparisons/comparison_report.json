@@ -1,0 +1,94 @@
+{
+  "contract_version": "1.1",
+  "has_comparison": true,
+  "checks": [
+    {
+      "kind": "coverage",
+      "status": "blocking",
+      "message": "August is complete only up to the 23rd. From 24 August the number of orders falls to between 1 and 99 per day, against about 195 on a normal day, and no order of 30-31 August is delivered yet. The full-month comparison (-4.1%) compares 23 complete days with 31.",
+      "evidence": {
+        "rule": "trailing days with volume < 60% of the other period's median",
+        "threshold_rows": 117,
+        "reference_median_rows": 195,
+        "last_complete_day": "2018-08-23",
+        "incomplete_days": {
+          "2018-08-24": 99,
+          "2018-08-25": 69,
+          "2018-08-26": 73,
+          "2018-08-27": 67,
+          "2018-08-28": 44,
+          "2018-08-29": 14,
+          "2018-08-30": 4,
+          "2018-08-31": 1
+        },
+        "delivered_30_31_aug": 0,
+        "source": "profiling/coverage_profile.json"
+      }
+    },
+    {
+      "kind": "population",
+      "status": "ok",
+      "message": "Same population on both sides: customers' delivered orders (Revenue@2.0 filter order_status = 'delivered').",
+      "evidence": {}
+    },
+    {
+      "kind": "unit",
+      "status": "ok",
+      "message": "Both values are in BRL.",
+      "evidence": {}
+    },
+    {
+      "kind": "scale",
+      "status": "ok",
+      "message": "Both periods are calendar months of 31 days, both values are totals.",
+      "evidence": {
+        "days_current": 31,
+        "days_previous": 31
+      }
+    },
+    {
+      "kind": "grain",
+      "status": "ok",
+      "message": "Both values come from fact_payments (one row = one payment).",
+      "evidence": {}
+    }
+  ],
+  "proposed_fix": {
+    "method": "same_days",
+    "description": "Compare 1-23 August 2018 with 1-23 July 2018.",
+    "justification": "23 is the last complete day of August. Using the same 23 days in July compares equal amounts of time.",
+    "period": {
+      "start": "2018-08-01",
+      "end": "2018-08-23"
+    },
+    "compare_to": {
+      "start": "2018-07-01",
+      "end": "2018-07-23"
+    },
+    "unit": "BRL",
+    "value_current": 941291.36,
+    "value_previous": 699238.79,
+    "change_pct": 0.3462
+  },
+  "alternatives": [
+    {
+      "method": "per_day_average",
+      "description": "Compare revenue per day: 1-23 August against the whole of July.",
+      "justification": "July's orders are concentrated at the end of the month (1,949 of its 6,292 orders after the 23rd), so the first 23 days undervalue July. A daily average uses every complete day of both months.",
+      "period": {
+        "start": "2018-08-01",
+        "end": "2018-08-23"
+      },
+      "compare_to": {
+        "start": "2018-07-01",
+        "end": "2018-07-31"
+      },
+      "unit": "BRL/day",
+      "value_current": 40925.71,
+      "value_previous": 33158.19,
+      "change_pct": 0.2343
+    }
+  ],
+  "user_decision": "pending",
+  "chosen_fix": null
+}

@@ -1,0 +1,48 @@
+{
+  "contract_version": "1.1",
+  "model": "rules+logreg@1.0",
+  "columns": [
+    {
+      "table": "orders",
+      "column": "order_id",
+      "semantic_type": "ID",
+      "confidence": 0.99,
+      "pii_candidate": false
+    },
+    {
+      "table": "orders",
+      "column": "order_purchase_timestamp",
+      "semantic_type": "DATETIME",
+      "confidence": 0.99,
+      "pii_candidate": false
+    },
+    {
+      "table": "order_payments",
+      "column": "payment_value",
+      "semantic_type": "AMOUNT",
+      "confidence": 0.97,
+      "pii_candidate": false
+    },
+    {
+      "table": "customers",
+      "column": "customer_unique_id",
+      "semantic_type": "ID",
+      "confidence": 0.95,
+      "pii_candidate": true
+    },
+    {
+      "table": "customers",
+      "column": "customer_zip_code_prefix",
+      "semantic_type": "ZIP_CODE",
+      "confidence": 0.93,
+      "pii_candidate": true
+    },
+    {
+      "table": "customers",
+      "column": "customer_state",
+      "semantic_type": "STATE",
+      "confidence": 0.98,
+      "pii_candidate": false
+    }
+  ]
+}

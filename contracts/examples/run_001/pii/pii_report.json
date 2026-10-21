@@ -1,0 +1,32 @@
+{
+  "contract_version": "1.1",
+  "policy_version": "pii-policy@1.0",
+  "columns": [
+    {
+      "table": "customers",
+      "column": "customer_unique_id",
+      "pii_kind": "PERSON_ID",
+      "action": "pseudonymized",
+      "method": "sha256 + secret salt",
+      "rows_affected": 99441
+    },
+    {
+      "table": "customers",
+      "column": "customer_zip_code_prefix",
+      "pii_kind": "ZIP_CODE",
+      "action": "generalized",
+      "method": "keep first 3 digits",
+      "rows_affected": 99441
+    }
+  ],
+  "tables": {
+    "orders": "orders.parquet",
+    "order_items": "order_items.parquet",
+    "order_payments": "order_payments.parquet",
+    "customers": "customers.parquet",
+    "products": "products.parquet",
+    "sellers": "sellers.parquet",
+    "order_reviews": "order_reviews.parquet",
+    "category_translation": "category_translation.parquet"
+  }
+}

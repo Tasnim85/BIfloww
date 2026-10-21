@@ -3,17 +3,18 @@ import json
 import hashlib
 
 from contracts.agent import AgentResult, AgentStatus, RunContext
-from contracts.artifacts import TransformationReceipt
+from contracts.warehouse import TransformationReceipt
 from contracts.audit import AuditEvent, log_event
 from .models import LineageReport, WarehouseManifest
+from bo2.artifact_io import read_artifact_text
 
 
-def run(ctx: RunContext) -> AgentResult:
+def _run(ctx: RunContext) -> AgentResult:
     outputs = {}
     try:
         if ctx.agent != "lineage":
             raise ValueError("Expected agent='lineage'")
-        tracked = {key:path for key,path in ctx.inputs.items() if key in {"manifest","receipts","privacy_report","cleaning_report","warehouse"}}
+        tracked = {key:path for key,path in ctx.inputs.items() if key in {"manifest","receipts","privacy_report","cleaning_report","warehouse","catalog"}}
         def fingerprints():
             hashes={}
             for key,path in tracked.items():
@@ -21,19 +22,19 @@ def run(ctx: RunContext) -> AgentResult:
                     hashes[key]=hashlib.file_digest(stream,"sha256").hexdigest()
             return hashes
         source_hashes=fingerprints()
-        receipts = [TransformationReceipt.model_validate(item) for item in json.loads(ctx.inputs["receipts"].read_text(encoding="utf-8"))]
-        manifest = WarehouseManifest.model_validate_json(ctx.inputs["manifest"].read_text(encoding="utf-8")).model_dump()
+        receipts = [TransformationReceipt.model_validate(item) for item in json.loads(read_artifact_text(ctx.inputs["receipts"]))]
+        manifest = WarehouseManifest.model_validate_json(read_artifact_text(ctx.inputs["manifest"])).model_dump()
         canonical = set(manifest["tables"])
         written = [r.output_table for r in receipts if r.output_table in canonical]
         if set(written) != canonical or len(written)!=len(set(written)):
             raise ValueError("Missing or duplicate canonical transformation receipt")
         privacy = {}
         if "privacy_report" in ctx.inputs:
-            report=json.loads(ctx.inputs["privacy_report"].read_text(encoding="utf-8"))
+            report=json.loads(read_artifact_text(ctx.inputs["privacy_report"]))
             privacy={f"{item['table']}.{item['column']}":item['action'] for item in report.get("classification",[])}
         cleaned={}
         if "cleaning_report" in ctx.inputs:
-            report=json.loads(ctx.inputs["cleaning_report"].read_text(encoding="utf-8"))
+            report=json.loads(read_artifact_text(ctx.inputs["cleaning_report"]))
             for item in report.get("changes",[]):
                 if "column" in item and "action" in item:
                     cleaned.setdefault(f"{item['table']}.{item['column']}",[]).append(item["action"])
@@ -137,7 +138,7 @@ def run(ctx: RunContext) -> AgentResult:
             etl_source=str(ctx.inputs["manifest"].parent.resolve()),source_fingerprints=source_hashes,
             integration_status="kpi_bindings_provided" if bindings else "bo2_only")
         # Never silently replace a different lineage snapshot in the same directory.
-        if path.exists() and json.loads(path.read_text(encoding="utf-8"))!=graph.model_dump():
+        if path.exists() and json.loads(read_artifact_text(path))!=graph.model_dump():
             raise ValueError("Different lineage snapshot already exists; choose a new output directory")
         path.write_text(graph.model_dump_json(indent=2), encoding="utf-8")
         outputs["lineage"] = path
@@ -150,7 +151,12 @@ def run(ctx: RunContext) -> AgentResult:
             outputs["neo4j_import"] = imported
         elif backend != "json":
             raise ValueError("Lineage backend must be neo4j or json")
-        log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="build_lineage", decision="success", rule_version="lineage@2.0", evidence={"nodes": len(nodes), "edges": len(edges)}), ctx.output_dir.parent / "audit_journal.jsonl")
+        log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="build_lineage", decision="success", rule_version="lineage@2.0", evidence={"nodes": len(nodes), "edges": len(edges)}), ctx.journal)
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS, outputs=outputs, message=f"Lineage stored in {backend}")
     except Exception as exc:
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.FAILED, outputs=outputs, message=str(exc))
+
+
+def run(ctx: RunContext) -> AgentResult:
+    from bo2.contract_adapter import execute
+    return execute(ctx, _run)

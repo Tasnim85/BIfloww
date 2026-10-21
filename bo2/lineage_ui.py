@@ -15,6 +15,7 @@ from etl.generic import digest
 from etl.neo4j_store import ancestors
 from bo2.run_paths import selected_folder, lineage_folder
 from bo2.pii_ui import MAX_DOWNLOAD_BYTES
+from bo2.artifact_io import read_artifact_text
 
 STAGES={"raw":"Fichier d’origine","pii":"Informations protégées","clean":"Données nettoyées",
         "transformation":"Transformation","physical":"Stockage préparé","warehouse":"Données pour l’analyse","kpi":"Indicateur"}
@@ -27,7 +28,7 @@ OPERATIONS={"privacy:keep":"Information conservée","privacy:hmac_sha256":"Ident
 
 
 def read(path):
-    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    return json.loads(read_artifact_text(path)) if path.is_file() else {}
 
 
 def folder(root):
@@ -138,7 +139,7 @@ def recorded_sources(run_id,target):
 
 
 def results(root,target):
-    graph=LineageReport.model_validate_json((target/"lineage.json").read_text(encoding="utf-8")).model_dump()
+    graph=LineageReport.model_validate_json(read_artifact_text(target/"lineage.json")).model_dump()
     etl=selected_folder(root,"etl")
     for key,name in [("manifest","warehouse_manifest.json"),("receipts","receipts.json"),("warehouse","warehouse.duckdb")]:
         expected=graph["source_fingerprints"].get(key)

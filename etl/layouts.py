@@ -1,5 +1,5 @@
 """Deterministic physical builders; Llama 3 selects a name, never executable SQL."""
-from contracts.artifacts import TransformationReceipt
+from contracts.warehouse import TransformationReceipt
 
 
 def describe(con, table, keys):

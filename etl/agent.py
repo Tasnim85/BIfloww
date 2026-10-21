@@ -7,11 +7,12 @@ import duckdb
 import pandas as pd
 
 from contracts.agent import AgentResult, AgentStatus, RunContext
-from contracts.artifacts import TransformationReceipt
+from contracts.warehouse import TransformationReceipt
 from contracts.audit import AuditEvent, log_event
 from .models import WarehouseManifest
 from .layouts import apply_layout
 from .schema_advisor import recommend
+from bo2.artifact_io import read_artifact_text
 
 KEYS = {"customers": ["customer_id"], "orders": ["order_id"], "products": ["product_id"], "sellers": ["seller_id"], "order_items": ["order_id", "order_item_id"], "order_payments": ["order_id", "payment_sequential"]}
 REQUIRED = {
@@ -45,7 +46,7 @@ def run_olist(ctx: RunContext) -> AgentResult:
     try:
         if ctx.agent != "etl" or ctx.inputs["tables"].parent.name != "cleaning":
             raise ValueError("ETL must consume cleaning/tables")
-        clean_report = json.loads(ctx.inputs["cleaning_report"].read_text(encoding="utf-8"))
+        clean_report = json.loads(read_artifact_text(ctx.inputs["cleaning_report"]))
         if clean_report["needs_review"]:
             raise ValueError("Cleaning has pending human review")
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
@@ -97,7 +98,7 @@ def run_olist(ctx: RunContext) -> AgentResult:
             schema_type = recommendation.schema_type
             recommendation_path = ctx.output_dir / "schema_recommendation.json"
             recommendation_path.write_text(recommendation.model_dump_json(indent=2), encoding="utf-8")
-            log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="recommend_warehouse_schema", decision=schema_type, rule_version="schema-advisor:llama3@1.0", evidence={"model": ctx.params.get("llm_model") or os.environ.get("OLLAMA_MODEL", "llama3:latest"), "rationale": recommendation.rationale, "validation_basis": "metadata_not_benchmark"}), ctx.output_dir.parent / "audit_journal.jsonl")
+            log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="recommend_warehouse_schema", decision=schema_type, rule_version="schema-advisor:llama3@1.0", evidence={"model": ctx.params.get("llm_model") or os.environ.get("OLLAMA_MODEL", "llama3:latest"), "rationale": recommendation.rationale, "validation_basis": "metadata_not_benchmark"}), ctx.journal)
         elif schema_mode in {"star", "snowflake", "constellation"}:
             schema_type = schema_mode
         else:
@@ -145,10 +146,10 @@ def run_olist(ctx: RunContext) -> AgentResult:
                 receipt = TransformationReceipt(output_table=table, source_tables=[source], join_keys=[], rows_before=len(frames[source]), rows_after=rows, grain=grains[table])
             receipts.append(receipt.model_dump())
             manifest[table] = {"rows": rows, "grain": grains[table], "primary_key": keys, "columns": [{"name": row[1], "type": row[2]} for row in connection.execute(f"PRAGMA table_info('{table}')").fetchall()]}
-            log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="build_table_and_check_grain", decision="success", rule_version="etl:olist@1.0", evidence=receipt.model_dump()), ctx.output_dir.parent / "audit_journal.jsonl")
+            log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="build_table_and_check_grain", decision="success", rule_version="etl:olist@1.0", evidence=receipt.model_dump()), ctx.journal)
         physical, mappings, extra_receipts = apply_layout(connection, schema_type, primary_keys, receipts)
         receipts.extend(extra_receipts)
-        log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="build_physical_layout", decision=schema_type, rule_version="etl-layout:olist@1.0", evidence={"physical_tables": list(physical), "physical_receipts": len(extra_receipts)}), ctx.output_dir.parent / "audit_journal.jsonl")
+        log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="build_physical_layout", decision=schema_type, rule_version="etl-layout:olist@1.0", evidence={"physical_tables": list(physical), "physical_receipts": len(extra_receipts)}), ctx.journal)
         for table, info in manifest.items():
             if connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0] != info["rows"]:
                 raise ValueError("Physical layout changed the canonical table grain")

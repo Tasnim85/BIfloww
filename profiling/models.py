@@ -1,4 +1,4 @@
-"""Provisional local artifacts; replace with contracts/quality.py when supplied."""
+"""Private BO2 diagnostics and SHAP metadata; shared files use contracts.quality."""
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field

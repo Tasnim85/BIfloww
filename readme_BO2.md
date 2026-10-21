@@ -6,10 +6,10 @@ Ce guide décrit toutes les étapes BO2 disponibles dans **streamlit_BO2.py**, d
 
 | Responsable | Tâche | Module |
 |---|---|---|
-| Ikbel | Détection et masquage des informations personnelles | `privacy.agent` |
-| Ahmed | Profilage, couverture et anomalies | `profiling.agent` |
-| Ikbel | Nettoyage par playbook versionné ou généré | `cleaning.agent` |
-| Ahmed | Organisation et construction de l’entrepôt | `etl.agent` |
+| Ikbel | Détection et masquage des informations personnelles | `privacy.pii:run` |
+| Ahmed | Profilage, couverture et anomalies | `profiling.profiler:run` |
+| Ikbel | Nettoyage par playbook versionné ou généré | `cleaning.cleaner:run` |
+| Ahmed | Organisation et construction de l’entrepôt | `etl.build:run` |
 | Ahmed | Lignage et enregistrement Neo4j | `etl.lineage` |
 
 L’application est un banc de test BO2. Le DAG global, le catalogue KPI, les calculs, SHAP et le tableau de bord final nécessitent encore l’intégration des autres groupes.
@@ -102,7 +102,7 @@ Dans **Nettoyer mes données**, choisir les règles puis cliquer sur **Lancer le
 | Version 2.0 | Nettoyage des textes, conversions prévues des nombres et dates, déduplication dans les tables autorisées et contrôles des champs critiques. |
 | Laisser l’assistant préparer les règles | Nouvelle proposition adaptée aux fichiers par Llama3 local. |
 
-Les deux versions de test sont `cleaning/playbooks/playbook_v1.0.json` et `cleaning/playbooks/playbook_v2.0.json`. Elles ciblent la structure Olist. Si le fichier choisi manque ou est incompatible, l’assistant propose des règles adaptées.
+Les deux versions de test sont `cleaning/playbooks/playbook_v1.0.json` et `cleaning/playbooks/playbook_v2.0.json`, au format `contracts.quality.Playbook`. Elles ciblent la structure Olist. Une version sans approbation doit être validée dans l’interface avant application. Si le fichier choisi manque ou est incompatible, l’assistant propose des règles adaptées.
 
 Dans Streamlit, ne rien sélectionner demande une génération même si une ancienne version compatible existe. Pour les commandes sans choix explicite, le moteur recherche la dernière version compatible ; un conflit de versions bloque ce choix automatique.
 
@@ -155,7 +155,9 @@ Chaque import possède un dossier `runs/<identifiant>/`. Les premiers résultats
 
 `cleaning_current_test.json` et `etl_current_test.json` indiquent les sélections actives. L’ETL utilise le nettoyage sélectionné ; le lignage utilise l’ETL sélectionné. Le dernier résultat ne se trouve donc pas nécessairement dans le dossier initial.
 
-Les tables intermédiaires utilisent Parquet ; les téléchargements de protection et nettoyage proposent des CSV. Le fichier `convertir_parquet_csv.py` reste disponible pour les conversions séparées. Les rapports sont en JSON et les événements d’audit en JSONL.
+Les tables intermédiaires utilisent Parquet ; les téléchargements de protection et nettoyage proposent des CSV. Le fichier `convertir_parquet_csv.py` reste disponible pour les conversions séparées. Les rapports échangés sont en JSON au format des contrats 1.1. Le journal partagé est maintenant `runs/audit_journal.db` : SQLite, ajout seul et chaîne de hash. Les anciens journaux JSONL sont conservés comme historique et ne sont plus alimentés par les agents.
+
+Les détails propres à BO2 (schéma choisi, contrôles supplémentaires, préparation SHAP et affichage) sont séparés dans des fichiers `*.bo2.json`. Ils ne remplacent pas les fichiers échangés avec l’équipe. Une empreinte `*.bo2.sha256` lie les détails d’affichage au fichier partagé correspondant.
 
 ## 11. Tester les tâches par commande
 
@@ -169,6 +171,15 @@ L’interface est recommandée pour choisir les colonnes et valider. Les command
 ```
 
 Pour choisir explicitement une version, ajouter `--playbook cleaning\playbooks\playbook_v1.0.json` à la première commande de nettoyage. Si des règles ont été proposées, les lire puis les approuver et reprendre :
+
+Si le résultat désigne plutôt un playbook partagé existant non approuvé (`outputs.playbook`), lire ce fichier puis utiliser la commande suivante pour approuver la version choisie. Remplacer `Votre nom` après revue réelle ; cette commande matérialise une décision humaine.
+
+```powershell
+.\.venv\Scripts\python.exe -m bo2 approve --proposal cleaning/playbooks/playbook_v2.0.json --reviewer "Votre nom" --output cleaning/playbooks/playbook_v2.0.json
+.\.venv\Scripts\python.exe -m bo2 step cleaning --run-id mon_test_bo2_001 --playbook cleaning/playbooks/playbook_v2.0.json
+```
+
+Pour une nouvelle proposition LLM, la validation reste liée à son empreinte et suit les commandes ci-dessous :
 
 ```powershell
 .\.venv\Scripts\python.exe -m bo2 approve --proposal runs/mon_test_bo2_001/cleaning/proposed_rules.json --reviewer "Votre nom" --output runs/mon_test_bo2_001/cleaning/approval.json
@@ -203,7 +214,18 @@ Depuis le projet, avec un nouveau dossier temporaire :
 
 Les tests couvrent protection, relations, versions, approbations, avant/après, totaux, scores, ETL, conservation des sources et lignage. Ils simulent les services ; un test réel avec Ollama et Neo4j démarrés reste distinct.
 
-Les agents reçoivent le `RunContext` et retournent l’`AgentResult` du dépôt. Les reçus utilisent `contracts.artifacts.TransformationReceipt` et l’audit utilise `contracts.audit`. Les rapports locaux portent `schema_version: bo2-local-1`. L’intégration aux contrats étendus décrits dans les documents de l’équipe reste à coordonner avec leurs propriétaires.
+Les agents reçoivent le `RunContext` de `contracts.agent` et retournent l’`AgentResult` officiel. Les points d’entrée sont ceux de `contracts.pipeline`. Les reçus utilisent `contracts.warehouse.TransformationReceipts` et les sorties partagées sont validées par `contracts.registry.read_output`. L’ancien `contracts/artifacts.py` est retiré, conformément à la version 1.1 récupérée de `main`.
+
+Le manifeste contient une liste de tables avec `kind` (`fact` ou `dimension`), `date_column` et les bornes de dates lorsqu’elles existent. Les références auxiliaires sont des dimensions ; les sources de rôle non confirmé restent dans DuckDB et les détails BO2, sans être présentées comme faits ou dimensions dans le manifeste partagé.
+
+Pour vérifier la conformité :
+
+```powershell
+.\.venv\Scripts\python.exe -m contracts.check_contracts
+.\.venv\Scripts\python.exe -m pytest tests/test_contract_alignment.py -q --basetemp=test-work/verification_contracts_001
+```
+
+Un contexte d’intégration se construit avec `contracts.context_for(...)`. Le journal transmis dans `ctx.journal` est utilisé par tous les agents BO2. Les anciens résultats ne sont pas réécrits : refaire un test pour obtenir les nouveaux formats. Cette conformité des échanges ne constitue pas une intégration complète des agents KPI, analyse ou dashboard.
 
 ## 13. Problèmes courants
 

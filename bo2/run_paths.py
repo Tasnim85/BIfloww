@@ -23,6 +23,7 @@ def lineage_folder(root):
     from etl.models import LINEAGE_VERSION
     base=selected_folder(root,"etl").parent/"lineage"
     graph=base/"lineage.json"
-    if graph.is_file() and json.loads(graph.read_text(encoding="utf-8")).get("lineage_version")!=LINEAGE_VERSION:
+    from bo2.artifact_io import read_artifact_text
+    if graph.is_file() and json.loads(read_artifact_text(graph)).get("lineage_version")!=LINEAGE_VERSION:
         return base.with_name("lineage_v"+LINEAGE_VERSION.replace(".","_"))
     return base

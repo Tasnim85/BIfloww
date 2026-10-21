@@ -15,6 +15,7 @@ from .llm_rules import Proposal, check_approval, validate_approval
 from .models import CleaningReport
 from . import llm_rules
 from .registry import select, schema, metadata, compatible, load_playbook
+from bo2.artifact_io import read_artifact_text
 
 
 def check_protected_rules(proposal, decisions):
@@ -49,14 +50,19 @@ def run(ctx: RunContext) -> AgentResult:
         if not frames:
             raise ValueError("No masked tables")
         if "profile" in ctx.inputs:
-            profile = json.loads(ctx.inputs["profile"].read_text(encoding="utf-8"))
+            profile = json.loads(read_artifact_text(ctx.inputs["profile"]))
             if set(profile["tables"]) != set(frames):
                 raise ValueError("Profile does not match the input tables")
             if any(profile["tables"][name]["rows"] != len(frame) for name, frame in frames.items()):
                 raise ValueError("Profile row counts do not match the input tables")
         pii_report_path = source.parent / "pii_report.json"
-        pii_report = json.loads(pii_report_path.read_text(encoding="utf-8")) if pii_report_path.exists() else {}
+        pii_report = json.loads(read_artifact_text(pii_report_path)) if pii_report_path.exists() else {}
         pii_decisions = pii_report.get("classification") or pii_report.get("decisions", [])
+        if "column_types" in ctx.inputs:
+            from contracts.intake import ColumnTypesReport
+            upstream=ColumnTypesReport.model_validate_json(ctx.inputs["column_types"].read_text(encoding="utf-8"))
+            pii_decisions=list(pii_decisions)+[{"table":c.table,"column":c.column,"action":"keep","semantic_type":"INTERNAL_KEY"}
+                for c in upstream.columns if c.semantic_type.value=="ID"]
         input_schema = schema(frames)
         if ctx.params.get("playbook_mode") == "generate":
             playbook, playbook_path = {}, None
@@ -208,8 +214,8 @@ def run(ctx: RunContext) -> AgentResult:
                 outputs["playbook"] = path
         report_path.write_text(CleaningReport(selection="existing" if playbook_path else "generated", playbook_path=str(playbook_path) if playbook_path else None, playbook_version=version, changes=changes, needs_review=review).model_dump_json(indent=2, exclude_none=True), encoding="utf-8")
         for change in changes:
-            log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="apply_cleaning_rule", decision="needs_review" if review else "applied", rule_version=version, evidence=change), ctx.output_dir.parent / "audit_journal.jsonl")
-        log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="cleaning_complete", decision="needs_review" if review else "success", rule_version=version, evidence={"review_items": len(review)}, outputs=[str(p) for p in outputs.values()]), ctx.output_dir.parent / "audit_journal.jsonl")
+            log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="apply_cleaning_rule", decision="needs_review" if review else "applied", rule_version=version, evidence=change), ctx.journal)
+        log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="cleaning_complete", decision="needs_review" if review else "success", rule_version=version, evidence={"review_items": len(review)}, outputs=[str(p) for p in outputs.values()]), ctx.journal)
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.NEEDS_REVIEW if review else AgentStatus.SUCCESS, outputs=outputs)
     except Exception as exc:
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.FAILED, message=str(exc))

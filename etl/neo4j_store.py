@@ -29,7 +29,10 @@ def _write_graph(tx, run_id, graph, graph_hash):
 
 
 def import_graph(graph: LineageReport, run_id: str) -> dict:
-    data = graph.model_dump()
+    data = graph.model_dump(mode="json")
+    if "contract_version" in data:
+        data={"nodes":[{"id":n["id"],"kind":n["kind"]} for n in data["nodes"]],
+              "edges":[{"source":e["source"],"target":e["target"],"operation":e["relation"]} for e in data["edges"]]}
     ids = [n["id"] for n in data["nodes"]]
     if len(ids) != len(set(ids)) or any(e["source"] not in ids or e["target"] not in ids for e in data["edges"]):
         raise ValueError("Invalid graph: duplicate nodes or dangling edges")

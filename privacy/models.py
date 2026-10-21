@@ -1,4 +1,4 @@
-"""Provisional local artifacts; replace with contracts/privacy.py when supplied."""
+"""Private BO2 classification details; shared files use contracts.privacy."""
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field

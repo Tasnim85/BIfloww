@@ -12,13 +12,14 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import streamlit as st
-from profiling.agent import run
+from profiling.profiler import run
+from bo2.artifact_io import read_artifact_text
 from contracts.agent import RunContext
 from bo2.pii_ui import MAX_DOWNLOAD_BYTES
 
 
 def read(path):
-    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    return json.loads(read_artifact_text(path)) if path.exists() else {}
 
 
 def folder(root):

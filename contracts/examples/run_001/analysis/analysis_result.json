@@ -1,0 +1,54 @@
+{
+  "contract_version": "1.1",
+  "request": {
+    "contract_version": "1.1",
+    "question": "Revenue by state in August 2018 compared with July 2018",
+    "metric": "Revenue",
+    "dimensions": [
+      "customer_state"
+    ],
+    "period": {
+      "start": "2018-08-01",
+      "end": "2018-08-31"
+    },
+    "compare_to": {
+      "start": "2018-07-01",
+      "end": "2018-07-31"
+    },
+    "filters": [],
+    "confidence": 0.91,
+    "matched_terms": {
+      "Revenue": "Revenue",
+      "state": "customer_state"
+    }
+  },
+  "kpi": "Revenue@2.0",
+  "sql": "SELECT c.customer_state, CASE WHEN f.order_purchase_date >= '2018-08-01' THEN 'current' ELSE 'previous' END AS period, SUM(f.payment_value) AS value FROM fact_payments f JOIN dim_customer c USING (customer_id) WHERE f.order_status = 'delivered' AND f.order_purchase_date BETWEEN '2018-07-01' AND '2018-08-31' GROUP BY 1, 2",
+  "data_file": "result.parquet",
+  "rows": 54,
+  "value_current": 985414.28,
+  "value_previous": 1027903.86,
+  "change_pct": -0.0413,
+  "unit": "BRL",
+  "validations": [
+    {
+      "name": "join_multiplicity",
+      "passed": true,
+      "detail": "fact_payments has 100756 rows for 100756 delivered payments: the join did not duplicate rows."
+    },
+    {
+      "name": "grain_matches_kpi",
+      "passed": true,
+      "detail": "Revenue@2.0 expects grain 'payment'; fact_payments grain is 'payment'."
+    }
+  ],
+  "insights": [
+    {
+      "text": "São Paulo (SP) makes 45% of August revenue.",
+      "evidence": {
+        "SP": 443770.05,
+        "total": 985414.28
+      }
+    }
+  ]
+}

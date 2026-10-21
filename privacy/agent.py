@@ -101,7 +101,14 @@ def run(ctx: RunContext) -> AgentResult:
         hints = {}
         if "column_types" in ctx.inputs:
             hints = json.loads(ctx.inputs["column_types"].read_text(encoding="utf-8"))
-            hints = hints.get("tables", hints)
+            if "columns" in hints:
+                from contracts.intake import ColumnTypesReport
+                report = ColumnTypesReport.model_validate(hints)
+                hints = {}
+                for column in report.columns:
+                    hints.setdefault(column.table, {})[column.column] = column.model_dump(mode="json")
+            else:
+                hints = hints.get("tables", hints)
         model = ctx.params.get("llm_model") or os.environ.get("OLLAMA_MODEL", "llama3:latest")
         threshold = float(ctx.params.get("confidence_threshold", 0.75))
         uncertainty_policy = ctx.params.get("uncertain_policy", "review")
@@ -172,7 +179,7 @@ def run(ctx: RunContext) -> AgentResult:
         report_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
         review_keys = {(item["table"], item["column"]) for item in pending}
         for item in classification:
-            log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="classify_column", decision="needs_review" if (item["table"], item["column"]) in review_keys else item["action"], rule_version=POLICY, evidence=item), ctx.output_dir.parent / "audit_journal.jsonl")
+            log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="classify_column", decision="needs_review" if (item["table"], item["column"]) in review_keys else item["action"], rule_version=POLICY, evidence=item), ctx.journal)
         if pending:
             progress(f"Analyse terminee : {len(pending)} point(s) a verifier. Rapport enregistre, tables non publiees.")
             return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.NEEDS_REVIEW, outputs={"report": report_path}, message=f"{len(pending)} column(s) need review; no masked tables published")

@@ -7,7 +7,10 @@ from .llm_rules import Proposal, validate_approval
 
 
 def load_playbook(path):
-    text = Path(path).read_text(encoding="utf-8")
+    from bo2.artifact_io import details_path
+    path=Path(path)
+    private=details_path(path)
+    text = (private if private.is_file() else path).read_text(encoding="utf-8")
     # Read historical YAML results for compatibility; all new files are JSON.
     return json.loads(text) if Path(path).suffix.lower() == ".json" else yaml.safe_load(text)
 
@@ -35,6 +38,8 @@ def select(frames, directory, runs):
                      *Path(runs).glob(f"*/cleaning_tests/*/cleaning/*.{extension}")]))
     candidates = []
     for path in paths:
+        if path.name.endswith('.bo2.json'):
+            continue
         book = load_playbook(path)
         if not isinstance(book, dict) or not {"name", "version"}.issubset(book) or not compatible(book, frames):
             continue

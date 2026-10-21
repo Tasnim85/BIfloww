@@ -1,0 +1,22 @@
+{
+  "contract_version": "1.1",
+  "question": "Revenue by state in August 2018 compared with July 2018",
+  "metric": "Revenue",
+  "dimensions": [
+    "customer_state"
+  ],
+  "period": {
+    "start": "2018-08-01",
+    "end": "2018-08-31"
+  },
+  "compare_to": {
+    "start": "2018-07-01",
+    "end": "2018-07-31"
+  },
+  "filters": [],
+  "confidence": 0.91,
+  "matched_terms": {
+    "Revenue": "Revenue",
+    "state": "customer_state"
+  }
+}

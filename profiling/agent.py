@@ -11,6 +11,7 @@ from contracts.audit import AuditEvent,log_event
 from .models import ProfileReport,AnomalyReport,CoverageReport
 from .coverage import coverage
 from .anomalies import train
+from bo2.artifact_io import read_artifact_text
 
 
 def rename(source,target):
@@ -42,11 +43,16 @@ def run(ctx:RunContext)->AgentResult:
             raise ValueError("PROFILING_EXISTS: this task already has results; start a new test")
         ctx.output_dir.mkdir(parents=True,exist_ok=True)
         old_profile=ctx.output_dir/"profile_report.json"
-        if old_profile.exists() and json.loads(old_profile.read_text(encoding="utf-8")).get("source_fingerprints")!=fingerprints:
+        if old_profile.exists() and json.loads(read_artifact_text(old_profile)).get("source_fingerprints")!=fingerprints:
             raise ValueError("PROFILING_CHANGED: inputs differ from the existing profile; start a new test")
         report_path=source.parent/"pii_report.json"
-        pii_report=json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else {}
+        pii_report=json.loads(read_artifact_text(report_path)) if report_path.exists() else {}
         decisions=pii_report.get("classification") or pii_report.get("decisions",[])
+        if "column_types" in ctx.inputs:
+            from contracts.intake import ColumnTypesReport
+            types=ColumnTypesReport.model_validate_json(ctx.inputs["column_types"].read_text(encoding="utf-8"))
+            decisions=list(decisions)+[{"table":c.table,"column":c.column,"action":"keep","semantic_type":"INTERNAL_KEY"}
+                for c in types.columns if c.semantic_type.value=="ID"]
         outputs={"profile":old_profile}
         with tempfile.TemporaryDirectory(prefix=".profiling-",dir=ctx.output_dir) as temporary:
             staging=Path(temporary)
@@ -80,7 +86,7 @@ def run(ctx:RunContext)->AgentResult:
                 for target in published:
                     target.unlink()
                 raise
-        log_event(AuditEvent(run_id=ctx.run_id,agent=ctx.agent,step="profiling_"+task,inputs=[str(source)],outputs=[str(p) for p in outputs.values()],decision="flag_only",rule_version="profiling@2.0",evidence={"task":task,"source_fingerprints":fingerprints}),ctx.output_dir.parent/"audit_journal.jsonl")
+        log_event(AuditEvent(run_id=ctx.run_id,agent=ctx.agent,step="profiling_"+task,inputs=[str(source)],outputs=[str(p) for p in outputs.values()],decision="flag_only",rule_version="profiling@2.0",evidence={"task":task,"source_fingerprints":fingerprints}),ctx.journal)
         return AgentResult(run_id=ctx.run_id,agent=ctx.agent,status=AgentStatus.SUCCESS,outputs=outputs)
     except ValueError as exc:
         message=str(exc) if str(exc).startswith(("PROFILING_","COVERAGE_","ANOMALY_")) else "PROFILING_INVALID: selected inputs could not be analysed"

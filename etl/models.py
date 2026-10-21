@@ -1,4 +1,4 @@
-"""Provisional local artifacts; replace with contracts/warehouse.py when supplied."""
+"""Private BO2 metadata and historical readers; shared files use contracts.warehouse."""
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field

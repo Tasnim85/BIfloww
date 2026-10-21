@@ -10,7 +10,8 @@ from uuid import uuid4
 import duckdb
 import streamlit as st
 from contracts.agent import RunContext
-from etl.agent import run
+from etl.build import run
+from bo2.artifact_io import read_artifact_text
 from etl.generic import digest, quote
 from bo2.pii_ui import MAX_DOWNLOAD_BYTES
 from bo2.run_paths import selected_folder
@@ -26,7 +27,7 @@ LAYOUTS = {"constellation": "Constellation — dimensions partagées", "star": "
 
 
 def read(path):
-    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    return json.loads(read_artifact_text(path)) if path.is_file() else {}
 
 
 def ready(root):

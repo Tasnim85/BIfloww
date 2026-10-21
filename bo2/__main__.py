@@ -68,16 +68,30 @@ def main():
     elif args.command == "propose":
         from cleaning.llm_rules import generate
         # Whitelist metadata: an arbitrary JSON profile cannot exfiltrate samples.
-        profile = json.loads(args.profile.read_text(encoding="utf-8"))
+        from bo2.artifact_io import read_artifact_text
+        profile = json.loads(read_artifact_text(args.profile))
         metadata = {"tables": {table: {"rows": values["rows"], "columns": {column: {key: stats[key] for key in ("dtype", "missing", "distinct")} for column, stats in values["columns"].items()}} for table, values in profile["tables"].items()}}
         print(generate(metadata, args.model, args.output))
     elif args.command == "approve":
-        from cleaning.llm_rules import approve as approve_proposal
-        print(approve_proposal(args.proposal, args.reviewer, args.output))
+        data=json.loads(args.proposal.read_text(encoding="utf-8"))
+        if "source" in data:
+            from contracts.quality import Playbook
+            from contracts import save
+            from datetime import datetime,timezone
+            if not args.reviewer.strip():
+                raise ValueError("A reviewer name is required")
+            book=Playbook.model_validate(data)
+            print(save(book.model_copy(update={"approved_by":args.reviewer.strip(),"approved_at":datetime.now(timezone.utc)}),args.output))
+        else:
+            from cleaning.llm_rules import approve as approve_proposal
+            print(approve_proposal(args.proposal, args.reviewer, args.output))
     elif args.command == "lineage-import":
         from etl.models import LineageReport
+        from contracts.warehouse import LineageGraph
+        from bo2.artifact_io import read_artifact_text
         from etl.neo4j_store import import_graph
-        graph = LineageReport.model_validate_json(args.graph.read_text(encoding="utf-8"))
+        data = json.loads(args.graph.read_text(encoding="utf-8"))
+        graph = LineageGraph.model_validate(data) if "contract_version" in data else LineageReport.model_validate(data)
         report = import_graph(graph, args.run_id)
         args.graph.with_name("neo4j_import.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(json.dumps(report, indent=2))

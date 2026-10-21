@@ -1,0 +1,52 @@
+{
+  "contract_version": "1.1",
+  "nodes": [
+    {
+      "id": "raw:order_payments.payment_value",
+      "kind": "raw_column",
+      "label": "olist_order_payments_dataset.csv / payment_value"
+    },
+    {
+      "id": "raw:orders.order_status",
+      "kind": "raw_column",
+      "label": "olist_orders_dataset.csv / order_status"
+    },
+    {
+      "id": "tr:build_fact_payments",
+      "kind": "transformation",
+      "label": "join order_payments + orders on order_id, keep delivered"
+    },
+    {
+      "id": "table:fact_payments",
+      "kind": "table",
+      "label": "fact_payments"
+    },
+    {
+      "id": "kpi:Revenue@2.0",
+      "kind": "kpi",
+      "label": "Revenue = SUM(payment_value)"
+    }
+  ],
+  "edges": [
+    {
+      "source": "raw:order_payments.payment_value",
+      "target": "tr:build_fact_payments",
+      "relation": "read"
+    },
+    {
+      "source": "raw:orders.order_status",
+      "target": "tr:build_fact_payments",
+      "relation": "filtered order_status == 'delivered'"
+    },
+    {
+      "source": "tr:build_fact_payments",
+      "target": "table:fact_payments",
+      "relation": "wrote"
+    },
+    {
+      "source": "table:fact_payments",
+      "target": "kpi:Revenue@2.0",
+      "relation": "aggregated SUM(payment_value)"
+    }
+  ]
+}

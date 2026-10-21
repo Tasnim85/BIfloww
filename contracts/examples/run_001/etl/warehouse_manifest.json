@@ -1,0 +1,124 @@
+{
+  "contract_version": "1.1",
+  "database_file": "warehouse.duckdb",
+  "tables": [
+    {
+      "name": "fact_payments",
+      "kind": "fact",
+      "grain": "payment",
+      "primary_key": [
+        "order_id",
+        "payment_sequential"
+      ],
+      "row_count": 100756,
+      "columns": [
+        "order_id",
+        "payment_sequential",
+        "payment_type",
+        "payment_installments",
+        "payment_value",
+        "customer_id",
+        "order_purchase_date",
+        "order_status"
+      ],
+      "date_column": "order_purchase_date",
+      "date_min": "2016-09-15",
+      "date_max": "2018-08-29"
+    },
+    {
+      "name": "fact_order_items",
+      "kind": "fact",
+      "grain": "order_item",
+      "primary_key": [
+        "order_id",
+        "order_item_id"
+      ],
+      "row_count": 110197,
+      "columns": [
+        "order_id",
+        "order_item_id",
+        "product_id",
+        "seller_id",
+        "price",
+        "freight_value",
+        "customer_id",
+        "order_purchase_date",
+        "order_status"
+      ],
+      "date_column": "order_purchase_date",
+      "date_min": "2016-09-15",
+      "date_max": "2018-08-29"
+    },
+    {
+      "name": "dim_customer",
+      "kind": "dimension",
+      "grain": "customer",
+      "primary_key": [
+        "customer_id"
+      ],
+      "row_count": 99441,
+      "columns": [
+        "customer_id",
+        "customer_unique_id",
+        "customer_city",
+        "customer_state"
+      ],
+      "date_column": null,
+      "date_min": null,
+      "date_max": null
+    },
+    {
+      "name": "dim_product",
+      "kind": "dimension",
+      "grain": "product",
+      "primary_key": [
+        "product_id"
+      ],
+      "row_count": 32951,
+      "columns": [
+        "product_id",
+        "product_category_name_english",
+        "product_weight_g"
+      ],
+      "date_column": null,
+      "date_min": null,
+      "date_max": null
+    },
+    {
+      "name": "dim_seller",
+      "kind": "dimension",
+      "grain": "seller",
+      "primary_key": [
+        "seller_id"
+      ],
+      "row_count": 3095,
+      "columns": [
+        "seller_id",
+        "seller_city",
+        "seller_state"
+      ],
+      "date_column": null,
+      "date_min": null,
+      "date_max": null
+    },
+    {
+      "name": "dim_date",
+      "kind": "dimension",
+      "grain": "day",
+      "primary_key": [
+        "date"
+      ],
+      "row_count": 774,
+      "columns": [
+        "date",
+        "year",
+        "month",
+        "year_month",
+        "weekday"
+      ],
+      "date_column": null,
+      "date_min": null,
+      "date_max": null
+    }
+  ]
+}
