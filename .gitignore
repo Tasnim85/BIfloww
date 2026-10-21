@@ -13,7 +13,8 @@ runs/
 .env
 .env.*
 !.env.example
-data/
+data/*
+!data/sample/
 README_LOCAL_STACK.md
 convertir_parquet_csv.py
 lancer_pii.cmd
@@ -36,3 +37,13 @@ coverage.xml
 # Fichiers temporaires Windows
 Thumbs.db
 Desktop.ini
+
+# Ajouts de la branche de Malek
+*.pyo
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+*.parquet
+*.zip
