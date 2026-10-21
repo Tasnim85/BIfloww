@@ -10,6 +10,7 @@ Responsibilities:
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -77,6 +78,8 @@ def validate_taxonomy_file(yaml_path: Path | str) -> ValidationResult:
     version = data.get("taxonomy_version")
     if not version:
         result.add_error("Missing required field: taxonomy_version")
+    elif not re.match(r"^\d+\.\d+\.\d+$", str(version).strip()):
+        result.add_error(f"Invalid taxonomy_version format '{version}': must follow SemVer (e.g. 1.1.0)")
     else:
         result.stats["taxonomy_version"] = version
 

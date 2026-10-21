@@ -80,8 +80,24 @@ class TestSemanticColumn:
         with pytest.raises(Exception):
             SemanticColumn(
                 source_table="t", column_name="c",
-                semantic_group="G", semantic_type="T",
+                semantic_group="PERSONAL_DATA", semantic_type="EMAIL",
                 confidence_score=1.5,  # out of [0, 1]
+            )
+
+    def test_c05_mismatched_pair_rejected(self):
+        """FINANCIAL_DATA / EMAIL must be rejected by Pydantic validator."""
+        with pytest.raises(ValueError, match="does not belong"):
+            SemanticColumn(
+                source_table="orders", column_name="email",
+                semantic_group="FINANCIAL_DATA", semantic_type="EMAIL",
+            )
+
+    def test_c05_fake_group_rejected(self):
+        """FAKE_GROUP must be rejected by Pydantic validator."""
+        with pytest.raises(ValueError, match="Unknown semantic_group"):
+            SemanticColumn(
+                source_table="orders", column_name="col",
+                semantic_group="FAKE_GROUP", semantic_type="EMAIL",
             )
 
     def test_c05b_no_confidence_for_manual(self):
@@ -185,6 +201,18 @@ class TestSemanticMetadata:
             review_required_columns=0,
         )
         assert report.total_columns == 0
+
+    def test_c10_empty_columns_with_nonzero_total_rejected(self):
+        """columns=[] with total_columns=99 must be rejected."""
+        with pytest.raises(ValueError, match="total_columns"):
+            SemanticMetadata(
+                dataset_name="empty",
+                columns=[],
+                total_columns=99,
+                classified_columns=0,
+                unknown_columns=0,
+                review_required_columns=0,
+            )
 
 
 # ── C11-C15: SemanticMatch & MatchesReport ───────────────────────────────

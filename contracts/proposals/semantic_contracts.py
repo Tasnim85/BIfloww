@@ -105,6 +105,26 @@ class SemanticColumn(Contract):
         description="Version of the classifier that produced this. None for manual."
     )
 
+    @model_validator(mode="after")
+    def validate_taxonomy_pair(self) -> "SemanticColumn":
+        """Ensure semantic_group and semantic_type exist in taxonomy and match."""
+        try:
+            from intake.semantic_detection.src.taxonomy_loader import TaxonomyLoader
+            loader = TaxonomyLoader()
+            if not loader.is_valid_group(self.semantic_group):
+                raise ValueError(f"Unknown semantic_group '{self.semantic_group}'")
+            if not loader.is_valid_type(self.semantic_type):
+                raise ValueError(f"Unknown semantic_type '{self.semantic_type}'")
+            if not loader.is_valid_pair(self.semantic_group, self.semantic_type):
+                real_group = loader.group_for_type(self.semantic_type)
+                raise ValueError(
+                    f"Type '{self.semantic_type}' does not belong to group '{self.semantic_group}' "
+                    f"(it belongs to '{real_group}')."
+                )
+        except (ImportError, FileNotFoundError):
+            pass  # If taxonomy file is not available in environment, pass
+        return self
+
     @field_validator("evidence")
     @classmethod
     def evidence_no_raw_values(cls, v: list[str]) -> list[str]:
@@ -141,30 +161,29 @@ class SemanticMetadata(Artifact):
     @model_validator(mode="after")
     def check_counters(self) -> "SemanticMetadata":
         """Ensure counters match the actual column list."""
-        if self.columns:
-            expected_total = len(self.columns)
-            expected_unknown = sum(
-                1 for c in self.columns if c.semantic_type == "UNKNOWN"
-            )
-            expected_review = sum(1 for c in self.columns if c.review_required)
-            expected_classified = expected_total - expected_unknown
+        expected_total = len(self.columns)
+        expected_unknown = sum(
+            1 for c in self.columns if c.semantic_type == "UNKNOWN"
+        )
+        expected_review = sum(1 for c in self.columns if c.review_required)
+        expected_classified = expected_total - expected_unknown
 
-            if self.total_columns != expected_total:
-                raise ValueError(
-                    f"total_columns ({self.total_columns}) != len(columns) ({expected_total})"
-                )
-            if self.unknown_columns != expected_unknown:
-                raise ValueError(
-                    f"unknown_columns ({self.unknown_columns}) != actual ({expected_unknown})"
-                )
-            if self.classified_columns != expected_classified:
-                raise ValueError(
-                    f"classified_columns ({self.classified_columns}) != actual ({expected_classified})"
-                )
-            if self.review_required_columns != expected_review:
-                raise ValueError(
-                    f"review_required_columns ({self.review_required_columns}) != actual ({expected_review})"
-                )
+        if self.total_columns != expected_total:
+            raise ValueError(
+                f"total_columns ({self.total_columns}) != len(columns) ({expected_total})"
+            )
+        if self.unknown_columns != expected_unknown:
+            raise ValueError(
+                f"unknown_columns ({self.unknown_columns}) != actual ({expected_unknown})"
+            )
+        if self.classified_columns != expected_classified:
+            raise ValueError(
+                f"classified_columns ({self.classified_columns}) != actual ({expected_classified})"
+            )
+        if self.review_required_columns != expected_review:
+            raise ValueError(
+                f"review_required_columns ({self.review_required_columns}) != actual ({expected_review})"
+            )
         return self
 
 
