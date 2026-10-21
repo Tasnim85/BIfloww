@@ -79,35 +79,44 @@ def test_stubbed_pipeline_produces_dashboard_spec(tmp_path, monkeypatch):
         mod.run = fn
         monkeypatch.setitem(sys.modules, name, mod)
 
-    def stub_pii(ctx: RunContext) -> AgentResult:
-        ctx.output_dir.mkdir(parents=True, exist_ok=True)
-        out_rep = ctx.output("report")
-        out_rep.write_text("{}", encoding="utf-8")
-        tables_out = ctx.output_dir / "tables"
-        tables_out.mkdir(parents=True, exist_ok=True)
-        return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
-                           outputs={"report": out_rep, "tables": tables_out})
-
-    def stub_profiling(ctx: RunContext) -> AgentResult:
+    def _populate_mock_outputs(ctx: RunContext):
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
         import pandas as pd
-        for key in ["profile", "coverage", "anomalies", "model"]:
-            p = ctx.output(key)
-            p.write_text("{}", encoding="utf-8")
-        scores_p = ctx.output("scores")
-        pd.DataFrame([{"anomaly_score": 0.0}]).to_parquet(scores_p)
+        import shutil
+        ex_dir = REPO_ROOT / "contracts" / "examples" / "run_001" / ctx.agent
+        for key, fname in STEPS[ctx.agent].outputs.items():
+            out_p = ctx.output(key)
+            if fname.endswith("/"):
+                out_p.mkdir(parents=True, exist_ok=True)
+            elif fname.endswith(".parquet"):
+                pd.DataFrame([{"dummy": 1.0}]).to_parquet(out_p)
+            elif fname.endswith(".duckdb"):
+                import duckdb
+                con = duckdb.connect(str(out_p))
+                con.execute("CREATE TABLE dummy (x INT)")
+                con.close()
+            else:
+                ex_file = ex_dir / fname
+                if ex_file.exists():
+                    shutil.copy2(ex_file, out_p)
+                else:
+                    out_p.write_text('{"status": "ok"}', encoding="utf-8")
+
+    def stub_pii(ctx: RunContext) -> AgentResult:
+        _populate_mock_outputs(ctx)
+        return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
+                           outputs={"report": ctx.output("report"), "tables": ctx.output_dir / "tables"})
+
+    def stub_profiling(ctx: RunContext) -> AgentResult:
+        _populate_mock_outputs(ctx)
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS)
 
     def stub_cleaning(ctx: RunContext) -> AgentResult:
-        ctx.output_dir.mkdir(parents=True, exist_ok=True)
-        ctx.output("report").write_text("{}", encoding="utf-8")
-        (ctx.output_dir / "tables").mkdir(parents=True, exist_ok=True)
+        _populate_mock_outputs(ctx)
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS)
 
     def stub_etl(ctx: RunContext) -> AgentResult:
-        ctx.output_dir.mkdir(parents=True, exist_ok=True)
-        for key in ["warehouse", "manifest", "receipts"]:
-            ctx.output(key).write_text("{}", encoding="utf-8")
+        _populate_mock_outputs(ctx)
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS)
 
     def stub_analysis(ctx: RunContext) -> AgentResult:
@@ -140,9 +149,7 @@ def test_stubbed_pipeline_produces_dashboard_spec(tmp_path, monkeypatch):
                            outputs={"report": out_p})
 
     def stub_noop(ctx: RunContext) -> AgentResult:
-        ctx.output_dir.mkdir(parents=True, exist_ok=True)
-        for key in STEPS[ctx.agent].outputs:
-            ctx.output(key).write_text("{}", encoding="utf-8")
+        _populate_mock_outputs(ctx)
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS)
 
     make_stub("privacy.pii", stub_pii)

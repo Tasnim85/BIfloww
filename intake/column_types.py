@@ -305,14 +305,14 @@ def _token_classify(tokens: list[str], col_lower: str) -> tuple[str, float]:
 
 
 def _read_headers(csv_path: Path) -> list[str]:
-    with open(csv_path, encoding="utf-8", newline="") as fh:
+    with open(csv_path, encoding="utf-8-sig", newline="") as fh:
         reader = csv.reader(fh)
         return next(reader, [])
 
 
 def _read_table_samples(csv_path: Path, max_rows: int = 10) -> tuple[list[str], list[list[str]]]:
     """Read header and first max_rows sample rows from CSV."""
-    with open(csv_path, encoding="utf-8", newline="") as fh:
+    with open(csv_path, encoding="utf-8-sig", newline="") as fh:
         reader = csv.reader(fh)
         header = next(reader, [])
         samples: list[list[str]] = []
@@ -351,7 +351,7 @@ def run(ctx: RunContext) -> AgentResult:
     csv_files = list(tables_dir.glob("*.csv"))
 
     for csv_path in csv_files:
-        table_name = csv_path.stem
+        table_name = csv_path.stem.lower().strip()
         try:
             headers, sample_rows = _read_table_samples(csv_path, max_rows=10)
         except Exception as exc:
@@ -438,7 +438,7 @@ def run(ctx: RunContext) -> AgentResult:
     if rich_columns:
         rich_report = SemanticMetadata(
             schema_version="1.0.0",
-            taxonomy_version="1.1.0",
+            taxonomy_version=_LOADER.version,
             run_id=ctx.run_id,
             dataset_name=tables_dir.name,
             columns=rich_columns,

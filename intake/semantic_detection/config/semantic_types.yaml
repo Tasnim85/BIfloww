@@ -319,7 +319,7 @@ groups:
         label: "Quantity"
         description: "Number of units, items or occurrences."
         privacy_hint: NO_DIRECT_PII_INDICATOR
-        column_aliases: [quantity, qty, count, nb_items, units, order_item_id, payment_sequential]
+        column_aliases: [quantity, qty, count, nb_items, units, order_item_id, payment_sequential, product_photos_qty]
         patterns: []
       - type_id: COUNT
         label: "Count"
@@ -367,7 +367,7 @@ groups:
         label: "Generic Numeric Measure"
         description: "Numeric value not fitting a more specific type."
         privacy_hint: NO_DIRECT_PII_INDICATOR
-        column_aliases: [value, measure, metric, indicator, nombre_photos, product_photos_qty, product_name_lenght, product_description_lenght]
+        column_aliases: [value, measure, metric, indicator, nombre_photos, product_name_lenght, product_description_lenght]
         patterns: []
 
   - group_id: TEXTUAL_DATA

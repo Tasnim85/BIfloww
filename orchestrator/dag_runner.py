@@ -1,4 +1,4 @@
-"""dag_runner.py ? BIFlow pipeline DAG executor (Samar ? BO1-01).
+"""dag_runner.py — BIFlow pipeline DAG executor (Samar — BO1-01).
 
 Hardened multi-agent DAG runner:
   - graphlib.TopologicalSorter static & dynamic dependency resolution.
@@ -6,12 +6,15 @@ Hardened multi-agent DAG runner:
   - Strict dependency barriers: FAILED, NEEDS_REVIEW, and SKIPPED propagate transitively.
   - stop_on_failure=False allows independent disjoint branches to run while strictly
     blocking any step that depends on a failed or review-pending step.
-  - Strict artifact integrity checks: canonical path in-run, non-empty, file-vs-dir,
-    JSON parseability, Parquet magic bytes header validation.
-  - Safe resumption: requires all upstream dependencies to be SUCCESS, verifies
-    all outputs are non-empty and valid before reusing cached results.
+  - Centralized artifact integrity & contract checks via validate_step_artifacts:
+    canonical path in-run, non-empty, file-vs-dir, JSON Pydantic contracts,
+    real Parquet readability via pyarrow, DuckDB table checks.
+  - Safe resumption: requires all upstream dependencies to be SUCCESS and unbroken,
+    invalidates downstream when upstream re-executes or changes, verifies all outputs
+    pass contract checks before reusing cached results.
   - Selective retry policy: retries only transient I/O / network failures,
     never retries deterministic code bugs or missing input files.
+  - Full audit logging: logs all resumptions and invalidations in the SQLite journal.
   - Loads local secrets from .env via bo2.config.load_local().
 """
 from __future__ import annotations
@@ -27,8 +30,9 @@ from pathlib import Path
 from typing import Callable
 
 from contracts.agent import AgentResult, AgentStatus, RunContext
-from contracts.audit import DEFAULT_JOURNAL
+from contracts.audit import DEFAULT_JOURNAL, AuditEvent, log_event
 from contracts.pipeline import RUNS_ROOT, STEPS, context_for, graph, output_path
+from orchestrator.artifact_validator import validate_step_artifacts
 
 from orchestrator.task_store import (
     DEFAULT_DB,
@@ -94,7 +98,7 @@ def _execute_step(
 
     set_running(run_id, step_name, db=db)
     if callback:
-        callback(step_name, "RUNNING", f"Starting {step_name}?")
+        callback(step_name, "RUNNING", f"Starting {step_name}…")
 
     # 1. Import phase: distinguish unbuilt agent from broken internal dependency
     try:
@@ -104,14 +108,14 @@ def _execute_step(
         top_pkg = mod_name.split(".")[0]
         if exc.name in (mod_name, top_pkg):
             msg = f"Agent not yet implemented: {exc}"
-            log.warning("Step %s skipped ? %s", step_name, msg)
+            log.warning("Step %s skipped — %s", step_name, msg)
             result = AgentResult(
                 run_id=run_id, agent=step_name,
                 status=AgentStatus.SKIPPED, message=msg,
             )
         else:
             msg = f"Agent dependency missing for {step_name} ({exc.name}): {exc}"
-            log.error("Step %s failed due to missing dependency ? %s", step_name, msg)
+            log.error("Step %s failed due to missing dependency — %s", step_name, msg)
             result = AgentResult(
                 run_id=run_id, agent=step_name,
                 status=AgentStatus.FAILED, message=msg,
@@ -155,51 +159,13 @@ def _execute_step(
 
         # 3. Output artifact validation: ensure SUCCESS actually produced declared outputs
         if result.status == AgentStatus.SUCCESS and step_def.outputs:
-            missing_or_invalid: list[str] = []
-            expected_step_dir = (Path(runs_root) / run_id / step_name).resolve()
-
-            for out_key, filename in step_def.outputs.items():
-                target_p = None
-                if out_key in result.outputs:
-                    val = result.outputs[out_key]
-                    if isinstance(val, (str, Path)):
-                        target_p = Path(val).resolve()
-                if target_p is None:
-                    target_p = (expected_step_dir / filename).resolve()
-
-                # Isolation check: must belong strictly to current run and step
-                try:
-                    target_p.relative_to(expected_step_dir)
-                except ValueError:
-                    missing_or_invalid.append(f"{out_key} (path escape: points outside {run_id}/{step_name})")
-                    continue
-
-                if not target_p.exists():
-                    missing_or_invalid.append(f"{out_key} (missing file/dir: {filename})")
-                    continue
-
-                is_dir_expected = filename.endswith("/")
-                if is_dir_expected:
-                    if not target_p.is_dir():
-                        missing_or_invalid.append(f"{out_key} (expected directory, got file: {filename})")
-                else:
-                    if target_p.is_dir():
-                        missing_or_invalid.append(f"{out_key} (expected file, got directory: {filename})")
-                    elif target_p.stat().st_size == 0:
-                        missing_or_invalid.append(f"{out_key} (empty file: {filename})")
-                    elif filename.endswith(".json"):
-                        try:
-                            json.loads(target_p.read_text(encoding="utf-8"))
-                        except Exception as e:
-                            missing_or_invalid.append(f"{out_key} (invalid JSON: {e})")
-                    elif filename.endswith(".parquet"):
-                        try:
-                            with open(target_p, "rb") as pf:
-                                if pf.read(4) != b"PAR1":
-                                    missing_or_invalid.append(f"{out_key} (invalid Parquet header)")
-                        except Exception as e:
-                            missing_or_invalid.append(f"{out_key} (corrupted Parquet: {e})")
-
+            missing_or_invalid = validate_step_artifacts(
+                step_name=step_name,
+                run_id=run_id,
+                declared_outputs=step_def.outputs,
+                actual_outputs=result.outputs,
+                runs_root=runs_root,
+            )
             if missing_or_invalid:
                 msg = f"Step {step_name} declared SUCCESS without producing valid artifact(s): {', '.join(missing_or_invalid)}"
                 log.error(msg)
@@ -257,14 +223,14 @@ def run_pipeline(
         callback:         Optional progress callback for UI/CLI.
 
     Returns:
-        dict mapping step name ? AgentResult.
+        dict mapping step name → AgentResult.
     """
     if run_id is None:
         run_id = f"run_{uuid.uuid4().hex[:8]}"
 
     log.info("Starting pipeline run: %s", run_id)
 
-    # Validate DAG ? raises CycleError if there is a cycle
+    # Validate DAG — raises CycleError if there is a cycle
     dag = graph()
     try:
         TopologicalSorter(dag).static_order()  # validate only
@@ -278,6 +244,7 @@ def run_pipeline(
     failed_steps: set[str] = set()
     blocked_or_failed_steps: set[str] = set()
     review_origins: dict[str, set[str]] = {}
+    reused_steps: set[str] = set()
     approved_steps = approved_reviews or (params.get("approved_reviews") if params else None) or {}
 
     sorter = TopologicalSorter(dag)
@@ -301,46 +268,24 @@ def run_pipeline(
                             # Unblock step so it can be re-run or accepted
 
                     # Resume support: skip steps already SUCCESS whose dependencies are SUCCESS
-                    # and whose output files exist, belong to this run, and are non-empty/valid
                     upstream_deps = step_def.depends_on
                     dependencies_successful = all(
                         dep in results and results[dep].status == AgentStatus.SUCCESS
                         for dep in upstream_deps
                     )
-                    if prev_status == TaskStatus.SUCCESS and dependencies_successful:
-                        outputs_valid = True
-                        expected_step_dir = (Path(runs_root) / run_id / step_name).resolve()
-                        if step_def.outputs:
-                            for key, filename in step_def.outputs.items():
-                                op = output_path(run_id, step_name, key, runs_root=runs_root).resolve()
-                                try:
-                                    op.relative_to(expected_step_dir)
-                                except ValueError:
-                                    outputs_valid = False
-                                    break
-                                if not op.exists():
-                                    outputs_valid = False
-                                    break
-                                if not filename.endswith("/") and op.is_file() and op.stat().st_size == 0:
-                                    outputs_valid = False
-                                    break
-                                if filename.endswith(".json") and op.is_file():
-                                    try:
-                                        json.loads(op.read_text(encoding="utf-8"))
-                                    except Exception:
-                                        outputs_valid = False
-                                        break
-                                if filename.endswith(".parquet") and op.is_file():
-                                    try:
-                                        with open(op, "rb") as pf:
-                                            if pf.read(4) != b"PAR1":
-                                                outputs_valid = False
-                                                break
-                                    except Exception:
-                                        outputs_valid = False
-                                        break
+                    upstream_reused = all(
+                        dep in reused_steps
+                        for dep in upstream_deps
+                    )
 
-                        if outputs_valid:
+                    if prev_status == TaskStatus.SUCCESS and dependencies_successful and upstream_reused:
+                        missing_or_invalid = validate_step_artifacts(
+                            step_name=step_name,
+                            run_id=run_id,
+                            declared_outputs=step_def.outputs,
+                            runs_root=runs_root,
+                        )
+                        if not missing_or_invalid:
                             msg = f"Reused existing SUCCESS outputs from {run_id}"
                             log.info("Step %s already SUCCESS with valid outputs, skipping execution", step_name)
                             outputs = {
@@ -354,10 +299,60 @@ def run_pipeline(
                                 outputs=outputs,
                                 message=msg,
                             )
+                            reused_steps.add(step_name)
+                            try:
+                                log_event(AuditEvent(
+                                    run_id=run_id,
+                                    agent=step_name,
+                                    step="resumption",
+                                    decision="REUSED",
+                                    evidence={"outputs": [str(p) for p in outputs.values()]}
+                                ), journal=journal)
+                            except Exception:
+                                pass
                             if callback:
                                 callback(step_name, TaskStatus.SUCCESS.value, msg)
                             sorter.done(step_name)
                             continue
+                        else:
+                            inval_msg = f"Corrupted or invalid outputs: {', '.join(missing_or_invalid)}"
+                            log.warning("Invalidating cached SUCCESS for step %s: %s", step_name, inval_msg)
+                            try:
+                                log_event(AuditEvent(
+                                    run_id=run_id,
+                                    agent=step_name,
+                                    step="invalidation",
+                                    decision="INVALIDATED",
+                                    evidence={"reason": inval_msg}
+                                ), journal=journal)
+                            except Exception:
+                                pass
+                    elif prev_status == TaskStatus.SUCCESS and not dependencies_successful and upstream_deps:
+                        inval_msg = "Upstream dependencies not in SUCCESS status"
+                        log.warning("Invalidating cached SUCCESS for step %s: %s", step_name, inval_msg)
+                        try:
+                            log_event(AuditEvent(
+                                run_id=run_id,
+                                agent=step_name,
+                                step="invalidation",
+                                decision="INVALIDATED",
+                                evidence={"reason": inval_msg}
+                            ), journal=journal)
+                        except Exception:
+                            pass
+                    elif prev_status == TaskStatus.SUCCESS and not upstream_reused and upstream_deps:
+                        inval_msg = "Upstream dependencies re-executed; invalidating cached outputs"
+                        log.info("Step %s: %s", step_name, inval_msg)
+                        try:
+                            log_event(AuditEvent(
+                                run_id=run_id,
+                                agent=step_name,
+                                step="invalidation",
+                                decision="INVALIDATED",
+                                evidence={"reason": inval_msg}
+                            ), journal=journal)
+                        except Exception:
+                            pass
 
                     # Dependency Barrier: check if ANY upstream dependency failed, was skipped, or is in review
                     upstream_blocked = [
@@ -383,9 +378,9 @@ def run_pipeline(
                             msg = f"Waiting for the human review of: {', '.join(sorted(review_sources))}"
                             review_origins[step_name] = review_sources
                         elif failed_deps:
-                            msg = f"Skipped ? upstream failure in: {set(failed_deps)}"
+                            msg = f"Skipped — upstream failure in: {set(failed_deps)}"
                         else:
-                            msg = f"Skipped ? upstream dependency '{upstream_blocked[0]}' was not successful"
+                            msg = f"Skipped — upstream dependency '{upstream_blocked[0]}' was not successful"
 
                         log.warning("Skipping step %s: %s", step_name, msg)
                         set_done(run_id, step_name, TaskStatus.SKIPPED, msg, db=db)
@@ -404,7 +399,7 @@ def run_pipeline(
 
                     # If stop_on_failure is enabled and ANY failure occurred anywhere, abort independent branches
                     if stop_on_failure and failed_steps:
-                        msg = f"Aborted ? stop_on_failure=True and failure exists in DAG: {set(failed_steps)}"
+                        msg = f"Aborted — stop_on_failure=True and failure exists in DAG: {set(failed_steps)}"
                         log.warning("Aborting step %s: %s", step_name, msg)
                         set_done(run_id, step_name, TaskStatus.SKIPPED, msg, db=db)
                         results[step_name] = AgentResult(
@@ -429,7 +424,7 @@ def run_pipeline(
                 newly_ready = list(sorter.get_ready()) if sorter.is_active() else []
 
             if not futures:
-                break   # nothing running and nothing ready ? DAG complete
+                break   # nothing running and nothing ready — DAG complete
 
             # Wait for at least one step to finish before looping
             done_futures = []
@@ -466,7 +461,7 @@ def get_run_status(run_id: str, db: Path = DEFAULT_DB) -> list[dict]:
     return get_run_summary(run_id, db=db)
 
 
-# ?? CLI entry point ??????????????????????????????????????????????????????
+# ── CLI entry point ──────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import argparse
     import sys

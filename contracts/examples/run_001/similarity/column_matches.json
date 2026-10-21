@@ -1,0 +1,11 @@
+{
+  "contract_version": "1.6",
+  "schema_version": "1.0.0",
+  "taxonomy_version": "1.1.1",
+  "run_id": "run_001",
+  "method": "hungarian-cross-table@2.0",
+  "threshold": 0.7,
+  "matches": [],
+  "total_comparisons": 0,
+  "matches_found": 0
+}

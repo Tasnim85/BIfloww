@@ -158,7 +158,7 @@ def test_scenario_c_controlled_failure_and_recovery(tmp_path):
                 raise RuntimeError("Controlled failure in Step A")
             ctx.output_dir.mkdir(parents=True, exist_ok=True)
             out = ctx.output("upload")
-            out.write_text('{"tables": ["t1"]}', encoding="utf-8")
+            out.write_text(json.dumps({"question": "Revenue", "tables": {"t1": "t1.csv"}, "uploaded_by": "Tester"}), encoding="utf-8")
             (ctx.output_dir / "tables").mkdir(parents=True, exist_ok=True)
             return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
                                outputs={"upload": out, "tables": ctx.output_dir / "tables"})
@@ -244,7 +244,7 @@ def test_scenario_d_needs_review_and_approved_resumption(tmp_path):
         def run(cls, ctx):
             ctx.output_dir.mkdir(parents=True, exist_ok=True)
             out = ctx.output("upload")
-            out.write_text('{"status": "approved"}', encoding="utf-8")
+            out.write_text(json.dumps({"question": "Revenue", "tables": {"t1": "t1.csv"}, "uploaded_by": "ComplianceOfficer"}), encoding="utf-8")
             (ctx.output_dir / "tables").mkdir(parents=True, exist_ok=True)
             return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
                                message="Approved and processed successfully",
