@@ -1,0 +1,106 @@
+{
+  "name": "cleaning",
+  "version": "1.0",
+  "source": "manual",
+  "approved_by": null,
+  "approved_at": null,
+  "rules": [
+    {
+      "rule_id": "text:customers",
+      "table": "customers",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "customer_id"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "text:orders",
+      "table": "orders",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "order_id",
+          "customer_id",
+          "order_purchase_timestamp",
+          "order_status"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "text:order_items",
+      "table": "order_items",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "order_id",
+          "order_item_id",
+          "product_id",
+          "seller_id"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "text:order_payments",
+      "table": "order_payments",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "order_id",
+          "payment_sequential"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "text:products",
+      "table": "products",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "product_id"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    },
+    {
+      "rule_id": "text:sellers",
+      "table": "sellers",
+      "column": null,
+      "action": "normalize_text",
+      "params": {
+        "case": "preserve",
+        "empty_to_null": true,
+        "required_values": [
+          "seller_id"
+        ],
+        "nonnegative": []
+      },
+      "description": "Retirer les espaces et vérifier les champs critiques"
+    }
+  ]
+}
