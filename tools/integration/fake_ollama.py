@@ -32,6 +32,10 @@ def column_answer(desc):
     return {"semantic_type": kind, "confidence": conf}
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
+    def do_GET(self):                                           # lets run_with_reviews know it is NOT llama3
+        data = json.dumps({"version": "fake-test-double"}).encode()
+        self.send_response(200); self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         meta = json.loads(body["messages"][-1]["content"])
