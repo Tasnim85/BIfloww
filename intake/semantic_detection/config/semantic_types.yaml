@@ -1,4 +1,4 @@
-taxonomy_version: "1.1.0"
+taxonomy_version: "1.1.1"
 taxonomy_name: "BIFlow Semantic Taxonomy"
 description: >
   Hierarchical taxonomy of semantic types for the BIFlow Semantic Detection module.
@@ -34,7 +34,7 @@ groups:
       - type_id: PERSON_ID
         label: "Person Identifier"
         description: "Unique identifier for a person (customer ID, employee ID)."
-        privacy_hint: LIKELY_PII
+        privacy_hint: POTENTIAL_PII
         column_aliases: [customer_id, client_id, user_id, employee_id, person_id, cust_id, emp_id]
         patterns:
           - regex: "^[A-Z]?[0-9]{4,12}$"
