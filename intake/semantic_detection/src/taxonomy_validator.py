@@ -111,12 +111,12 @@ def validate_taxonomy_file(yaml_path: Path | str) -> ValidationResult:
 
         # Description
         if not group.get("description"):
-            result.add_warning(f"Group '{gid}' has no description.")
+            result.add_error(f"Group '{gid}' has no description.")
 
         # Types
         types = group.get("types", [])
         if not types:
-            result.add_warning(f"Group '{gid}' has no types defined.")
+            result.add_error(f"Group '{gid}' has no types defined.")
 
         for j, tdef in enumerate(types):
             tid = tdef.get("type_id")
@@ -138,7 +138,7 @@ def validate_taxonomy_file(yaml_path: Path | str) -> ValidationResult:
 
             # Description
             if not tdef.get("description"):
-                result.add_warning(f"Type '{tid}' in group '{gid}' has no description.")
+                result.add_error(f"Type '{tid}' in group '{gid}' has no description.")
 
             # Privacy hint
             ph = tdef.get("privacy_hint")

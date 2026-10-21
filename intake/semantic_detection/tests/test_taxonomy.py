@@ -174,3 +174,110 @@ class TestValidation:
         # A non-existent type does not break anything
         assert loader.get_type("FUTURE_TYPE") is None
         assert loader.group_for_type("FUTURE_TYPE") is None
+
+
+# ── Strict validation tests ─────────────────────────────────────────────
+class TestStrictValidation:
+    def test_missing_group_description_is_error(self, tmp_path):
+        """A group with no description must cause valid=False."""
+        yaml_content = (
+            'taxonomy_version: "1.1.1"\n'
+            "groups:\n"
+            "  - group_id: PERSONAL_DATA\n"
+            "    label: Personal Data\n"
+            "    # description intentionally omitted\n"
+            "    types:\n"
+            "      - type_id: EMAIL\n"
+            "        label: Email\n"
+            "        description: Electronic mail address.\n"
+            "        privacy_hint: LIKELY_PII\n"
+            "        column_aliases: []\n"
+            "        patterns: []\n"
+        )
+        bad_yaml = tmp_path / "bad_group_desc.yaml"
+        bad_yaml.write_text(yaml_content, encoding="utf-8")
+        result = validate_taxonomy_file(bad_yaml)
+        assert not result.valid, "Expected valid=False when group description is missing"
+        assert any("no description" in e.lower() or "PERSONAL_DATA" in e for e in result.errors)
+
+    def test_missing_type_description_is_error(self, tmp_path):
+        """A type with no description must cause valid=False."""
+        yaml_content = (
+            'taxonomy_version: "1.1.1"\n'
+            "groups:\n"
+            "  - group_id: PERSONAL_DATA\n"
+            "    label: Personal Data\n"
+            "    description: Group with personal data.\n"
+            "    types:\n"
+            "      - type_id: EMAIL\n"
+            "        label: Email\n"
+            "        # description intentionally omitted\n"
+            "        privacy_hint: LIKELY_PII\n"
+            "        column_aliases: []\n"
+            "        patterns: []\n"
+        )
+        bad_yaml = tmp_path / "bad_type_desc.yaml"
+        bad_yaml.write_text(yaml_content, encoding="utf-8")
+        result = validate_taxonomy_file(bad_yaml)
+        assert not result.valid, "Expected valid=False when type description is missing"
+        assert any("EMAIL" in e and "description" in e.lower() for e in result.errors)
+
+    def test_group_without_types_is_error(self, tmp_path):
+        """A group with no types must cause valid=False."""
+        yaml_content = (
+            'taxonomy_version: "1.1.1"\n'
+            "groups:\n"
+            "  - group_id: PERSONAL_DATA\n"
+            "    label: Personal Data\n"
+            "    description: Group with personal data.\n"
+            "    types: []\n"
+        )
+        bad_yaml = tmp_path / "bad_empty_group.yaml"
+        bad_yaml.write_text(yaml_content, encoding="utf-8")
+        result = validate_taxonomy_file(bad_yaml)
+        assert not result.valid, "Expected valid=False when a group has no types"
+        assert any("PERSONAL_DATA" in e and "no types" in e.lower() for e in result.errors)
+
+    def test_invalid_privacy_hint_is_error(self, tmp_path):
+        """A type with an unknown privacy_hint must cause valid=False."""
+        yaml_content = (
+            'taxonomy_version: "1.1.1"\n'
+            "groups:\n"
+            "  - group_id: PERSONAL_DATA\n"
+            "    label: Personal Data\n"
+            "    description: Group with personal data.\n"
+            "    types:\n"
+            "      - type_id: EMAIL\n"
+            "        label: Email\n"
+            "        description: Electronic mail address.\n"
+            "        privacy_hint: HIGH\n"  # invalid value
+            "        column_aliases: []\n"
+            "        patterns: []\n"
+        )
+        bad_yaml = tmp_path / "bad_hint.yaml"
+        bad_yaml.write_text(yaml_content, encoding="utf-8")
+        result = validate_taxonomy_file(bad_yaml)
+        assert not result.valid, "Expected valid=False when privacy_hint is invalid"
+        assert any("HIGH" in e and "privacy_hint" in e.lower() for e in result.errors)
+
+    def test_invalid_version_format_is_error(self, tmp_path):
+        """taxonomy_version='abc' must cause valid=False."""
+        yaml_content = (
+            'taxonomy_version: "abc"\n'
+            "groups:\n"
+            "  - group_id: PERSONAL_DATA\n"
+            "    label: Personal Data\n"
+            "    description: Group with personal data.\n"
+            "    types:\n"
+            "      - type_id: EMAIL\n"
+            "        label: Email\n"
+            "        description: Electronic mail address.\n"
+            "        privacy_hint: LIKELY_PII\n"
+            "        column_aliases: []\n"
+            "        patterns: []\n"
+        )
+        bad_yaml = tmp_path / "bad_version.yaml"
+        bad_yaml.write_text(yaml_content, encoding="utf-8")
+        result = validate_taxonomy_file(bad_yaml)
+        assert not result.valid, "Expected valid=False when taxonomy_version is 'abc'"
+        assert any("version" in e.lower() for e in result.errors)
