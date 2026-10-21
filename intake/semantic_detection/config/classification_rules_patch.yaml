@@ -1,0 +1,80 @@
+# classification_rules_patch.yaml — Correctifs Step 2 (STEP2_INTEGRATION_PROPOSAL.md)
+#
+# Ce fichier documente les 3 règles ajoutées / modifiées pour corriger
+# les divergences identifiées dans compare_step1_step2.py :
+#
+#  Fix 1: ID_OVER_TEXT_RULE   — _id suffix prioritaire sur les mots-clés texte
+#  Fix 2: CUSTOMER_UNIQUE_ID  — customer_unique_id → PERSON_ID (PII=True)
+#  Fix 3: INSTALLMENTS        — payment_installments → QUANTITY (PII=False)
+#
+# Ces règles sont PRÉPENDÉES avant les règles existantes dans classification_rules.yaml
+# (priority 0 = plus haute priorité possible).
+
+rules_patch:
+
+  # ─── Fix 1 ─────────────────────────────────────────────────────────────────
+  # Problem : review_id → classifié TEXT(PII=True) car le mot "review" l'emporte
+  #           sur le suffixe "_id".  Toute colonne se terminant en _id doit être
+  #           un identifiant, quel que soit le préfixe contextuel.
+  # Solution: règle de priorité 0 (maximale) qui intercepte tout <X>_id.
+
+  - rule_id: ID_SUFFIX_OVERRIDE_RULE
+    priority: 0
+    group_id: BUSINESS_ENTITY_DATA
+    type_id:  SYSTEM_ID
+    match:
+      keywords:
+        # suffixe _id (snake_case) — couvre review_id, order_item_id, etc.
+        - _id
+      value_patterns:
+        # identifiant numérique ou alphanumérique
+        - "^[0-9a-f\\-]{8,}$"
+        - "^\\d+$"
+    confidence: 0.91
+    notes: >
+      Any column whose normalised name ends with _id is an identifier, even when
+      its prefix (review, item, session…) would otherwise match a text/category rule.
+      This rule fires before all domain-specific rules (priority 0).
+
+  # Spécialisation : si le préfixe est "customer" ou "client" → PERSON_ID (PII)
+  - rule_id: CUSTOMER_ID_OVERRIDE_RULE
+    priority: 0
+    group_id: PERSONAL_DATA
+    type_id:  PERSON_ID
+    match:
+      keywords:
+        - customer_id
+        - customer_unique_id
+        - client_id
+        - client_unique_id
+        - buyer_id
+        - member_id
+        - subscriber_id
+    confidence: 0.93
+    notes: >
+      Customer / client identifiers are PERSON_ID (pii_candidate=True).
+      Overrides the generic SYSTEM_ID rule for customer-scoped identifiers.
+      Fixes: customer_unique_id was classified SYSTEM_ID (PII=False) by Step 2.
+
+  # ─── Fix 3 ─────────────────────────────────────────────────────────────────
+  # Problem : payment_installments → classifié NUMBER(PII=True) car la regex de
+  #           valeur a matché un pattern numérique interprété comme identifiant.
+  # Solution: règle explicite pour les colonnes d'échéances (quantité, pas PII).
+
+  - rule_id: INSTALLMENTS_RULE
+    priority: 0
+    group_id: QUANTITATIVE_DATA
+    type_id:  QUANTITY
+    match:
+      keywords:
+        - installment
+        - installments
+        - parcelas
+        - nb_echeances
+        - payment_installments
+        - num_installments
+    confidence: 0.90
+    notes: >
+      Number of payment installments is a QUANTITY (pii_candidate=False), not a
+      personal identifier.  Fixes: payment_installments was mis-classified as
+      NUMBER(PII=True) by the generic value-pattern regex in the original rules.
