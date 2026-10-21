@@ -3,14 +3,16 @@ import pandas as pd
 
 
 def coverage(frame, table="orders", date_column="order_purchase_timestamp", status_column="order_status", id_column="order_id"):
-    required = [date_column, status_column] + ([id_column] if id_column else [])
+    required = [date_column] + ([status_column] if status_column else []) + ([id_column] if id_column else [])
     if not set(required).issubset(frame.columns):
         raise ValueError("COVERAGE_COLUMNS: choose the order date, status and identifier columns")
     if id_column and (frame[id_column].isna().any() or frame[id_column].duplicated().any()):
         raise ValueError("COVERAGE_GRAIN: order identifiers must be present and unique; select an order table")
     dates = pd.to_datetime(frame[date_column], errors="coerce", format="mixed", utc=True)
     days = dates.dt.strftime("%Y-%m-%d").where(dates.notna(), None)
-    statuses = frame[status_column].astype("string").str.strip().replace("", pd.NA)
+    # A dataset without a status column is still covered: every row is counted, with no status.
+    statuses = (frame[status_column].astype("string").str.strip().replace("", pd.NA) if status_column
+                else pd.Series(pd.NA, index=frame.index, dtype="string"))
     data = pd.DataFrame({"date":days, "status":statuses})
     def counts(columns):
         grouped = data.groupby(columns,dropna=False,sort=True).size().reset_index(name="orders")
@@ -22,6 +24,6 @@ def coverage(frame, table="orders", date_column="order_purchase_timestamp", stat
             "period_end":None if dates.dropna().empty else dates.max().strftime("%Y-%m-%d"),
             "missing_dates":int(frame[date_column].isna().sum()),
             "invalid_dates":int((frame[date_column].notna() & dates.isna()).sum()),
-            "missing_statuses":int(statuses.isna().sum()),
+            "missing_statuses":int(statuses.isna().sum()) if status_column else 0,
             "orders_by_day":counts(["date"]),"orders_by_status":counts(["status"]),
             "orders_by_day_status":counts(["date","status"])}

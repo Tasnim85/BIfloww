@@ -11,6 +11,7 @@ from contracts.audit import AuditEvent,log_event
 from .models import ProfileReport,AnomalyReport,CoverageReport
 from .coverage import coverage
 from .anomalies import train
+from .autodetect import coverage_settings, anomaly_settings
 from bo2.artifact_io import read_artifact_text
 
 
@@ -60,17 +61,21 @@ def run(ctx:RunContext)->AgentResult:
                 profiles={name:{"rows":len(df),"duplicate_rows":int(df.duplicated().sum()),"columns":{col:{"dtype":str(df[col].dtype),"missing":int(df[col].isna().sum()),"distinct":int(df[col].nunique())} for col in df}} for name,df in frames.items()}
                 (staging/"profile_report.json").write_text(ProfileReport(tables=profiles,source_fingerprints=fingerprints).model_dump_json(indent=2),encoding="utf-8")
             if task in {"all","coverage"}:
-                table=ctx.params.get("orders_table","orders")
+                table,date_column,status_column,id_column,reason=coverage_settings(frames,ctx.params)
                 if table not in frames:
                     raise ValueError("COVERAGE_TABLE: select the file containing orders")
-                result=coverage(frames[table],table,ctx.params.get("date_column","order_purchase_timestamp"),ctx.params.get("status_column","order_status"),ctx.params.get("order_id_column","order_id"))
+                result=coverage(frames[table],table,date_column,status_column,id_column)
+                log_event(AuditEvent(run_id=ctx.run_id,agent=ctx.agent,step="coverage_settings",decision=table,rule_version="profiling-autodetect@1.0",
+                    evidence={"table":table,"date_column":date_column,"status_column":status_column,"id_column":id_column,"reason":reason}),ctx.journal)
                 (staging/"coverage_profile.json").write_text(CoverageReport.model_validate(result).model_dump_json(indent=2),encoding="utf-8")
                 outputs["coverage"]=ctx.output_dir/"coverage_profile.json"
             if task in {"all","anomalies"}:
-                table=ctx.params.get("anomaly_table","order_payments")
+                table,features,id_column,amount_column,reason=anomaly_settings(frames,ctx.params,decisions)
                 if table not in frames:
                     raise ValueError("ANOMALY_TABLE: select the file to inspect")
-                _,report=train(frames[table],staging,table=table,features=ctx.params.get("features"),id_column=ctx.params.get("anomaly_id_column","order_id"),amount_column=ctx.params.get("amount_column","payment_value"),contamination=ctx.params.get("contamination",.01),decisions=decisions)
+                log_event(AuditEvent(run_id=ctx.run_id,agent=ctx.agent,step="anomaly_settings",decision=table,rule_version="profiling-autodetect@1.0",
+                    evidence={"table":table,"features":features,"id_column":id_column,"amount_column":amount_column,"reason":reason}),ctx.journal)
+                _,report=train(frames[table],staging,table=table,features=features,id_column=id_column,amount_column=amount_column,contamination=ctx.params.get("contamination",.01),decisions=decisions)
                 report["source_fingerprints"]=fingerprints
                 (staging/"anomaly_report.json").write_text(AnomalyReport.model_validate(report).model_dump_json(indent=2),encoding="utf-8")
                 outputs.update(anomalies=ctx.output_dir/"anomaly_report.json",model=ctx.output_dir/"anomaly_model.joblib",scores=ctx.output_dir/"anomaly_scores.parquet")

@@ -47,3 +47,15 @@ def test_unknown_kpi_fails_cleanly(tmp_path):
     out = run(context_for("analysis", "t2", runs_root=tmp_path, journal=tmp_path / "j.db"))
     assert out.status == AgentStatus.FAILED
     assert "Profit" in out.message
+
+
+def test_total_of_a_ratio_is_not_the_sum_of_its_groups(tmp_path):
+    """AverageBasket in August: SP 280/2 orders = 140, RJ 120/1 = 120. The total is 400/3 = 133.33,
+    not 140 + 120 = 260 (a ratio or a COUNT DISTINCT is recomputed, never added up)."""
+    build("t3", tmp_path)
+    req_path = tmp_path / "t3/request/analysis_request.json"
+    req_path.write_text(req_path.read_text().replace('"metric": "Revenue"', '"metric": "AverageBasket"'))
+    out = run(context_for("analysis", "t3", runs_root=tmp_path, journal=tmp_path / "j.db"))
+    assert out.status == AgentStatus.SUCCESS
+    result = read_output(out.outputs["result"], "analysis.result")
+    assert result.value_current == 133.33
