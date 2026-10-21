@@ -1,0 +1,1138 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "BIFlow API — Analyst & KPI catalog",
+  "description": "\nRabeb's part of BIFlow, over HTTP.\n\n* **Analyst (step 5, BO3-03)**: the KPI computed with SQL built from the approved catalog, the 4\n  validation checks, and insights written by an LLM agent (every number fact-checked).\n* **KPI catalog**: the approved KPIs and the glossary, and a KPI computed live with its checks.\n* **KPI proposer**: a draft catalog for any warehouse, reviewed by a human before use.\n\nEvery response is a contract of `contracts/` (version in `/health`).\n",
+  "version": "1.1"
+ },
+ "paths": {
+  "/api/runs/{run_id}/analysis": {
+   "post": {
+    "tags": [
+     "analysis"
+    ],
+    "summary": "Analyse",
+    "description": "Run the Analyst (step 5) on a run: SQL compiled from the catalog, the 4 BO3-03 checks,\nthen the insights. Needs the run's request and warehouse. Status 'failed' = a check failed\nor the request asks for something the catalog does not allow (see message).",
+    "operationId": "analyse_api_runs__run_id__analysis_post",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunAnalysis"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunAnalysisResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "get": {
+    "tags": [
+     "analysis"
+    ],
+    "summary": "Analysis",
+    "description": "The Analyst's answer: value, comparison, KPI version, exact SQL, BO3-03 checks, insights.",
+    "operationId": "analysis_api_runs__run_id__analysis_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/analysis/rows": {
+   "get": {
+    "tags": [
+     "analysis"
+    ],
+    "summary": "Rows",
+    "description": "result.parquet as JSON (dimensions..., period, value): the data of the charts.",
+    "operationId": "rows_api_runs__run_id__analysis_rows_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResultRows"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/analysis/insights": {
+   "get": {
+    "tags": [
+     "analysis"
+    ],
+    "summary": "Insights",
+    "description": "The insights, and who wrote them: 'llm' (every number checked) or 'fallback'.",
+    "operationId": "insights_api_runs__run_id__analysis_insights_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Insights"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/catalog": {
+   "get": {
+    "tags": [
+     "KPI catalog"
+    ],
+    "summary": "Catalog",
+    "description": "The approved KPIs (formula, version, unit, filters, population, allowed dimensions).",
+    "operationId": "catalog_api_catalog_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KpiCatalog"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/glossary": {
+   "get": {
+    "tags": [
+     "KPI catalog"
+    ],
+    "summary": "Glossary",
+    "description": "The manager's words -> the catalog's names (read by the request agent).",
+    "operationId": "glossary_api_glossary_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Glossary"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/kpis/preview": {
+   "post": {
+    "tags": [
+     "KPI catalog"
+    ],
+    "summary": "Preview",
+    "description": "Compute a KPI on a run's warehouse with the Analyst's compiler and BO3-03 checks.\nRead-only: nothing is written, nothing is journaled.",
+    "operationId": "preview_api_kpis_preview_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/KpiPreview"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KpiPreviewResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/kpi-proposal": {
+   "post": {
+    "tags": [
+     "KPI catalog"
+    ],
+    "summary": "Kpi Proposal",
+    "description": "A DRAFT catalog + glossary for this run's warehouse (any dataset). Approved KPIs keep their\nname, version, unit and filters. Nothing is written into kpi/catalog.yaml: a human reviews it.",
+    "operationId": "kpi_proposal_api_runs__run_id__kpi_proposal_post",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProposeKpis"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KpiProposal"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/health": {
+   "get": {
+    "tags": [
+     "general"
+    ],
+    "summary": "Health",
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Health"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AgentResult": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "agent": {
+      "type": "string",
+      "title": "Agent"
+     },
+     "status": {
+      "$ref": "#/components/schemas/AgentStatus"
+     },
+     "outputs": {
+      "additionalProperties": {
+       "type": "string",
+       "format": "path"
+      },
+      "type": "object",
+      "title": "Outputs"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message",
+      "default": ""
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "run_id",
+     "agent",
+     "status"
+    ],
+    "title": "AgentResult",
+    "description": "What an agent gives back to the orchestrator when it finishes."
+   },
+   "AgentStatus": {
+    "type": "string",
+    "enum": [
+     "success",
+     "failed",
+     "needs_review",
+     "skipped"
+    ],
+    "title": "AgentStatus"
+   },
+   "AnalysisRequest": {
+    "properties": {
+     "contract_version": {
+      "type": "string",
+      "title": "Contract Version",
+      "default": "1.1"
+     },
+     "question": {
+      "type": "string",
+      "title": "Question"
+     },
+     "metric": {
+      "type": "string",
+      "title": "Metric"
+     },
+     "dimensions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Dimensions"
+     },
+     "period": {
+      "$ref": "#/components/schemas/Period"
+     },
+     "compare_to": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "filters": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Filters"
+     },
+     "confidence": {
+      "type": "number",
+      "title": "Confidence",
+      "default": 1.0
+     },
+     "matched_terms": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "type": "object",
+      "title": "Matched Terms"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "question",
+     "metric",
+     "period"
+    ],
+    "title": "AnalysisRequest",
+    "description": "Sarra's question turned into something a program can compute."
+   },
+   "AnalysisResult": {
+    "properties": {
+     "contract_version": {
+      "type": "string",
+      "title": "Contract Version",
+      "default": "1.1"
+     },
+     "request": {
+      "$ref": "#/components/schemas/AnalysisRequest"
+     },
+     "kpi": {
+      "type": "string",
+      "title": "Kpi"
+     },
+     "sql": {
+      "type": "string",
+      "title": "Sql"
+     },
+     "data_file": {
+      "type": "string",
+      "title": "Data File",
+      "default": "result.parquet"
+     },
+     "rows": {
+      "type": "integer",
+      "title": "Rows"
+     },
+     "value_current": {
+      "type": "number",
+      "title": "Value Current"
+     },
+     "value_previous": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value Previous"
+     },
+     "change_pct": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Change Pct"
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit"
+     },
+     "validations": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationCheck"
+      },
+      "type": "array",
+      "title": "Validations"
+     },
+     "insights": {
+      "items": {
+       "$ref": "#/components/schemas/Insight"
+      },
+      "type": "array",
+      "title": "Insights"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "request",
+     "kpi",
+     "sql",
+     "rows",
+     "value_current",
+     "unit",
+     "validations"
+    ],
+    "title": "AnalysisResult"
+   },
+   "Dimension": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "table": {
+      "type": "string",
+      "title": "Table"
+     },
+     "column": {
+      "type": "string",
+      "title": "Column"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name",
+     "table",
+     "column",
+     "description"
+    ],
+    "title": "Dimension"
+   },
+   "Glossary": {
+    "properties": {
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "terms": {
+      "items": {
+       "$ref": "#/components/schemas/GlossaryTerm"
+      },
+      "type": "array",
+      "title": "Terms"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "version",
+     "terms"
+    ],
+    "title": "Glossary"
+   },
+   "GlossaryTerm": {
+    "properties": {
+     "term": {
+      "type": "string",
+      "title": "Term"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "synonyms": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Synonyms"
+     },
+     "definition": {
+      "type": "string",
+      "title": "Definition"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "term",
+     "kind",
+     "synonyms",
+     "definition"
+    ],
+    "title": "GlossaryTerm"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "Health": {
+    "properties": {
+     "status": {
+      "type": "string",
+      "title": "Status",
+      "default": "ok"
+     },
+     "contracts_version": {
+      "type": "string",
+      "title": "Contracts Version"
+     },
+     "catalog_version": {
+      "type": "string",
+      "title": "Catalog Version"
+     },
+     "kpis": {
+      "type": "integer",
+      "title": "Kpis"
+     },
+     "llm": {
+      "$ref": "#/components/schemas/LlmInfo"
+     }
+    },
+    "type": "object",
+    "required": [
+     "contracts_version",
+     "catalog_version",
+     "kpis",
+     "llm"
+    ],
+    "title": "Health"
+   },
+   "Insight": {
+    "properties": {
+     "text": {
+      "type": "string",
+      "title": "Text"
+     },
+     "evidence": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Evidence"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "text"
+    ],
+    "title": "Insight"
+   },
+   "Insights": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "source": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "llm",
+         "fallback"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source"
+     },
+     "insights": {
+      "items": {
+       "$ref": "#/components/schemas/Insight"
+      },
+      "type": "array",
+      "title": "Insights"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "source",
+     "insights"
+    ],
+    "title": "Insights"
+   },
+   "KpiCatalog": {
+    "properties": {
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "kpis": {
+      "items": {
+       "$ref": "#/components/schemas/KpiDefinition"
+      },
+      "type": "array",
+      "title": "Kpis"
+     },
+     "dimensions": {
+      "items": {
+       "$ref": "#/components/schemas/Dimension"
+      },
+      "type": "array",
+      "title": "Dimensions"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "version",
+     "kpis",
+     "dimensions"
+    ],
+    "title": "KpiCatalog"
+   },
+   "KpiDefinition": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "expression": {
+      "type": "string",
+      "title": "Expression"
+     },
+     "table": {
+      "type": "string",
+      "title": "Table"
+     },
+     "grain": {
+      "type": "string",
+      "title": "Grain"
+     },
+     "date_column": {
+      "type": "string",
+      "title": "Date Column"
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit"
+     },
+     "filters": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Filters"
+     },
+     "population": {
+      "type": "string",
+      "title": "Population",
+      "default": ""
+     },
+     "allowed_dimensions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Allowed Dimensions"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name",
+     "version",
+     "description",
+     "expression",
+     "table",
+     "grain",
+     "date_column",
+     "unit"
+    ],
+    "title": "KpiDefinition"
+   },
+   "KpiPreview": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$",
+      "title": "Run Id",
+      "description": "Run whose warehouse is used"
+     },
+     "metric": {
+      "type": "string",
+      "title": "Metric",
+      "description": "KPI name in the catalog, e.g. 'Revenue'"
+     },
+     "dimensions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Dimensions",
+      "default": []
+     },
+     "period": {
+      "$ref": "#/components/schemas/Period"
+     },
+     "compare_to": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "metric",
+     "period"
+    ],
+    "title": "KpiPreview"
+   },
+   "KpiPreviewResult": {
+    "properties": {
+     "kpi": {
+      "type": "string",
+      "title": "Kpi"
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit"
+     },
+     "sql": {
+      "type": "string",
+      "title": "Sql"
+     },
+     "rows": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Rows"
+     },
+     "validations": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationCheck"
+      },
+      "type": "array",
+      "title": "Validations"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kpi",
+     "unit",
+     "sql",
+     "rows",
+     "validations"
+    ],
+    "title": "KpiPreviewResult"
+   },
+   "KpiProposal": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "llm",
+       "mechanical"
+      ],
+      "title": "Source"
+     },
+     "catalog": {
+      "$ref": "#/components/schemas/KpiCatalog"
+     },
+     "glossary": {
+      "$ref": "#/components/schemas/Glossary"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "source",
+     "catalog",
+     "glossary"
+    ],
+    "title": "KpiProposal",
+    "description": "A DRAFT: nothing is written into kpi/catalog.yaml. A human reviews it before use."
+   },
+   "LlmInfo": {
+    "properties": {
+     "provider": {
+      "type": "string",
+      "title": "Provider"
+     },
+     "model": {
+      "type": "string",
+      "title": "Model"
+     },
+     "ready": {
+      "type": "boolean",
+      "title": "Ready"
+     }
+    },
+    "type": "object",
+    "required": [
+     "provider",
+     "model",
+     "ready"
+    ],
+    "title": "LlmInfo"
+   },
+   "Period": {
+    "properties": {
+     "start": {
+      "type": "string",
+      "title": "Start"
+     },
+     "end": {
+      "type": "string",
+      "title": "End"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "start",
+     "end"
+    ],
+    "title": "Period",
+    "description": "A closed date interval, both ends INCLUDED. ISO dates: 'YYYY-MM-DD'."
+   },
+   "ProposeKpis": {
+    "properties": {
+     "llm": {
+      "type": "boolean",
+      "title": "Llm",
+      "description": "Let the LLM choose and name the KPIs; False = every candidate",
+      "default": true
+     }
+    },
+    "type": "object",
+    "title": "ProposeKpis"
+   },
+   "ResultRows": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Columns"
+     },
+     "rows": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Rows"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "columns",
+     "rows"
+    ],
+    "title": "ResultRows",
+    "description": "result.parquet as JSON: one row per (dimensions..., period), ready for a chart."
+   },
+   "RunAnalysis": {
+    "properties": {
+     "llm": {
+      "type": "boolean",
+      "title": "Llm",
+      "description": "Insights written by the LLM agent (fact-checked); False = deterministic sentences",
+      "default": true
+     }
+    },
+    "type": "object",
+    "title": "RunAnalysis"
+   },
+   "RunAnalysisResult": {
+    "properties": {
+     "agent": {
+      "$ref": "#/components/schemas/AgentResult"
+     },
+     "result": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AnalysisResult"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "agent",
+     "result"
+    ],
+    "title": "RunAnalysisResult"
+   },
+   "ValidationCheck": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "passed": {
+      "type": "boolean",
+      "title": "Passed"
+     },
+     "detail": {
+      "type": "string",
+      "title": "Detail"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name",
+     "passed",
+     "detail"
+    ],
+    "title": "ValidationCheck",
+    "description": "One BO3-03 check run on the answer, e.g. join multiplicity, grain match."
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  }
+ }
+}

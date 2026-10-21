@@ -7,6 +7,7 @@ from enum import Enum
 from pydantic import create_model
 from pydantic import BaseModel, ConfigDict, Field
 from bo2.local_llm import request_json
+from .generic import is_key_name
 
 
 class Role(BaseModel):
@@ -48,7 +49,7 @@ def profile(frames, metadata):
         numeric = []; dates = []; categories = []; normalizable = []
         for column in frame:
             series = frame[column]
-            key_like = column in keys or column.lower() == "id" or column.lower().endswith(("_id", "_key", "_code"))
+            key_like = column in keys or is_key_name(column)
             identifier_hint = any(word in column.lower().split("_") for word in ["zip", "postal", "sequential", "sequence", "code", "prefix"])
             if not key_like and not identifier_hint and not pd.api.types.is_bool_dtype(series) and not pd.api.types.is_datetime64_any_dtype(series):
                 parsed_numeric = pd.to_numeric(series, errors="coerce")

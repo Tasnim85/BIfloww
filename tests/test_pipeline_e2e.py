@@ -55,8 +55,8 @@ def test_real_pipeline_fails_at_dashboard_when_analysis_absent(tmp_path):
     assert results["column_types"].status == AgentStatus.SUCCESS
     assert results["request"].status == AgentStatus.SUCCESS
 
-    # External agents skipped
-    assert results["analysis"].status == AgentStatus.SKIPPED
+    # External agents: skipped when absent, failed when inputs missing
+    assert results["analysis"].status in (AgentStatus.SKIPPED, AgentStatus.FAILED)
     assert results["comparisons"].status in (AgentStatus.SKIPPED, AgentStatus.FAILED)
 
     # Dashboard fails because analysis.result file does not exist
@@ -65,7 +65,7 @@ def test_real_pipeline_fails_at_dashboard_when_analysis_absent(tmp_path):
     assert not spec_path.exists(), "dashboard_spec.json must NOT exist when inputs are absent"
 
 
-def test_stubbed_pipeline_produces_dashboard_spec(tmp_path):
+def test_stubbed_pipeline_produces_dashboard_spec(tmp_path, monkeypatch):
     """Proves that when upstream contracts are satisfied, dashboard produces dashboard_spec.json."""
     run_id = f"test_stub_{uuid.uuid4().hex[:6]}"
     runs_root = tmp_path / "runs"
@@ -73,9 +73,11 @@ def test_stubbed_pipeline_produces_dashboard_spec(tmp_path):
     journal = tmp_path / f"journal_{run_id}.jsonl"
 
     def make_stub(name, fn):
+        # monkeypatch puts the real modules back after this test: the stubs must not
+        # replace the real agents (analysis.analyst, etl.build...) in the tests that follow.
         mod = types.ModuleType(name)
         mod.run = fn
-        sys.modules[name] = mod
+        monkeypatch.setitem(sys.modules, name, mod)
 
     def stub_pii(ctx: RunContext) -> AgentResult:
         ctx.output_dir.mkdir(parents=True, exist_ok=True)
