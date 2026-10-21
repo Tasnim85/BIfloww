@@ -1,10 +1,14 @@
 """intake/similarity.py — Step 0: dataset similarity detection (Malek — BO1-06 Phase 1).
 
-Compares the uploaded column names against known datasets (Olist sample)
-using simple Jaccard similarity on normalized column name sets.
+Compares uploaded column names against known datasets (e.g. Olist sample)
+using simple Jaccard set similarity on normalized column name sets.
 
-Step 1 (this file): column-name Jaccard similarity.
-Step 2 (future):    sentence-embedding cosine similarity.
+IMPORTANT ARCHITECTURAL NOTE:
+  This implementation uses lexical Jaccard set overlap over column name strings.
+  It is a lightweight Phase 1 heuristic and is NOT the full BO1-06 semantic
+  similarity method (which requires contextual sentence embeddings via
+  Sentence-Transformers and vector cosine similarity over metadata and values).
+  Full embedding-based semantic matching is scheduled for BO1-06 Phase 2.
 """
 from __future__ import annotations
 
