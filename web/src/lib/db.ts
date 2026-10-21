@@ -43,6 +43,15 @@ CREATE TABLE IF NOT EXISTS analyses (
 );
 CREATE INDEX IF NOT EXISTS analyses_user ON analyses(user_id, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS analyses_run ON analyses(run_id);
+CREATE TABLE IF NOT EXISTS notifications (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  analysis_id   TEXT REFERENCES analyses(id) ON DELETE CASCADE,
+  kind          TEXT NOT NULL,              -- completed | needs_review | failed
+  created_at    TEXT NOT NULL,
+  read_at       TEXT
+);
+CREATE INDEX IF NOT EXISTS notifications_user ON notifications(user_id, created_at DESC);
 `;
 
 const g = globalThis as unknown as { __askboardDb?: Database.Database };
@@ -152,4 +161,35 @@ export function updateAnalysis(id: string, userId: string,
 
 export function hideAnalysis(id: string, userId: string) {
   db().prepare("UPDATE analyses SET hidden = 1, updated_at = ? WHERE id = ? AND user_id = ?").run(now(), id, userId);
+}
+
+// ---- Notifications: "your analysis is ready" -------------------------------------------------
+export type NotificationKind = "completed" | "needs_review" | "failed";
+export type Notification = { id: string; kind: NotificationKind; analysis_id: string | null; question: string | null;
+                             created_at: string; read: boolean };
+
+export function addNotification(userId: string, analysisId: string, kind: NotificationKind) {
+  db().prepare("INSERT INTO notifications (id, user_id, analysis_id, kind, created_at) VALUES (?, ?, ?, ?, ?)")
+    .run(newId(), userId, analysisId, kind, now());
+}
+
+export function listNotifications(userId: string, limit = 20): { unread: number; items: Notification[] } {
+  const rows = db().prepare(`SELECT n.id, n.kind, n.analysis_id, a.question, n.created_at, n.read_at
+                               FROM notifications n LEFT JOIN analyses a ON a.id = n.analysis_id
+                              WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT ?`).all(userId, limit) as
+    (Omit<Notification, "read"> & { read_at: string | null })[];
+  const unread = (db().prepare("SELECT COUNT(*) AS c FROM notifications WHERE user_id = ? AND read_at IS NULL")
+    .get(userId) as { c: number }).c;
+  return { unread, items: rows.map(({ read_at, ...r }) => ({ ...r, read: read_at !== null })) };
+}
+
+/** Marks some (ids) or all of the user's notifications as read. Only the user's own rows are touched. */
+export function markNotificationsRead(userId: string, ids?: string[]) {
+  if (ids && ids.length === 0) return;
+  if (!ids) {
+    db().prepare("UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL").run(now(), userId);
+    return;
+  }
+  const mark = db().prepare("UPDATE notifications SET read_at = ? WHERE id = ? AND user_id = ? AND read_at IS NULL");
+  db().transaction(() => ids.forEach((id) => mark.run(now(), id, userId)))();
 }

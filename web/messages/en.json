@@ -20,164 +20,113 @@
  "landing": {
   "nav": {
    "how": "How it works",
-   "agents": "Agents",
-   "trust": "Trust",
-   "objectives": "Objectives",
+   "proof": "Proof",
+   "goals": "Goals",
    "get_started": "Get started",
    "open_app": "Open the app"
   },
   "hero": {
-   "eyebrow": "Autonomous multi-agent business intelligence",
-   "title_1": "Drop a CSV.",
-   "title_2": "Ask a question.",
-   "title_3": "Get your dashboard.",
-   "subtitle": "Six AI agents clean your data, model it, define your KPIs and build your dashboard. Every number comes with its proof, and you can always ask why.",
-   "cta": "Get started free",
-   "secondary": "See how it works",
-   "points": {
-    "no_engineer": "No data engineer needed",
-    "languages": "English & French",
-    "proof": "Every decision journaled"
-   }
-  },
-  "demo": {
-   "aria": "Animated example: a question, the agents at work, a misleading comparison caught and the honest answer.",
-   "question": "Revenue by state: August vs July?",
-   "agents_at_work": "Agents at work",
-   "agent_profile": "Profile",
-   "agent_clean": "Clean",
-   "agent_model": "Model",
-   "agent_kpi": "KPIs",
-   "agent_analyze": "Analyze",
-   "agent_check": "Check",
-   "agent_audit": "Audit",
-   "waiting": "Waiting for your question…",
-   "working": "Preparing your data…",
-   "caught_title": "Misleading comparison caught",
-   "caught_text": "August data stops on the 23rd: comparing it with a full July would be unfair.",
+   "lead": "Askboard answers business questions from your data, and shows how it got there.",
+   "aria": "Example: a question is asked, the data is prepared, a misleading comparison is caught and the honest answer is shown.",
+   "question": "Revenue by state, August vs July?",
+   "stages": {
+    "profile": "Profile",
+    "clean": "Clean",
+    "model": "Model",
+    "analyse": "Analyse",
+    "check": "Check"
+   },
+   "preparing": "Preparing your data",
+   "caught_title": "This comparison is misleading",
+   "caught_text": "August stops on the 23rd. Compared with a full July, the drop is not real.",
    "as_asked": "as asked",
-   "answer_label": "Same days (1–23), August vs July",
-   "verified": "Verified",
-   "footer": "Real figures from the Olist dataset · 16 decisions in the audit journal"
-  },
-  "stats": {
-   "agents": {
-    "value": "6",
-    "label": "specialized AI agents"
-   },
-   "checks": {
-    "value": "5",
-    "label": "comparability checks"
-   },
-   "journal": {
-    "value": "100%",
-    "label": "decisions journaled"
-   },
-   "languages": {
-    "value": "2",
-    "label": "languages, light & dark"
-   }
+   "answer_title": "Same days, 1 to 23",
+   "answer_text": "Revenue grew. Askboard proposed the fix, you approved it.",
+   "proof_checks": "5 checks",
+   "proof_journal": "Logged in the journal",
+   "cta": "Ask your first question",
+   "secondary": "See how it works"
   },
   "how": {
-   "eyebrow": "How it works",
-   "title": "From raw file to trusted insight in three steps",
-   "subtitle": "No SQL, no pipeline to build, no modeling to learn. You bring the data and the question.",
+   "title": "From a CSV to an answer you can defend",
+   "text": "Six agents do the work an analyst would do. You only bring the file and the question.",
    "steps": {
     "drop": {
-     "title": "Drop your CSV",
-     "text": "Askboard profiles your file, detects personal data, missing values and outliers, and cleans it with versioned rules."
+     "title": "Drop a file",
+     "text": "A CSV export from any tool. Personal data is masked first."
+    },
+    "prepare": {
+     "title": "Data gets ready",
+     "text": "Profiled, cleaned and modelled with versioned rules."
     },
     "ask": {
      "title": "Ask in plain words",
-     "text": "“Revenue by state, August vs July?” The agents understand your business vocabulary and pick the right KPI."
+     "text": "“Revenue by region, March vs February?” in English or French."
     },
-    "trust": {
-     "title": "Get a dashboard you can trust",
-     "text": "Misleading comparisons are caught before you see them, and every figure links back to its source."
+    "check": {
+     "title": "Comparisons checked",
+     "text": "Incomplete or unequal periods are caught before you see a chart."
+    },
+    "explain": {
+     "title": "Get the why",
+     "text": "Every figure has its sources. Ask “why?” at any time."
     }
    }
   },
-  "agents": {
-   "eyebrow": "The team behind each answer",
-   "title": "Six agents, one orchestrator",
-   "subtitle": "Each agent does one job well, writes its decisions in a shared journal, and hands its work to the next.",
-   "list": {
-    "quality": {
-     "title": "Data quality",
-     "text": "Profiles the data, flags anomalies and personal data, cleans with a versioned playbook."
-    },
-    "etl": {
-     "title": "Data engineering",
-     "text": "Ingests and transforms the file into a clean, typed warehouse."
-    },
-    "semantic": {
-     "title": "Semantics & KPIs",
-     "text": "Understands business terms and defines dimensions, measures and KPIs."
-    },
-    "analyst": {
-     "title": "Analyst",
-     "text": "Computes the answer and finds the insight behind it."
-    },
-    "dashboard": {
-     "title": "Dashboards",
-     "text": "Chooses the right chart and refuses misleading comparisons."
-    },
-    "auditor": {
-     "title": "Auditor & explainability",
-     "text": "Explains every decision, keeps a tamper-proof journal and watches for drift."
-    }
-   },
-   "orchestrator_title": "The orchestrator",
-   "orchestrator_text": "runs the agents in the right order, in parallel when it can, and stops when a human must decide."
-  },
-  "trust": {
-   "eyebrow": "Trust by design",
-   "title": "Numbers you can question",
-   "subtitle": "A dashboard is only useful if you can believe it. Askboard shows its work.",
+  "proof": {
+   "title": "Every answer comes with its proof",
+   "text": "A dashboard only helps if you can believe it.",
    "compare": {
     "title": "Honest comparisons",
-    "text": "Incomplete periods, different lengths or populations are detected and a justified fix is proposed. You decide.",
     "asked": "August vs July, as asked",
-    "fixed": "Same days 1–23"
+    "fixed": "Same days, 1 to 23",
+    "per_day": "Per day average",
+    "recommended": "Recommended",
+    "choose": "Nothing changes until you choose."
    },
    "explain": {
-    "title": "Explained decisions",
-    "text": "Why was this payment flagged? SHAP shows what pushed the model, in plain words.",
+    "title": "Anomalies in plain words",
+    "sentence": "Flagged because the payment value, 2,647.76 BRL, is far above the typical 100 BRL.",
     "f1": "Payment value",
-    "f2": "Number of installments"
+    "f2": "Installments"
    },
    "journal": {
-    "title": "Tamper-proof journal",
-    "text": "Every decision is chained with SHA-256. Change one line and the chain breaks."
+    "title": "A journal nobody can rewrite",
+    "text": "Each decision keeps the fingerprint of the one before. Change a line and the chain breaks.",
+    "intact": "Chain intact",
+    "rows": {
+     "r1": "Missing weights filled with the median",
+     "r2": "Comparison blocked: August incomplete",
+     "r3": "You chose: same days"
+    }
    }
   },
-  "objectives": {
-   "eyebrow": "Business objectives",
-   "title": "Built for four goals",
+  "goals": {
+   "title": "Four goals, one product",
    "bo1": {
-    "title": "Faster time-to-insight",
-    "text": "From raw data to a usable answer in minutes, not weeks."
+    "title": "Faster answers",
+    "text": "From raw data to a usable answer in minutes."
    },
    "bo2": {
-    "title": "Automated governance",
-    "text": "Deterministic rules and agent supervision remove routine human errors."
+    "title": "Governance by default",
+    "text": "Deterministic rules replace routine manual cleaning."
    },
    "bo3": {
-    "title": "Explainability & audit",
-    "text": "A natural-language rationale and a log entry for every transformation and KPI."
+    "title": "Explained and audited",
+    "text": "A plain rationale and a log entry for every decision."
    },
    "bo4": {
-    "title": "BI for everyone",
-    "text": "Managers get their own dashboards without waiting for an engineer."
+    "title": "BI for every manager",
+    "text": "Your own dashboards, without waiting for an engineer."
    }
   },
   "cta": {
-   "title": "Ready to ask your data?",
-   "text": "Create your account and run your first analysis on a prepared dataset in under a minute.",
+   "title": "Your data has answers. Ask for them.",
+   "text": "Try it on a prepared dataset in under a minute.",
    "button": "Create my account"
   },
   "footer": {
-   "text": "BIFlow project · Askboard 2026 · English & Français"
+   "text": "Askboard, a BIFlow project, 2026"
   }
  },
  "auth": {
@@ -543,6 +492,45 @@
    "intact_now": "Verified now: {n} entries, chain intact.",
    "verify": "Verify now",
    "drift": "Drift"
+  },
+  "notifications": {
+   "bell": "Notifications",
+   "bell_unread": "{count, plural, one {# unread notification} other {# unread notifications}}",
+   "title": "Notifications",
+   "mark_all": "Mark all as read",
+   "empty": "No notifications yet. You'll be told here when an analysis finishes.",
+   "unread": "Unread",
+   "open": "Open the analysis",
+   "dismiss": "Dismiss",
+   "kind": {
+    "completed": "Your analysis is ready",
+    "needs_review": "Your analysis needs your decision",
+    "failed": "Your analysis failed"
+   }
+  }
+ },
+ "email": {
+  "welcome": {
+   "subject": "Welcome to Askboard",
+   "preheader": "Your account is ready. Ask your first question in under a minute.",
+   "title": "Welcome, {name}",
+   "intro": "Your Askboard account is ready. Here is how your first analysis works:",
+   "steps": {
+    "drop": {
+     "title": "Drop a CSV",
+     "text": "or start with a prepared dataset."
+    },
+    "ask": {
+     "title": "Ask a question",
+     "text": "in plain words, in English or French."
+    },
+    "trust": {
+     "title": "Get an explained dashboard",
+     "text": "every number is checked, and you can always ask why."
+    }
+   },
+   "cta": "Open Askboard",
+   "footer": "You received this email because an Askboard account was created with this address. If it wasn't you, you can ignore it."
   }
  }
 }

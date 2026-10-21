@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { currentUserId } from "@/lib/auth";
 import { backend } from "@/lib/backend";
-import { createAnalysis, listAnalyses, updateAnalysis } from "@/lib/db";
+import { addNotification, createAnalysis, listAnalyses, updateAnalysis } from "@/lib/db";
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const Body = z.object({
@@ -47,10 +47,12 @@ export async function POST(req: Request) {
   });
   if (res.status !== 200) {
     updateAnalysis(a.id, uid, { status: "failed" });
+    addNotification(uid, a.id, "failed");
     return NextResponse.json({ error: "pipeline_failed", detail: res.data, id: a.id }, { status: 502 });
   }
   const blocking = res.data.report.checks.some((c) => c.status === "blocking");
   updateAnalysis(a.id, uid, { run_id: res.data.run_id, status: blocking ? "needs_review" : "completed",
                               decision: res.data.report.user_decision });
+  addNotification(uid, a.id, blocking ? "needs_review" : "completed");
   return NextResponse.json({ id: a.id, run_id: res.data.run_id }, { status: 201 });
 }

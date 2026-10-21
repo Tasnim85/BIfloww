@@ -1,23 +1,34 @@
 import {
-  ArrowRight, BadgeCheck, BrainCircuit, Database, FileSpreadsheet, Gauge, Languages, LayoutDashboard,
-  Link2, LockKeyhole, MessageSquareText, Scale, ScanSearch, ShieldCheck, Sparkles, Users, Workflow,
+  BookLock, FileSpreadsheet, MessageSquareText, ScanSearch, ShieldCheck, Sparkles, Wand2,
 } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { HeroDemo } from "@/components/landing/HeroDemo";
+import { AskHero } from "@/components/landing/AskHero";
 import { Navbar } from "@/components/landing/Navbar";
-import { Reveal } from "@/components/landing/Reveal";
 import { Logo } from "@/components/ui/Logo";
 import { currentUserId } from "@/lib/auth";
 
-const STEPS = [{ id: "drop", icon: FileSpreadsheet }, { id: "ask", icon: MessageSquareText }, { id: "trust", icon: BadgeCheck }];
-const AGENTS = [
-  { id: "quality", icon: ScanSearch }, { id: "etl", icon: Database }, { id: "semantic", icon: BrainCircuit },
-  { id: "analyst", icon: Gauge }, { id: "dashboard", icon: LayoutDashboard }, { id: "auditor", icon: ShieldCheck },
+// a real sequence: numbered on purpose
+const STEPS = [
+  { id: "drop", icon: FileSpreadsheet }, { id: "prepare", icon: Wand2 }, { id: "ask", icon: MessageSquareText },
+  { id: "check", icon: ScanSearch }, { id: "explain", icon: Sparkles },
 ];
-const OBJECTIVES = [
-  { id: "bo1", icon: Sparkles }, { id: "bo2", icon: Workflow }, { id: "bo3", icon: Scale }, { id: "bo4", icon: Users },
-];
+const GOALS = ["bo1", "bo2", "bo3", "bo4"] as const;
+
+/** Thin orbit rings, the same motif as the presentation's section slides. */
+function Orbits({ className }: { className?: string }) {
+  return (
+    <div aria-hidden className={`pointer-events-none absolute ${className ?? ""}`}>
+      {[100, 72, 46].map((s) => (
+        <span key={s} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.08]"
+              style={{ width: `${s}%`, height: `${s}%` }} />
+      ))}
+      <span className="absolute left-[14%] top-[22%] h-2 w-2 rounded-full bg-accent" />
+      <span className="absolute right-[18%] top-[30%] h-1.5 w-1.5 rounded-full bg-primary" />
+      <span className="absolute bottom-[20%] left-[30%] h-1.5 w-1.5 rounded-full bg-primary" />
+    </div>
+  );
+}
 
 export default async function Landing() {
   const t = await getTranslations("landing");
@@ -26,197 +37,142 @@ export default async function Landing() {
 
   return (
     <div className="relative overflow-x-clip">
-      <Navbar signedIn={signedIn} />
-
-      {/* ---- Hero ---- */}
-      <section className="relative">
-        <div className="grid-bg pointer-events-none absolute inset-0 -z-10" aria-hidden />
-        <div aria-hidden className="pointer-events-none absolute -top-24 right-[-10%] -z-10 h-[420px] w-[420px] rounded-full bg-primary/15 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute top-40 left-[-10%] -z-10 h-[320px] w-[320px] rounded-full bg-accent/15 blur-3xl" />
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-20 pt-12 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:pt-20">
-          <Reveal>
-            <span className="chip border border-primary/25 bg-primary-soft text-primary">
-              <Sparkles className="h-3.5 w-3.5" />{t("hero.eyebrow")}
-            </span>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl">
-              {t("hero.title_1")} <span className="text-primary">{t("hero.title_2")}</span>{" "}
-              <span className="relative whitespace-nowrap">
-                <span className="relative z-10">{t("hero.title_3")}</span>
-                <span aria-hidden className="absolute inset-x-0 bottom-1 -z-0 h-3 rounded bg-accent/40 sm:h-4" />
-              </span>
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">{t("hero.subtitle")}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={cta} className="btn-primary h-12 px-6 text-base">{t("hero.cta")}<ArrowRight className="h-4 w-4" /></Link>
-              <a href="#how" className="btn-outline h-12 px-6 text-base">{t("hero.secondary")}</a>
-            </div>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
-              {["no_engineer", "languages", "proof"].map((k) => (
-                <li key={k} className="flex items-center gap-2"><BadgeCheck className="h-4 w-4 text-ok" />{t(`hero.points.${k}`)}</li>
-              ))}
-            </ul>
-          </Reveal>
-          <Reveal delay={0.15}><HeroDemo /></Reveal>
+      {/* ---- Hero: always dark, the question is the headline ---- */}
+      <Navbar signedIn={signedIn} overDark />
+      <section className="dark relative isolate overflow-hidden bg-bg text-ink">
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60%_70%_at_75%_40%,rgb(14_116_144/0.35),transparent_70%),radial-gradient(40%_40%_at_85%_80%,rgb(245_158_11/0.12),transparent_70%)]" />
+        <Orbits className="-right-[18%] top-[6%] -z-10 aspect-square w-[95%] sm:w-[70%] lg:w-[58%]" />
+        <div className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6 lg:pb-28 lg:pt-16">
+          <p className="max-w-xl text-lg text-muted">{t("hero.lead")}</p>
+          <div className="mt-8"><AskHero /></div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href={cta} className="btn-accent h-12 px-6 text-base">{t("hero.cta")}</Link>
+            <a href="#how" className="btn h-12 border border-white/15 px-6 text-base text-ink hover:bg-white/5">{t("hero.secondary")}</a>
+          </div>
         </div>
       </section>
 
-      {/* ---- Stats ---- */}
-      <section className="border-y border-line bg-surface">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4">
-          {["agents", "checks", "journal", "languages"].map((k, i) => (
-            <Reveal key={k} delay={i * 0.05} className="text-center">
-              <div className="font-display text-3xl font-bold text-primary sm:text-4xl">{t(`stats.${k}.value`)}</div>
-              <div className="mt-1 text-sm text-muted">{t(`stats.${k}.label`)}</div>
-            </Reveal>
-          ))}
+      {/* ---- How it works: a five-step rail ---- */}
+      <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
+        <div className="max-w-2xl">
+          <h2 className="text-3xl font-bold sm:text-4xl">{t("how.title")}</h2>
+          <p className="mt-4 text-lg text-muted">{t("how.text")}</p>
         </div>
-      </section>
-
-      {/* ---- How it works ---- */}
-      <section id="how" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-24 sm:px-6">
-        <Reveal className="max-w-2xl">
-          <p className="eyebrow">{t("how.eyebrow")}</p>
-          <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("how.title")}</h2>
-          <p className="mt-4 text-muted">{t("how.subtitle")}</p>
-        </Reveal>
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+        <ol className="relative mt-14 grid gap-10 md:grid-cols-5 md:gap-6">
+          <span aria-hidden className="absolute left-6 top-6 hidden h-px w-[calc(100%-3rem)] bg-line md:block" />
           {STEPS.map(({ id, icon: Icon }, i) => (
-            <Reveal key={id} delay={i * 0.1}>
-              <div className="card group relative h-full p-6 transition hover:-translate-y-1 hover:shadow-lift">
-                <div className="flex items-center justify-between">
-                  <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary text-primary-fg"><Icon className="h-6 w-6" /></div>
-                  <span className="font-display text-5xl font-bold text-line">0{i + 1}</span>
-                </div>
-                <h3 className="mt-5 text-xl font-semibold">{t(`how.steps.${id}.title`)}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{t(`how.steps.${id}.text`)}</p>
+            <li key={id} className="relative flex gap-4 md:block">
+              <div className="relative z-10 grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-surface text-primary shadow-card">
+                <Icon className="h-5 w-5" />
               </div>
-            </Reveal>
+              <div className="md:mt-5">
+                <p className="font-display text-sm font-semibold text-accent">{i + 1}</p>
+                <h3 className="mt-1 text-lg font-semibold">{t(`how.steps.${id}.title`)}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted">{t(`how.steps.${id}.text`)}</p>
+              </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </section>
 
-      {/* ---- Agents ---- */}
-      <section id="agents" className="scroll-mt-20 bg-navy py-24 text-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <Reveal className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">{t("agents.eyebrow")}</p>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("agents.title")}</h2>
-            <p className="mt-4 text-white/70">{t("agents.subtitle")}</p>
-          </Reveal>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {AGENTS.map(({ id, icon: Icon }, i) => (
-              <Reveal key={id} delay={i * 0.06}>
-                <div className="h-full rounded-2xl border border-white/10 bg-white/[0.04] p-6 transition hover:border-accent/50 hover:bg-white/[0.07]">
-                  <div className="flex items-center gap-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent/15 text-accent"><Icon className="h-5 w-5" /></div>
-                    <h3 className="text-lg font-semibold">{t(`agents.list.${id}.title`)}</h3>
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-white/70">{t(`agents.list.${id}.text`)}</p>
+      {/* ---- Proof: real fragments of the product, not feature cards ---- */}
+      <section id="proof" className="scroll-mt-20 border-y border-line bg-surface py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-bold sm:text-4xl">{t("proof.title")}</h2>
+            <p className="mt-4 text-lg text-muted">{t("proof.text")}</p>
+          </div>
+
+          <div className="mt-12 grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+            {/* the comparison fix, as Sarra sees it */}
+            <div className="rounded-3xl bg-bg p-6 sm:p-8">
+              <h3 className="text-xl font-semibold">{t("proof.compare.title")}</h3>
+              <div className="mt-6 flex items-baseline justify-between gap-4 rounded-2xl border border-line bg-surface px-5 py-4">
+                <span className="text-sm text-muted">{t("proof.compare.asked")}</span>
+                <span className="font-display text-2xl font-bold text-bad line-through decoration-2">−4.1%</span>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border-2 border-primary bg-surface px-5 py-4">
+                  <span className="text-xs font-semibold text-primary">{t("proof.compare.recommended")}</span>
+                  <p className="mt-1 text-sm font-medium">{t("proof.compare.fixed")}</p>
+                  <p className="mt-2 font-display text-3xl font-bold text-ok">+34.6%</p>
                 </div>
-              </Reveal>
-            ))}
-          </div>
-          <Reveal delay={0.2}>
-            <div className="mt-6 flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent/10 p-5">
-              <Workflow className="h-6 w-6 shrink-0 text-accent" />
-              <p className="text-sm text-white/85"><span className="font-semibold text-white">{t("agents.orchestrator_title")}</span> {t("agents.orchestrator_text")}</p>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ---- Trust ---- */}
-      <section id="trust" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-24 sm:px-6">
-        <Reveal className="max-w-2xl">
-          <p className="eyebrow">{t("trust.eyebrow")}</p>
-          <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("trust.title")}</h2>
-          <p className="mt-4 text-muted">{t("trust.subtitle")}</p>
-        </Reveal>
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
-          <Reveal>
-            <div className="card h-full p-6">
-              <Scale className="h-6 w-6 text-accent" />
-              <h3 className="mt-4 text-lg font-semibold">{t("trust.compare.title")}</h3>
-              <p className="mt-2 text-sm text-muted">{t("trust.compare.text")}</p>
-              <div className="mt-5 rounded-xl bg-surface-2 p-4 text-sm">
-                <div className="flex items-center justify-between"><span className="text-muted">{t("trust.compare.asked")}</span><span className="font-mono font-semibold text-bad line-through">−4.1%</span></div>
-                <div className="mt-2 flex items-center justify-between"><span className="text-muted">{t("trust.compare.fixed")}</span><span className="font-mono font-semibold text-ok">+34.6%</span></div>
-              </div>
-            </div>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <div className="card h-full p-6">
-              <BrainCircuit className="h-6 w-6 text-accent" />
-              <h3 className="mt-4 text-lg font-semibold">{t("trust.explain.title")}</h3>
-              <p className="mt-2 text-sm text-muted">{t("trust.explain.text")}</p>
-              <div className="mt-5 space-y-2.5">
-                {[{ k: "trust.explain.f1", v: 67 }, { k: "trust.explain.f2", v: 33 }].map((f) => (
-                  <div key={f.k}>
-                    <div className="flex justify-between text-xs font-medium"><span>{t(f.k)}</span><span className="font-mono">{f.v}%</span></div>
-                    <div className="mt-1 h-2 rounded-full bg-surface-2"><div className="h-2 rounded-full bg-primary" style={{ width: `${f.v}%` }} /></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <div className="card h-full p-6">
-              <LockKeyhole className="h-6 w-6 text-accent" />
-              <h3 className="mt-4 text-lg font-semibold">{t("trust.journal.title")}</h3>
-              <p className="mt-2 text-sm text-muted">{t("trust.journal.text")}</p>
-              <div className="mt-5 space-y-2 font-mono text-[11px]">
-                {["profiling · anomalies", "comparisons · coverage", "user · same_days"].map((row, i) => (
-                  <div key={row} className="flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2">
-                    <span className="text-muted">#{i + 4}</span><span className="flex-1 truncate">{row}</span>
-                    <Link2 className="h-3.5 w-3.5 text-primary" aria-hidden /><span className="text-muted">a3f{i}…</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ---- Business objectives ---- */}
-      <section id="objectives" className="scroll-mt-20 border-t border-line bg-surface py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <Reveal className="max-w-2xl">
-            <p className="eyebrow">{t("objectives.eyebrow")}</p>
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{t("objectives.title")}</h2>
-          </Reveal>
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {OBJECTIVES.map(({ id, icon: Icon }, i) => (
-              <Reveal key={id} delay={i * 0.07}>
-                <div className="h-full rounded-2xl border border-line bg-bg p-6">
-                  <div className="flex items-center justify-between">
-                    <Icon className="h-6 w-6 text-primary" />
-                    <span className="chip bg-accent-soft text-ink">{id.toUpperCase()}</span>
-                  </div>
-                  <h3 className="mt-4 font-semibold">{t(`objectives.${id}.title`)}</h3>
-                  <p className="mt-2 text-sm text-muted">{t(`objectives.${id}.text`)}</p>
+                <div className="rounded-2xl border border-line bg-surface px-5 py-4">
+                  <span className="text-xs font-semibold text-muted">&nbsp;</span>
+                  <p className="mt-1 text-sm font-medium">{t("proof.compare.per_day")}</p>
+                  <p className="mt-2 font-display text-3xl font-bold text-ok">+23.4%</p>
                 </div>
-              </Reveal>
-            ))}
+              </div>
+              <p className="mt-5 flex items-center gap-2 text-sm text-muted"><ShieldCheck className="h-4 w-4 text-primary" />{t("proof.compare.choose")}</p>
+            </div>
+
+            <div className="grid gap-6">
+              {/* an anomaly, explained */}
+              <div className="rounded-3xl border border-line p-6">
+                <h3 className="text-lg font-semibold">{t("proof.explain.title")}</h3>
+                <p className="mt-3 text-sm leading-relaxed">{t("proof.explain.sentence")}</p>
+                <div className="mt-4 space-y-2">
+                  {[{ k: "f1", v: 67 }, { k: "f2", v: 33 }].map((f) => (
+                    <div key={f.k} className="grid grid-cols-[8.5rem_1fr_2.5rem] items-center gap-3 text-xs">
+                      <span className="truncate text-muted">{t(`proof.explain.${f.k}`)}</span>
+                      <span className="h-2 rounded-full bg-surface-2"><span className="block h-2 rounded-full bg-accent" style={{ width: `${f.v}%` }} /></span>
+                      <span className="text-right font-semibold">{f.v}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* the journal: entries linked to each other */}
+              <div className="rounded-3xl border border-line p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">{t("proof.journal.title")}</h3>
+                  <span className="chip shrink-0 bg-ok-soft text-ok"><BookLock className="h-3.5 w-3.5" />{t("proof.journal.intact")}</span>
+                </div>
+                <p className="mt-2 text-sm text-muted">{t("proof.journal.text")}</p>
+                <ol className="relative mt-4 space-y-2 pl-5">
+                  <span aria-hidden className="absolute bottom-3 left-[5px] top-3 w-px bg-primary/40" />
+                  {(["r1", "r2", "r3"] as const).map((r) => (
+                    <li key={r} className="relative text-sm">
+                      <span aria-hidden className="absolute -left-5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-primary bg-surface" />
+                      {t(`proof.journal.rows.${r}`)}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ---- CTA ---- */}
-      <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6">
-        <Reveal>
-          <div className="relative overflow-hidden rounded-3xl bg-primary px-6 py-14 text-center text-primary-fg sm:px-12">
-            <div aria-hidden className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-accent/30 blur-2xl" />
-            <h2 className="relative text-3xl font-bold sm:text-4xl">{t("cta.title")}</h2>
-            <p className="relative mx-auto mt-4 max-w-xl opacity-90">{t("cta.text")}</p>
-            <Link href={cta} className="btn-accent relative mt-8 h-12 px-7 text-base">{t("cta.button")}<ArrowRight className="h-4 w-4" /></Link>
-          </div>
-        </Reveal>
+      {/* ---- Goals ---- */}
+      <section id="goals" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
+        <h2 className="text-3xl font-bold sm:text-4xl">{t("goals.title")}</h2>
+        <dl className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          {GOALS.map((g) => (
+            <div key={g} className="border-t-2 border-ink pt-5">
+              <dt>
+                <span className="font-display text-sm font-semibold text-primary">{g.toUpperCase()}</span>
+                <span className="mt-2 block text-lg font-semibold">{t(`goals.${g}.title`)}</span>
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-muted">{t(`goals.${g}.text`)}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {/* ---- Closing call to action (dark again) ---- */}
+      <section className="dark relative isolate overflow-hidden bg-bg text-ink">
+        <Orbits className="left-1/2 top-1/2 -z-10 aspect-square w-[120%] -translate-x-1/2 -translate-y-1/2 sm:w-[70%]" />
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
+          <h2 className="text-3xl font-bold sm:text-5xl">{t("cta.title")}</h2>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-muted">{t("cta.text")}</p>
+          <Link href={cta} className="btn-accent mt-8 h-12 px-7 text-base">{t("cta.button")}</Link>
+        </div>
       </section>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted sm:flex-row sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted sm:flex-row sm:px-6">
           <Logo variant="lockup" size={28} />
-          <p className="flex items-center gap-2"><Languages className="h-4 w-4" />{t("footer.text")}</p>
+          <p>{t("footer.text")}</p>
         </div>
       </footer>
     </div>

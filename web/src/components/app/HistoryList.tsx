@@ -2,8 +2,9 @@
 import { ArrowRight, FileSearch, Loader2, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Empty, Skeleton, StatusBadge, fmtDate } from "@/components/ui/kit";
+import { ANALYSES_EVENT } from "@/components/app/Notifications";
 import { api, type Analysis, useApi } from "@/lib/client";
 import { cn } from "@/lib/cn";
 import { DATASET_INFO } from "@/lib/pipeline";
@@ -13,7 +14,12 @@ const FILTERS = ["all", "needs_review", "completed", "failed"] as const;
 export function HistoryList() {
   const t = useTranslations("app");
   const locale = useLocale();
-  const { data, loading, setData } = useApi<Analysis[]>("/api/analyses");
+  const { data, loading, setData, reload } = useApi<Analysis[]>("/api/analyses");
+  useEffect(() => {                                    // a finished analysis appears without reloading the page
+    const on = () => { void reload(); };
+    window.addEventListener(ANALYSES_EVENT, on);
+    return () => window.removeEventListener(ANALYSES_EVENT, on);
+  }, [reload]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all");
   const [removing, setRemoving] = useState<string | null>(null);
