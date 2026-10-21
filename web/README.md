@@ -58,6 +58,26 @@ Ouvre http://localhost:3000.
 
 À l'inscription, la case n'est cochée qu'une fois : le serveur renvoie ensuite un ticket à usage unique (2 minutes) pour la connexion automatique. Diagnostic : `npm run check:recaptcha`.
 
+### E-mail de bienvenue
+
+À la création d'un compte (e-mail ou Google), Askboard envoie un e-mail de bienvenue avec le logo, dans la langue de l'utilisateur. Il est envoyé en arrière-plan : une panne d'e-mail ne bloque jamais l'inscription.
+
+1. Avec Gmail : active la validation en 2 étapes sur ton compte Google, puis crée un **mot de passe d'application** (https://myaccount.google.com/apppasswords).
+2. Dans `web\.env.local`, remplis `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER`, `SMTP_PASS` (le mot de passe d'application) et `MAIL_FROM`.
+3. Relance `npm run dev`.
+
+**Erreur « self-signed certificate in certificate chain »** : un logiciel de ton PC, presque toujours l'antivirus (Avast, AVG, Kaspersky, ESET…), ouvre les e-mails sortants pour les analyser et remplace le certificat de Gmail par le sien. Lance `npm run check:mail` : la ligne « signed by » donne son nom. Deux solutions sûres :
+- désactive l'analyse des e-mails sortants dans l'antivirus (Avast / AVG : Paramètres → Protection → Agents principaux → Agent Mail → décocher l'analyse des e-mails sortants (SMTP)) ;
+- ou exporte le certificat racine de l'antivirus en `.pem` et indique son chemin dans `SMTP_CA_FILE` : il ne sera utilisé que pour l'envoi des e-mails.
+
+Ne désactive jamais la vérification des certificats (`NODE_TLS_REJECT_UNAUTHORIZED=0`) : n'importe qui pourrait alors lire ton mot de passe.
+
+Sans `SMTP_HOST`, en développement, l'e-mail est enregistré dans `web\data\outbox\` : ouvre le fichier `.html` dans ton navigateur pour le voir.
+
+### Notifications
+
+Quand une analyse se termine (prête, en attente de décision ou en échec), une notification apparaît dans la cloche en haut de l'app, avec un message en bas à droite. Tu peux quitter la page « Nouvelle analyse » pendant le calcul : la notification te ramène au résultat.
+
 ## 3. Ce que fait chaque partie
 
 ```

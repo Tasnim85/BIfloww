@@ -20,164 +20,113 @@
  "landing": {
   "nav": {
    "how": "Fonctionnement",
-   "agents": "Agents",
-   "trust": "Confiance",
-   "objectives": "Objectifs",
+   "proof": "Preuves",
+   "goals": "Objectifs",
    "get_started": "Commencer",
    "open_app": "Ouvrir l'app"
   },
   "hero": {
-   "eyebrow": "Business intelligence multi-agents autonome",
-   "title_1": "Déposez un CSV.",
-   "title_2": "Posez une question.",
-   "title_3": "Obtenez votre dashboard.",
-   "subtitle": "Six agents IA nettoient vos données, les modélisent, définissent vos KPI et construisent votre dashboard. Chaque chiffre a sa preuve, et vous pouvez toujours demander pourquoi.",
-   "cta": "Commencer gratuitement",
-   "secondary": "Voir le fonctionnement",
-   "points": {
-    "no_engineer": "Aucun data engineer requis",
-    "languages": "Français & anglais",
-    "proof": "Chaque décision journalisée"
-   }
-  },
-  "demo": {
-   "aria": "Exemple animé : une question, les agents au travail, une comparaison trompeuse détectée et la réponse honnête.",
-   "question": "Chiffre d'affaires par État : août vs juillet ?",
-   "agents_at_work": "Agents au travail",
-   "agent_profile": "Profil",
-   "agent_clean": "Nettoie",
-   "agent_model": "Modèle",
-   "agent_kpi": "KPI",
-   "agent_analyze": "Analyse",
-   "agent_check": "Vérifie",
-   "agent_audit": "Audit",
-   "waiting": "En attente de votre question…",
-   "working": "Préparation des données…",
-   "caught_title": "Comparaison trompeuse détectée",
-   "caught_text": "Les données d'août s'arrêtent le 23 : les comparer à un mois de juillet complet serait injuste.",
+   "lead": "Askboard répond à vos questions métier à partir de vos données, et montre comment il y est arrivé.",
+   "aria": "Exemple : une question est posée, les données sont préparées, une comparaison trompeuse est détectée et la réponse honnête s'affiche.",
+   "question": "Chiffre d'affaires par état, août vs juillet ?",
+   "stages": {
+    "profile": "Profil",
+    "clean": "Nettoyage",
+    "model": "Modèle",
+    "analyse": "Analyse",
+    "check": "Contrôle"
+   },
+   "preparing": "Préparation de vos données",
+   "caught_title": "Cette comparaison est trompeuse",
+   "caught_text": "Août s'arrête le 23. Face à un mois de juillet complet, la baisse n'est pas réelle.",
    "as_asked": "tel que demandé",
-   "answer_label": "Mêmes jours (1–23), août vs juillet",
-   "verified": "Vérifié",
-   "footer": "Chiffres réels du jeu Olist · 16 décisions dans le journal d'audit"
-  },
-  "stats": {
-   "agents": {
-    "value": "6",
-    "label": "agents IA spécialisés"
-   },
-   "checks": {
-    "value": "5",
-    "label": "contrôles de comparabilité"
-   },
-   "journal": {
-    "value": "100 %",
-    "label": "des décisions journalisées"
-   },
-   "languages": {
-    "value": "2",
-    "label": "langues, clair & sombre"
-   }
+   "answer_title": "Mêmes jours, du 1er au 23",
+   "answer_text": "Le chiffre d'affaires a augmenté. Askboard a proposé la correction, vous l'avez validée.",
+   "proof_checks": "5 contrôles",
+   "proof_journal": "Inscrit au journal",
+   "cta": "Poser ma première question",
+   "secondary": "Voir comment ça marche"
   },
   "how": {
-   "eyebrow": "Fonctionnement",
-   "title": "Du fichier brut à l'insight fiable en trois étapes",
-   "subtitle": "Pas de SQL, pas de pipeline à construire, pas de modélisation à apprendre. Vous apportez les données et la question.",
+   "title": "D'un CSV à une réponse que vous pouvez défendre",
+   "text": "Six agents font le travail d'un analyste. Vous n'apportez que le fichier et la question.",
    "steps": {
     "drop": {
-     "title": "Déposez votre CSV",
-     "text": "Askboard profile votre fichier, détecte les données personnelles, les valeurs manquantes et aberrantes, et le nettoie avec des règles versionnées."
+     "title": "Déposez un fichier",
+     "text": "Un export CSV de n'importe quel outil. Les données personnelles sont masquées d'abord."
+    },
+    "prepare": {
+     "title": "Les données se préparent",
+     "text": "Profilées, nettoyées et modélisées avec des règles versionnées."
     },
     "ask": {
-     "title": "Demandez avec vos mots",
-     "text": "« Chiffre d'affaires par État, août vs juillet ? » Les agents comprennent votre vocabulaire métier et choisissent le bon KPI."
+     "title": "Demandez simplement",
+     "text": "« Chiffre d'affaires par région, mars vs février ? » en français ou en anglais."
     },
-    "trust": {
-     "title": "Un dashboard digne de confiance",
-     "text": "Les comparaisons trompeuses sont détectées avant que vous les voyiez, et chaque chiffre remonte à sa source."
+    "check": {
+     "title": "Comparaisons contrôlées",
+     "text": "Les périodes incomplètes ou inégales sont détectées avant tout graphique."
+    },
+    "explain": {
+     "title": "Obtenez le pourquoi",
+     "text": "Chaque chiffre a ses sources. Demandez « pourquoi ? » à tout moment."
     }
    }
   },
-  "agents": {
-   "eyebrow": "L'équipe derrière chaque réponse",
-   "title": "Six agents, un orchestrateur",
-   "subtitle": "Chaque agent fait un seul travail, et bien. Il écrit ses décisions dans un journal commun et passe le relais au suivant.",
-   "list": {
-    "quality": {
-     "title": "Qualité des données",
-     "text": "Profile les données, signale anomalies et données personnelles, nettoie avec un playbook versionné."
-    },
-    "etl": {
-     "title": "Data engineering",
-     "text": "Ingère et transforme le fichier en un entrepôt propre et typé."
-    },
-    "semantic": {
-     "title": "Sémantique & KPI",
-     "text": "Comprend les termes métier et définit dimensions, mesures et KPI."
-    },
-    "analyst": {
-     "title": "Analyste",
-     "text": "Calcule la réponse et trouve l'insight derrière."
-    },
-    "dashboard": {
-     "title": "Dashboards",
-     "text": "Choisit le bon graphique et refuse les comparaisons trompeuses."
-    },
-    "auditor": {
-     "title": "Auditeur & explicabilité",
-     "text": "Explique chaque décision, tient un journal infalsifiable et surveille le drift."
-    }
-   },
-   "orchestrator_title": "L'orchestrateur",
-   "orchestrator_text": "lance les agents dans le bon ordre, en parallèle quand c'est possible, et s'arrête quand un humain doit décider."
-  },
-  "trust": {
-   "eyebrow": "La confiance dès la conception",
-   "title": "Des chiffres qu'on peut questionner",
-   "subtitle": "Un dashboard n'est utile que si on peut le croire. Askboard montre son travail.",
+  "proof": {
+   "title": "Chaque réponse arrive avec sa preuve",
+   "text": "Un dashboard n'aide que si l'on peut y croire.",
    "compare": {
-    "title": "Comparaisons honnêtes",
-    "text": "Périodes incomplètes, durées ou populations différentes sont détectées et une correction justifiée est proposée. Vous décidez.",
+    "title": "Des comparaisons honnêtes",
     "asked": "Août vs juillet, tel que demandé",
-    "fixed": "Mêmes jours 1–23"
+    "fixed": "Mêmes jours, du 1er au 23",
+    "per_day": "Moyenne par jour",
+    "recommended": "Recommandé",
+    "choose": "Rien ne change tant que vous n'avez pas choisi."
    },
    "explain": {
-    "title": "Décisions expliquées",
-    "text": "Pourquoi ce paiement a-t-il été signalé ? SHAP montre ce qui a poussé le modèle, en mots simples.",
-    "f1": "Montant du paiement",
+    "title": "Les anomalies en mots simples",
+    "sentence": "Signalé car la valeur du paiement, 2 647,76 BRL, est très au-dessus des 100 BRL habituels.",
+    "f1": "Valeur du paiement",
     "f2": "Nombre d'échéances"
    },
    "journal": {
-    "title": "Journal infalsifiable",
-    "text": "Chaque décision est chaînée par SHA-256. Modifiez une ligne et la chaîne se brise."
+    "title": "Un journal que personne ne peut réécrire",
+    "text": "Chaque décision garde l'empreinte de la précédente. Modifiez une ligne et la chaîne casse.",
+    "intact": "Chaîne intacte",
+    "rows": {
+     "r1": "Poids manquants complétés par la médiane",
+     "r2": "Comparaison bloquée : août incomplet",
+     "r3": "Votre choix : mêmes jours"
+    }
    }
   },
-  "objectives": {
-   "eyebrow": "Objectifs métier",
-   "title": "Conçu pour quatre objectifs",
+  "goals": {
+   "title": "Quatre objectifs, un produit",
    "bo1": {
-    "title": "Insight plus rapide",
-    "text": "Des données brutes à une réponse utilisable en minutes, pas en semaines."
+    "title": "Des réponses plus rapides",
+    "text": "Des données brutes à une réponse utilisable en quelques minutes."
    },
    "bo2": {
-    "title": "Gouvernance automatisée",
-    "text": "Règles déterministes et supervision par agents : fini les erreurs humaines de routine."
+    "title": "Une gouvernance par défaut",
+    "text": "Des règles déterministes remplacent le nettoyage manuel."
    },
    "bo3": {
-    "title": "Explicabilité & audit",
-    "text": "Une justification en langage naturel et une entrée de journal pour chaque transformation et KPI."
+    "title": "Expliqué et audité",
+    "text": "Une justification claire et une trace pour chaque décision."
    },
    "bo4": {
-    "title": "La BI pour tous",
-    "text": "Les managers obtiennent leurs dashboards sans attendre un ingénieur."
+    "title": "La BI pour chaque manager",
+    "text": "Vos propres dashboards, sans attendre un ingénieur."
    }
   },
   "cta": {
-   "title": "Prêt à interroger vos données ?",
-   "text": "Créez votre compte et lancez votre première analyse sur un jeu préparé en moins d'une minute.",
+   "title": "Vos données ont des réponses. Demandez-les.",
+   "text": "Essayez sur un jeu de données prêt en moins d'une minute.",
    "button": "Créer mon compte"
   },
   "footer": {
-   "text": "Projet BIFlow · Askboard 2026 · English & Français"
+   "text": "Askboard, un projet BIFlow, 2026"
   }
  },
  "auth": {
@@ -543,6 +492,45 @@
    "intact_now": "Vérifié à l'instant : {n} entrées, chaîne intacte.",
    "verify": "Vérifier maintenant",
    "drift": "Drift"
+  },
+  "notifications": {
+   "bell": "Notifications",
+   "bell_unread": "{count, plural, one {# notification non lue} other {# notifications non lues}}",
+   "title": "Notifications",
+   "mark_all": "Tout marquer comme lu",
+   "empty": "Aucune notification pour l'instant. Vous serez prévenu ici quand une analyse se termine.",
+   "unread": "Non lue",
+   "open": "Ouvrir l'analyse",
+   "dismiss": "Fermer",
+   "kind": {
+    "completed": "Votre analyse est prête",
+    "needs_review": "Votre analyse attend votre décision",
+    "failed": "Votre analyse a échoué"
+   }
+  }
+ },
+ "email": {
+  "welcome": {
+   "subject": "Bienvenue sur Askboard",
+   "preheader": "Votre compte est prêt. Posez votre première question en moins d'une minute.",
+   "title": "Bienvenue, {name}",
+   "intro": "Votre compte Askboard est prêt. Voici comment se passe votre première analyse :",
+   "steps": {
+    "drop": {
+     "title": "Déposez un CSV",
+     "text": "ou commencez avec un jeu de données prêt."
+    },
+    "ask": {
+     "title": "Posez une question",
+     "text": "en mots simples, en français ou en anglais."
+    },
+    "trust": {
+     "title": "Recevez un dashboard expliqué",
+     "text": "chaque chiffre est contrôlé, et vous pouvez toujours demander pourquoi."
+    }
+   },
+   "cta": "Ouvrir Askboard",
+   "footer": "Vous recevez cet e-mail car un compte Askboard a été créé avec cette adresse. Si ce n'est pas vous, ignorez-le."
   }
  }
 }
