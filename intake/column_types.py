@@ -28,7 +28,16 @@ from pathlib import Path
 from contracts.agent import AgentResult, AgentStatus, RunContext
 from contracts.common import SemanticType, save
 from contracts.intake import ColumnType, ColumnTypesReport
+from contracts.proposals.semantic_contracts import (
+    ClassificationStatus,
+    PrivacyHint,
+    SemanticColumn,
+    SemanticMetadata,
+)
 from intake.semantic_detection.src.taxonomy_loader import TaxonomyLoader
+from intake.semantic_detection.step2.schema_reader import ColumnSchema, TableSchema
+from intake.semantic_detection.step3.hybrid_classifier import HybridClassifier
+
 
 _LOADER = TaxonomyLoader()   # loaded once at import time
 
@@ -301,8 +310,23 @@ def _read_headers(csv_path: Path) -> list[str]:
         return next(reader, [])
 
 
+def _read_table_samples(csv_path: Path, max_rows: int = 10) -> tuple[list[str], list[list[str]]]:
+    """Read header and first max_rows sample rows from CSV."""
+    with open(csv_path, encoding="utf-8", newline="") as fh:
+        reader = csv.reader(fh)
+        header = next(reader, [])
+        samples: list[list[str]] = []
+        for _ in range(max_rows):
+            try:
+                row = next(reader)
+                samples.append(row)
+            except StopIteration:
+                break
+        return header, samples
+
+
 def run(ctx: RunContext) -> AgentResult:
-    """Step 1a: classify every column of every uploaded table."""
+    """Step 1a & Step 2/3: hybrid classification with table context and rich report."""
     tables_dir: Path = ctx.inputs["tables"]
 
     if not tables_dir.exists():
@@ -313,48 +337,139 @@ def run(ctx: RunContext) -> AgentResult:
             message="Input tables/ folder not found.",
         )
 
+    # Initialize Hybrid Classifier (combines Step 2 rules + Step 3 embeddings)
+    hybrid_clf: HybridClassifier | None = None
+    try:
+        hybrid_clf = HybridClassifier()
+    except Exception as exc:
+        log_msg = f"HybridClassifier init failed ({exc}), falling back to direct rules"
+        import logging
+        logging.getLogger(__name__).warning(log_msg)
+
     all_columns: list[ColumnType] = []
+    rich_columns: list[SemanticColumn] = []
     csv_files = list(tables_dir.glob("*.csv"))
 
     for csv_path in csv_files:
         table_name = csv_path.stem
         try:
-            headers = _read_headers(csv_path)
+            headers, sample_rows = _read_table_samples(csv_path, max_rows=10)
         except Exception as exc:
             ctx.log("read_headers", "FAILED",
                     inputs=[str(csv_path)], evidence={"error": str(exc)})
             continue
 
-        for col in headers:
-            all_columns.append(_classify_column(table_name, col))
+        if hybrid_clf is not None:
+            # Build TableSchema and ColumnSchema with sample values for context matching
+            col_schemas = []
+            for idx, col_name in enumerate(headers):
+                vals = [r[idx] for r in sample_rows if idx < len(r)]
+                col_schemas.append(ColumnSchema(
+                    table=table_name,
+                    column=col_name,
+                    position=idx,
+                    sample_values=vals,
+                    nullable=True,
+                ))
+            table_schema = TableSchema(
+                table=table_name,
+                source_path=str(csv_path),
+                source_format="csv",
+                columns=col_schemas,
+            )
+            h_results = hybrid_clf.classify_table(table_schema)
+
+            for h_res in h_results:
+                sem_type = _TYPE_MAP.get(h_res.semantic_type, SemanticType.OTHER)
+                is_pii = (
+                    h_res.privacy_hint in ("LIKELY_PII", "POTENTIAL_PII")
+                    or h_res.semantic_type in _PII_TAXONOMY_TYPES
+                )
+                all_columns.append(ColumnType(
+                    table=h_res.table,
+                    column=h_res.column,
+                    semantic_type=sem_type,
+                    confidence=round(h_res.confidence, 4),
+                    pii_candidate=is_pii,
+                ))
+
+                c_status = (
+                    ClassificationStatus.UNKNOWN if h_res.semantic_type == "UNKNOWN"
+                    else (ClassificationStatus.NEEDS_REVIEW if h_res.review_required
+                          else ClassificationStatus.AUTOMATIC)
+                )
+                p_hint = getattr(PrivacyHint, h_res.privacy_hint, PrivacyHint.NO_DIRECT_PII_INDICATOR)
+                dec_evidence = []
+                if isinstance(h_res.evidence, dict) and "decision" in h_res.evidence:
+                    dec_evidence.append(str(h_res.evidence["decision"]))
+
+                rich_columns.append(SemanticColumn(
+                    source_table=h_res.table,
+                    column_name=h_res.column,
+                    technical_type="object",
+                    semantic_group=h_res.semantic_group,
+                    semantic_type=h_res.semantic_type,
+                    privacy_hint=p_hint,
+                    confidence_score=round(h_res.confidence, 4),
+                    confidence_method=h_res.method,
+                    evidence=dec_evidence,
+                    review_required=h_res.review_required,
+                    classification_status=c_status,
+                    classifier_version=f"hybrid@{hybrid_clf._backend_name}@2.0",
+                ))
+        else:
+            for col in headers:
+                all_columns.append(_classify_column(table_name, col))
 
     pii_count     = sum(1 for c in all_columns if c.pii_candidate)
     low_conf      = sum(1 for c in all_columns if c.confidence < 0.5)
     unknown_count = sum(1 for c in all_columns if c.semantic_type == SemanticType.OTHER
                         and c.confidence == 0.0)
 
-    report = ColumnTypesReport(model="rules@1.1", columns=all_columns)
+    model_label = f"hybrid@{hybrid_clf._backend_name}@2.0" if hybrid_clf else "rules@1.1"
+
+    # 1. Pipeline standard report (contracts.intake.ColumnTypesReport)
+    report = ColumnTypesReport(model=model_label, columns=all_columns)
     out_path = ctx.output("report")
     save(report, out_path)
+
+    # 2. Rich proposal report (contracts.proposals.semantic_contracts.SemanticMetadata)
+    outputs_dict: dict[str, Path] = {"report": out_path}
+    if rich_columns:
+        rich_report = SemanticMetadata(
+            schema_version="1.0.0",
+            taxonomy_version="1.1.0",
+            run_id=ctx.run_id,
+            dataset_name=tables_dir.name,
+            columns=rich_columns,
+            total_columns=len(rich_columns),
+            classified_columns=sum(1 for c in rich_columns if c.semantic_type != "UNKNOWN"),
+            unknown_columns=sum(1 for c in rich_columns if c.semantic_type == "UNKNOWN"),
+            review_required_columns=sum(1 for c in rich_columns if c.review_required),
+        )
+        rich_path = ctx.output_dir / "semantic_metadata.json"
+        save(rich_report, rich_path)
+        outputs_dict["semantic_metadata"] = rich_path
 
     ctx.log(
         "classify", "SUCCESS",
         inputs=[str(tables_dir)],
         outputs=[str(out_path)],
-        rule_version="column_types:rules@1.1",
+        rule_version=f"column_types:{model_label}",
         evidence={
             "tables": len(csv_files),
             "columns": len(all_columns),
             "pii_candidates": pii_count,
             "low_confidence_columns": low_conf,
             "unknown_columns": unknown_count,
+            "rich_report_generated": bool(rich_columns),
         },
     )
 
     return AgentResult(
         run_id=ctx.run_id, agent=ctx.agent,
         status=AgentStatus.SUCCESS,
-        outputs={"report": out_path},
-        message=(f"Classified {len(all_columns)} columns across {len(csv_files)} table(s). "
+        outputs=outputs_dict,
+        message=(f"Classified {len(all_columns)} columns across {len(csv_files)} table(s) via {model_label}. "
                  f"{pii_count} PII candidate(s), {low_conf} low-confidence (<0.5)."),
     )

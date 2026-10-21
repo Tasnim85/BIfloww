@@ -394,3 +394,153 @@ def test_t09_internal_dependency_missing_gives_failed(tmp_dirs):
         f"Une dependance interne manquante doit FAILED (pas SKIPPED), got {results['A'].status}: {results['A'].message}"
     )
     assert "missing_internal_pkg" in results["A"].message
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# T10 — NEEDS_REVIEW bloque les dépendants
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_t10_needs_review_blocks_downstream(tmp_dirs):
+    """Si A renvoie NEEDS_REVIEW, B (dépendant de A) ne doit PAS s'exécuter."""
+    tmp_path, db, runs = tmp_dirs
+    run_id = _make_run_id()
+
+    step_A = _make_step("A", set(), "ep_review")
+    step_B = _make_step("B", {"A"}, "ep_consumer")
+    steps = {"A": step_A, "B": step_B}
+    dag = {"A": set(), "B": {"A"}}
+
+    import orchestrator.dag_runner as runner
+
+    def review_agent(ctx):
+        return _stub_result(run_id, "A", AgentStatus.NEEDS_REVIEW, "requires review")
+
+    b_executed = [False]
+    def consumer_agent(ctx):
+        b_executed[0] = True
+        return _stub_result(run_id, "B", AgentStatus.SUCCESS, "ok")
+
+    def dispatch(ep):
+        return review_agent if ep == "ep_review" else consumer_agent
+
+    with _PipelineContext(steps, dag, runs, run_id):
+        with mock.patch.object(runner, "_import_run", side_effect=dispatch):
+            results = runner.run_pipeline(run_id=run_id, max_workers=2, runs_root=runs, db=db)
+
+    assert results["A"].status == AgentStatus.NEEDS_REVIEW
+    assert results["B"].status == AgentStatus.SKIPPED
+    assert "review" in results["B"].message.lower()
+    assert not b_executed[0], "B ne doit pas s'exécuter si A est NEEDS_REVIEW"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# T11 — Propagation transitive de l'échec (A -> B -> C)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_t11_transitive_failure_skips_full_chain(tmp_dirs):
+    """Dans A -> B -> C, si A échoue, B est SKIPPED et C est également SKIPPED."""
+    tmp_path, db, runs = tmp_dirs
+    run_id = _make_run_id()
+
+    step_A = _make_step("A", set(), "ep_a")
+    step_B = _make_step("B", {"A"}, "ep_b")
+    step_C = _make_step("C", {"B"}, "ep_c")
+    steps = {"A": step_A, "B": step_B, "C": step_C}
+    dag = {"A": set(), "B": {"A"}, "C": {"B"}}
+
+    import orchestrator.dag_runner as runner
+
+    def fail_a(ctx):
+        return _stub_result(run_id, "A", AgentStatus.FAILED, "error in A")
+
+    c_executed = [False]
+    def agent_c(ctx):
+        c_executed[0] = True
+        return _stub_result(run_id, "C", AgentStatus.SUCCESS, "ok")
+
+    def dispatch(ep):
+        if ep == "ep_a":
+            return fail_a
+        return agent_c
+
+    with _PipelineContext(steps, dag, runs, run_id):
+        with mock.patch.object(runner, "_import_run", side_effect=dispatch):
+            results = runner.run_pipeline(run_id=run_id, max_workers=2, runs_root=runs, db=db)
+
+    assert results["A"].status == AgentStatus.FAILED
+    assert results["B"].status == AgentStatus.SKIPPED
+    assert results["C"].status == AgentStatus.SKIPPED
+    assert not c_executed[0], "C ne doit pas s'exécuter si son ancêtre a échoué"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# T12 — Agent non implémenté / manquant bloque les consommateurs
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_t12_missing_agent_skips_downstream_consumer(tmp_dirs):
+    """Si A est SKIPPED car non implémenté, B qui consomme A doit être SKIPPED."""
+    tmp_path, db, runs = tmp_dirs
+    run_id = _make_run_id()
+
+    step_A = _make_step("A", set(), "missing_pkg.agent:run")
+    step_B = _make_step("B", {"A"}, "ep_b")
+    steps = {"A": step_A, "B": step_B}
+    dag = {"A": set(), "B": {"A"}}
+
+    import orchestrator.dag_runner as runner
+
+    b_executed = [False]
+    def agent_b(ctx):
+        b_executed[0] = True
+        return _stub_result(run_id, "B", AgentStatus.SUCCESS, "ok")
+
+    def fake_import(ep):
+        if ep == "missing_pkg.agent:run":
+            raise ModuleNotFoundError("No module named 'missing_pkg'", name="missing_pkg")
+        return agent_b
+
+    with _PipelineContext(steps, dag, runs, run_id):
+        with mock.patch.object(runner, "_import_run", side_effect=fake_import):
+            results = runner.run_pipeline(run_id=run_id, max_workers=2, runs_root=runs, db=db)
+
+    assert results["A"].status == AgentStatus.SKIPPED
+    assert results["B"].status == AgentStatus.SKIPPED
+    assert not b_executed[0], "B ne doit pas s'exécuter si A est manquant"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# T13 — SUCCESS sans artefact obligatoire converti en FAILED
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_t13_success_without_outputs_fails_and_skips_downstream(tmp_dirs):
+    """Si A déclare SUCCESS sans créer son fichier de sortie obligatoire, A échoue et B est SKIPPED."""
+    tmp_path, db, runs = tmp_dirs
+    run_id = _make_run_id()
+
+    step_A = _make_step("A", set(), "ep_a", outputs={"report": "report.json"})
+    step_B = _make_step("B", {"A"}, "ep_b")
+    steps = {"A": step_A, "B": step_B}
+    dag = {"A": set(), "B": {"A"}}
+
+    import orchestrator.dag_runner as runner
+
+    # A déclare SUCCESS mais n'écrit pas report.json
+    def bad_agent_a(ctx):
+        return _stub_result(run_id, "A", AgentStatus.SUCCESS, "claimed success but wrote nothing")
+
+    b_executed = [False]
+    def agent_b(ctx):
+        b_executed[0] = True
+        return _stub_result(run_id, "B", AgentStatus.SUCCESS, "ok")
+
+    def dispatch(ep):
+        return bad_agent_a if ep == "ep_a" else agent_b
+
+    with _PipelineContext(steps, dag, runs, run_id):
+        with mock.patch.object(runner, "_import_run", side_effect=dispatch):
+            results = runner.run_pipeline(run_id=run_id, max_workers=2, runs_root=runs, db=db)
+
+    assert results["A"].status == AgentStatus.FAILED
+    assert "without producing valid artifact" in results["A"].message.lower() or "missing declared output artifact" in results["A"].message.lower()
+    assert results["B"].status == AgentStatus.SKIPPED
+    assert not b_executed[0], "B ne doit pas s'exécuter si les artefacts requis de A sont absents"

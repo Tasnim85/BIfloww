@@ -225,3 +225,46 @@ class TestHungarianVsBidirectional:
             assert len(b_assigned_clean) == len(set(b_assigned_clean)), (
                 "Hungarian assignment is not injective -- double B assignment detected!"
             )
+
+
+# =============================================================================
+# BO1-06 Phase 4: Cross-Table Column Matching Tests
+# =============================================================================
+
+class TestCrossTableColumnMatching:
+    """Verify compute_column_matches produces typed semantic relationships."""
+
+    def test_exact_foreign_key_match(self) -> None:
+        from intake.similarity import compute_column_matches
+        from contracts.proposals.semantic_contracts import RelationshipType, SemanticMatchesReport
+
+        tables = {
+            "orders": ["order_id", "customer_id", "order_status"],
+            "customers": ["customer_id", "customer_city", "customer_state"],
+        }
+        report = compute_column_matches(tables, threshold=0.70, run_id="run_test")
+        assert isinstance(report, SemanticMatchesReport)
+        assert report.matches_found == len(report.matches)
+        assert report.matches_found >= 1
+
+        # Look for customer_id <-> customer_id match
+        fk_matches = [
+            m for m in report.matches
+            if m.source_column == "customer_id" and m.target_column == "customer_id"
+        ]
+        assert len(fk_matches) == 1
+        m = fk_matches[0]
+        assert m.relationship_type == RelationshipType.SAME_CONCEPT_CANDIDATE
+        assert m.similarity_score == 1.0
+        assert any("candidate join key" in ev for ev in m.evidence)
+
+    def test_unrelated_tables_no_matches(self) -> None:
+        from intake.similarity import compute_column_matches
+
+        tables = {
+            "biology": ["sepal_length", "petal_width"],
+            "finance": ["payment_value", "freight_cost"],
+        }
+        report = compute_column_matches(tables, threshold=0.70, run_id="run_bio")
+        assert report.matches_found == 0
+        assert len(report.matches) == 0

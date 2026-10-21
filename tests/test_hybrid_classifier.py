@@ -145,3 +145,65 @@ class TestHybridSummaryAndSerialization:
         assert "confidence" in d
         assert "method" in d
         assert "review_required" in d
+
+
+# ── End-to-end Column Types Run with Rich Metadata ────────────────────────────
+
+class TestColumnTypesAgentIntegration:
+    """Verify intake.column_types.run() generates both simplified and rich reports."""
+
+    def test_run_generates_both_reports(self, tmp_path) -> None:
+        import csv
+        from contracts.agent import RunContext
+        from contracts.common import load
+        from contracts.intake import ColumnTypesReport
+        from contracts.proposals.semantic_contracts import SemanticMetadata
+        from intake.column_types import run as column_types_run
+
+        tables_dir = tmp_path / "tables"
+        tables_dir.mkdir()
+
+        # Create a sample orders CSV
+        orders_csv = tables_dir / "orders.csv"
+        with open(orders_csv, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["order_id", "customer_id", "order_status", "price", "order_purchase_timestamp"])
+            writer.writerow(["ord_001", "cust_123", "delivered", "49.90", "2024-01-15 10:30:00"])
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        ctx = RunContext(
+            run_id="test_hybrid_run",
+            agent="column_types",
+            inputs={"tables": tables_dir},
+            output_dir=output_dir,
+            params={},
+            journal=tmp_path / "audit.jsonl",
+        )
+
+        result = column_types_run(ctx)
+        assert result.status.value == "success"
+        assert "report" in result.outputs
+
+        # 1. Check standard ColumnTypesReport
+        std_report = load(ColumnTypesReport, result.outputs["report"])
+        assert len(std_report.columns) == 5
+        assert std_report.model.startswith("hybrid@")
+
+        # 2. Check rich SemanticMetadata report
+        assert "semantic_metadata" in result.outputs
+        rich_path = result.outputs["semantic_metadata"]
+        assert rich_path.exists()
+
+        rich_report = load(SemanticMetadata, rich_path)
+        assert rich_report.total_columns == 5
+        assert rich_report.classified_columns == 5
+        assert rich_report.unknown_columns == 0
+
+        # Verify that specific rich taxonomy types are preserved (PRICE not collapsed to AMOUNT)
+        col_types = {c.column_name: c.semantic_type for c in rich_report.columns}
+        assert col_types["order_id"] in ("ORDER_ID", "SYSTEM_ID")
+        assert col_types["customer_id"] == "PERSON_ID"
+        assert col_types["price"] == "PRICE"
+        assert col_types["order_status"] == "STATUS"
