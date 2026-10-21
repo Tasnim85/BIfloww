@@ -1,0 +1,2618 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "BIFlow API — Auditor & BO4-12",
+  "description": "\nTasnim's part of BIFlow, over HTTP.\n\n* **BO4-12** — is a comparison honest? 5 checks, a justified fix, the user's decision.\n* **BO3 Auditor** — SHAP explanations of anomalies, the append-only audit journal (hash chain),\n  drift monitoring, and the *why?* agent (LLM + read-only tools, every number fact-checked).\n\nEvery response is a contract of `contracts/` (version in `/health`).\n",
+  "version": "1.6"
+ },
+ "paths": {
+  "/api/runs": {
+   "get": {
+    "tags": [
+     "runs"
+    ],
+    "summary": "List Runs",
+    "operationId": "list_runs_api_runs_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/RunInfo"
+         },
+         "type": "array",
+         "title": "Response List Runs Api Runs Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/datasets": {
+   "get": {
+    "tags": [
+     "runs"
+    ],
+    "summary": "Datasets",
+    "description": "Runs whose data can answer a NEW question (POST /comparisons): coverage profile,\nwarehouse and catalog present. Custom runs (custom_*) reuse another run's data: left out.",
+    "operationId": "datasets_api_datasets_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/Dataset"
+         },
+         "type": "array",
+         "title": "Response Datasets Api Datasets Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}": {
+   "get": {
+    "tags": [
+     "runs"
+    ],
+    "summary": "Run Summary",
+    "description": "Everything the result screen needs: question, BO4-12 verdict, which periods the\ndashboard uses, integrity of the journal, anomalies, drift.",
+    "operationId": "run_summary_api_runs__run_id__get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "lang",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "fr",
+          "en"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French.",
+       "title": "Lang"
+      },
+      "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French."
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunSummary"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/comparison": {
+   "get": {
+    "tags": [
+     "BO4-12 comparisons"
+    ],
+    "summary": "Comparison",
+    "operationId": "comparison_api_runs__run_id__comparison_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "lang",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "fr",
+          "en"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French.",
+       "title": "Lang"
+      },
+      "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French."
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComparisonReport"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/comparison/decision": {
+   "post": {
+    "tags": [
+     "BO4-12 comparisons"
+    ],
+    "summary": "Decide",
+    "description": "The user accepts a fix, keeps the comparison as asked (rejected), or goes back to\npending. Written in the audit journal. Nothing is applied without it.",
+    "operationId": "decide_api_runs__run_id__comparison_decision_post",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "lang",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "fr",
+          "en"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French.",
+       "title": "Lang"
+      },
+      "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French."
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Decision"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ComparisonReport"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/comparisons": {
+   "post": {
+    "tags": [
+     "BO4-12 comparisons"
+    ],
+    "summary": "New Comparison",
+    "description": "Run the real BO4-12 agent on a new question, on the data of an existing run.\nCreates a new run custom_<id> (logged in the UI journal, never in the real one).",
+    "operationId": "new_comparison_api_comparisons_post",
+    "parameters": [
+     {
+      "name": "lang",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "fr",
+          "en"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French.",
+       "title": "Lang"
+      },
+      "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French."
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NewComparison"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NewComparisonResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/dashboard": {
+   "get": {
+    "tags": [
+     "BO4-12 comparisons"
+    ],
+    "summary": "Dashboard",
+    "description": "The KPI by the first requested dimension, for the periods the user's decision fixes.\n409 while a blocked comparison waits for the user's decision.",
+    "operationId": "dashboard_api_runs__run_id__dashboard_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 100,
+       "minimum": 1,
+       "default": 10,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/KpiBreakdown"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/explanations": {
+   "get": {
+    "tags": [
+     "BO3 auditor"
+    ],
+    "summary": "Explanations",
+    "operationId": "explanations_api_runs__run_id__explanations_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "anomalies_only",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": true,
+       "title": "Anomalies Only"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 20,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "lang",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "fr",
+          "en"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French.",
+       "title": "Lang"
+      },
+      "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French."
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ExplanationPage"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/explanations/{row_key}": {
+   "get": {
+    "tags": [
+     "BO3 auditor"
+    ],
+    "summary": "Explanation",
+    "operationId": "explanation_api_runs__run_id__explanations__row_key__get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "row_key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Row Key"
+      }
+     },
+     {
+      "name": "lang",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "fr",
+          "en"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French.",
+       "title": "Lang"
+      },
+      "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French."
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnomalyExplanation"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/why": {
+   "post": {
+    "tags": [
+     "BO3 auditor"
+    ],
+    "summary": "Why",
+    "description": "The why? agent: LLM + read-only tools. Every number and citation is checked; if the\nLLM fails, a deterministic answer from the journal is returned (source = 'template').\nAnswers in body.lang, or else in the language of the question (detected).",
+    "operationId": "why_api_runs__run_id__why_post",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WhyQuestion"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WhyAnswer"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/journal": {
+   "get": {
+    "tags": [
+     "BO3 audit journal"
+    ],
+    "summary": "Run Journal",
+    "description": "Decisions of this run, oldest first. include_llm adds the LLM calls and why? answers.",
+    "operationId": "run_journal_api_runs__run_id__journal_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "include_llm",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Include Llm"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/JournalEntry"
+         },
+         "title": "Response Run Journal Api Runs  Run Id  Journal Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/journals": {
+   "get": {
+    "tags": [
+     "BO3 audit journal"
+    ],
+    "summary": "List Journals",
+    "operationId": "list_journals_api_journals_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/JournalInfo"
+         },
+         "type": "array",
+         "title": "Response List Journals Api Journals Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/journals/{journal_id}/entries": {
+   "get": {
+    "tags": [
+     "BO3 audit journal"
+    ],
+    "summary": "Journal Entries",
+    "operationId": "journal_entries_api_journals__journal_id__entries_get",
+    "parameters": [
+     {
+      "name": "journal_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^(demo|drift|clinics|ui|real)$",
+       "title": "Journal Id"
+      }
+     },
+     {
+      "name": "run_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "agent",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Agent"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 5000,
+       "minimum": 1,
+       "default": 500,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/JournalEntry"
+         },
+         "title": "Response Journal Entries Api Journals  Journal Id  Entries Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/journals/{journal_id}/verify": {
+   "get": {
+    "tags": [
+     "BO3 audit journal"
+    ],
+    "summary": "Journal Verify",
+    "description": "Recompute the whole hash chain: any modified or deleted entry is found.",
+    "operationId": "journal_verify_api_journals__journal_id__verify_get",
+    "parameters": [
+     {
+      "name": "journal_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^(demo|drift|clinics|ui|real)$",
+       "title": "Journal Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntegrityReport"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/drift": {
+   "get": {
+    "tags": [
+     "BO3 drift"
+    ],
+    "summary": "Run Drift",
+    "operationId": "run_drift_api_runs__run_id__drift_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "lang",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "fr",
+          "en"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French.",
+       "title": "Lang"
+      },
+      "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French."
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DriftReport"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/drift": {
+   "get": {
+    "tags": [
+     "BO3 drift"
+    ],
+    "summary": "All Drift",
+    "description": "Drift reports of every monitored run (reports 'not_available' are left out).",
+    "operationId": "all_drift_api_drift_get",
+    "parameters": [
+     {
+      "name": "lang",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "fr",
+          "en"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French.",
+       "title": "Lang"
+      },
+      "description": "Language of the texts (fr / en). Default: the Accept-Language header, else French."
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/DriftReport"
+         },
+         "title": "Response All Drift Api Drift Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/health": {
+   "get": {
+    "tags": [
+     "general"
+    ],
+    "summary": "Health",
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Health"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AnalysisRequest": {
+    "properties": {
+     "contract_version": {
+      "type": "string",
+      "title": "Contract Version",
+      "default": "1.6"
+     },
+     "question": {
+      "type": "string",
+      "title": "Question"
+     },
+     "metric": {
+      "type": "string",
+      "title": "Metric"
+     },
+     "dimensions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Dimensions"
+     },
+     "period": {
+      "$ref": "#/components/schemas/Period"
+     },
+     "compare_to": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "filters": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Filters"
+     },
+     "confidence": {
+      "type": "number",
+      "title": "Confidence",
+      "default": 1.0
+     },
+     "matched_terms": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "type": "object",
+      "title": "Matched Terms"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "contract_version",
+     "question",
+     "metric",
+     "dimensions",
+     "period",
+     "compare_to",
+     "filters",
+     "confidence",
+     "matched_terms"
+    ],
+    "title": "AnalysisRequest",
+    "description": "Sarra's question turned into something a program can compute."
+   },
+   "AnomalyExplanation": {
+    "properties": {
+     "row_key": {
+      "type": "string",
+      "title": "Row Key"
+     },
+     "is_anomaly": {
+      "type": "boolean",
+      "title": "Is Anomaly"
+     },
+     "anomaly_score": {
+      "type": "number",
+      "title": "Anomaly Score"
+     },
+     "base_value": {
+      "type": "number",
+      "title": "Base Value"
+     },
+     "model_output": {
+      "type": "number",
+      "title": "Model Output"
+     },
+     "contributions": {
+      "items": {
+       "$ref": "#/components/schemas/FeatureContribution"
+      },
+      "type": "array",
+      "title": "Contributions"
+     },
+     "narrative": {
+      "type": "string",
+      "title": "Narrative"
+     },
+     "narrative_parts": {
+      "items": {
+       "$ref": "#/components/schemas/Msg"
+      },
+      "type": "array",
+      "title": "Narrative Parts"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "row_key",
+     "is_anomaly",
+     "anomaly_score",
+     "base_value",
+     "model_output",
+     "contributions",
+     "narrative",
+     "narrative_parts"
+    ],
+    "title": "AnomalyExplanation"
+   },
+   "CheckKind": {
+    "type": "string",
+    "enum": [
+     "coverage",
+     "population",
+     "unit",
+     "scale",
+     "grain"
+    ],
+    "title": "CheckKind"
+   },
+   "CheckStatus": {
+    "type": "string",
+    "enum": [
+     "ok",
+     "warning",
+     "blocking"
+    ],
+    "title": "CheckStatus"
+   },
+   "ComparisonCheck": {
+    "properties": {
+     "kind": {
+      "$ref": "#/components/schemas/CheckKind"
+     },
+     "status": {
+      "$ref": "#/components/schemas/CheckStatus"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     },
+     "evidence": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Evidence"
+     },
+     "message_parts": {
+      "items": {
+       "$ref": "#/components/schemas/Msg"
+      },
+      "type": "array",
+      "title": "Message Parts"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "kind",
+     "status",
+     "message",
+     "evidence",
+     "message_parts"
+    ],
+    "title": "ComparisonCheck"
+   },
+   "ComparisonReport": {
+    "properties": {
+     "contract_version": {
+      "type": "string",
+      "title": "Contract Version",
+      "default": "1.6"
+     },
+     "has_comparison": {
+      "type": "boolean",
+      "title": "Has Comparison"
+     },
+     "rules_version": {
+      "type": "string",
+      "title": "Rules Version",
+      "default": ""
+     },
+     "summary": {
+      "type": "string",
+      "title": "Summary",
+      "default": ""
+     },
+     "summary_source": {
+      "type": "string",
+      "title": "Summary Source",
+      "default": "template"
+     },
+     "summary_parts": {
+      "items": {
+       "$ref": "#/components/schemas/Msg"
+      },
+      "type": "array",
+      "title": "Summary Parts"
+     },
+     "summary_lang": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Summary Lang"
+     },
+     "checks": {
+      "items": {
+       "$ref": "#/components/schemas/ComparisonCheck"
+      },
+      "type": "array",
+      "title": "Checks"
+     },
+     "proposed_fix": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ProposedFix"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "alternatives": {
+      "items": {
+       "$ref": "#/components/schemas/ProposedFix"
+      },
+      "type": "array",
+      "title": "Alternatives"
+     },
+     "user_decision": {
+      "$ref": "#/components/schemas/UserDecision",
+      "default": "pending"
+     },
+     "chosen_fix": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/FixMethod"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "contract_version",
+     "has_comparison",
+     "rules_version",
+     "summary",
+     "summary_source",
+     "summary_parts",
+     "summary_lang",
+     "checks",
+     "proposed_fix",
+     "alternatives",
+     "user_decision",
+     "chosen_fix"
+    ],
+    "title": "ComparisonReport"
+   },
+   "DashboardState": {
+    "properties": {
+     "periods_source": {
+      "type": "string",
+      "title": "Periods Source"
+     },
+     "period": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "compare_to": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "periods_source",
+     "period",
+     "compare_to"
+    ],
+    "title": "DashboardState"
+   },
+   "Dataset": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "first_day": {
+      "type": "string",
+      "title": "First Day"
+     },
+     "last_day": {
+      "type": "string",
+      "title": "Last Day"
+     },
+     "kpis": {
+      "items": {
+       "$ref": "#/components/schemas/DatasetKpi"
+      },
+      "type": "array",
+      "title": "Kpis"
+     },
+     "dimensions": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "type": "object",
+      "title": "Dimensions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "first_day",
+     "last_day",
+     "kpis",
+     "dimensions"
+    ],
+    "title": "Dataset",
+    "description": "A run whose data (coverage profile + warehouse + catalog) can answer new questions."
+   },
+   "DatasetKpi": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "ref": {
+      "type": "string",
+      "title": "Ref"
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "allowed_dimensions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Allowed Dimensions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "ref",
+     "unit",
+     "description",
+     "allowed_dimensions"
+    ],
+    "title": "DatasetKpi"
+   },
+   "Decision": {
+    "properties": {
+     "decision": {
+      "$ref": "#/components/schemas/UserDecision"
+     },
+     "chosen_fix": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/FixMethod"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only with 'accepted'. Default: the recommended fix."
+     }
+    },
+    "type": "object",
+    "required": [
+     "decision"
+    ],
+    "title": "Decision"
+   },
+   "DriftReport": {
+    "properties": {
+     "contract_version": {
+      "type": "string",
+      "title": "Contract Version",
+      "default": "1.6"
+     },
+     "reference_runs": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Reference Runs"
+     },
+     "current_run": {
+      "type": "string",
+      "title": "Current Run"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "input_checks": {
+      "items": {
+       "$ref": "#/components/schemas/InputDriftCheck"
+      },
+      "type": "array",
+      "title": "Input Checks"
+     },
+     "metric_checks": {
+      "items": {
+       "$ref": "#/components/schemas/MetricDriftCheck"
+      },
+      "type": "array",
+      "title": "Metric Checks"
+     },
+     "flagged_agents": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Flagged Agents"
+     },
+     "narrative": {
+      "type": "string",
+      "title": "Narrative"
+     },
+     "narrative_parts": {
+      "items": {
+       "$ref": "#/components/schemas/Msg"
+      },
+      "type": "array",
+      "title": "Narrative Parts"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "contract_version",
+     "reference_runs",
+     "current_run",
+     "status",
+     "input_checks",
+     "metric_checks",
+     "flagged_agents",
+     "narrative",
+     "narrative_parts"
+    ],
+    "title": "DriftReport"
+   },
+   "ExplanationPage": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "model_version": {
+      "type": "string",
+      "title": "Model Version"
+     },
+     "explainer": {
+      "type": "string",
+      "title": "Explainer"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "offset": {
+      "type": "integer",
+      "title": "Offset"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AnomalyExplanation"
+      },
+      "type": "array",
+      "title": "Items"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "model_version",
+     "explainer",
+     "total",
+     "offset",
+     "items"
+    ],
+    "title": "ExplanationPage"
+   },
+   "FeatureContribution": {
+    "properties": {
+     "feature": {
+      "type": "string",
+      "title": "Feature"
+     },
+     "value": {
+      "type": "number",
+      "title": "Value"
+     },
+     "shap_value": {
+      "type": "number",
+      "title": "Shap Value"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "feature",
+     "value",
+     "shap_value"
+    ],
+    "title": "FeatureContribution"
+   },
+   "FixMethod": {
+    "type": "string",
+    "enum": [
+     "same_days",
+     "per_day_average",
+     "align_population",
+     "convert_unit"
+    ],
+    "title": "FixMethod"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "Health": {
+    "properties": {
+     "status": {
+      "type": "string",
+      "title": "Status",
+      "default": "ok"
+     },
+     "contracts_version": {
+      "type": "string",
+      "title": "Contracts Version"
+     },
+     "llm": {
+      "$ref": "#/components/schemas/LlmInfo"
+     },
+     "runs": {
+      "type": "integer",
+      "title": "Runs"
+     },
+     "journals": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Journals"
+     }
+    },
+    "type": "object",
+    "required": [
+     "contracts_version",
+     "llm",
+     "runs",
+     "journals"
+    ],
+    "title": "Health"
+   },
+   "InputDriftCheck": {
+    "properties": {
+     "agent": {
+      "type": "string",
+      "title": "Agent"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "psi": {
+      "type": "number",
+      "title": "Psi"
+     },
+     "ks_pvalue": {
+      "type": "number",
+      "title": "Ks Pvalue"
+     },
+     "flagged": {
+      "type": "boolean",
+      "title": "Flagged"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "agent",
+     "name",
+     "psi",
+     "ks_pvalue",
+     "flagged"
+    ],
+    "title": "InputDriftCheck"
+   },
+   "IntegrityReport": {
+    "properties": {
+     "ok": {
+      "type": "boolean",
+      "title": "Ok"
+     },
+     "entries_checked": {
+      "type": "integer",
+      "title": "Entries Checked"
+     },
+     "first_bad_entry": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Bad Entry"
+     },
+     "problem": {
+      "type": "string",
+      "title": "Problem"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "ok",
+     "entries_checked",
+     "first_bad_entry",
+     "problem"
+    ],
+    "title": "IntegrityReport"
+   },
+   "JournalEntry": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "agent": {
+      "type": "string",
+      "title": "Agent"
+     },
+     "step": {
+      "type": "string",
+      "title": "Step"
+     },
+     "decision": {
+      "type": "string",
+      "title": "Decision"
+     },
+     "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Timestamp"
+     },
+     "inputs": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Inputs"
+     },
+     "outputs": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Outputs"
+     },
+     "rule_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rule Version"
+     },
+     "evidence": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Evidence"
+     },
+     "entry_id": {
+      "type": "integer",
+      "title": "Entry Id"
+     },
+     "prev_hash": {
+      "type": "string",
+      "title": "Prev Hash"
+     },
+     "entry_hash": {
+      "type": "string",
+      "title": "Entry Hash"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "run_id",
+     "agent",
+     "step",
+     "decision",
+     "timestamp",
+     "inputs",
+     "outputs",
+     "rule_version",
+     "evidence",
+     "entry_id",
+     "prev_hash",
+     "entry_hash"
+    ],
+    "title": "JournalEntry",
+    "description": "An AuditEvent as stored: position in the chain + hashes."
+   },
+   "JournalInfo": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "entries": {
+      "type": "integer",
+      "title": "Entries"
+     },
+     "runs": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Runs"
+     },
+     "intact": {
+      "type": "boolean",
+      "title": "Intact"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "label",
+     "entries",
+     "runs",
+     "intact"
+    ],
+    "title": "JournalInfo"
+   },
+   "KpiBreakdown": {
+    "properties": {
+     "kpi": {
+      "type": "string",
+      "title": "Kpi"
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit"
+     },
+     "dimension": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dimension"
+     },
+     "period": {
+      "$ref": "#/components/schemas/Period"
+     },
+     "compare_to": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "periods_source": {
+      "type": "string",
+      "title": "Periods Source"
+     },
+     "total_current": {
+      "type": "number",
+      "title": "Total Current"
+     },
+     "total_previous": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total Previous"
+     },
+     "change_pct": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Change Pct"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/Row"
+      },
+      "type": "array",
+      "title": "Rows"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kpi",
+     "unit",
+     "dimension",
+     "period",
+     "compare_to",
+     "periods_source",
+     "total_current",
+     "total_previous",
+     "change_pct",
+     "rows"
+    ],
+    "title": "KpiBreakdown"
+   },
+   "LlmInfo": {
+    "properties": {
+     "provider": {
+      "type": "string",
+      "title": "Provider"
+     },
+     "model": {
+      "type": "string",
+      "title": "Model"
+     },
+     "ready": {
+      "type": "boolean",
+      "title": "Ready"
+     }
+    },
+    "type": "object",
+    "required": [
+     "provider",
+     "model",
+     "ready"
+    ],
+    "title": "LlmInfo"
+   },
+   "MetricDriftCheck": {
+    "properties": {
+     "agent": {
+      "type": "string",
+      "title": "Agent"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "value": {
+      "type": "number",
+      "title": "Value"
+     },
+     "center": {
+      "type": "number",
+      "title": "Center"
+     },
+     "lower": {
+      "type": "number",
+      "title": "Lower"
+     },
+     "upper": {
+      "type": "number",
+      "title": "Upper"
+     },
+     "out_of_control": {
+      "type": "boolean",
+      "title": "Out Of Control"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "agent",
+     "name",
+     "value",
+     "center",
+     "lower",
+     "upper",
+     "out_of_control"
+    ],
+    "title": "MetricDriftCheck"
+   },
+   "Msg": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "params": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Params"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "key",
+     "params"
+    ],
+    "title": "Msg",
+    "description": "One sentence (or piece of sentence) to render in any language."
+   },
+   "NewComparison": {
+    "properties": {
+     "base_run": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$",
+      "title": "Base Run",
+      "description": "Run whose data is used"
+     },
+     "metric": {
+      "type": "string",
+      "title": "Metric",
+      "description": "KPI name in the catalog, e.g. 'Revenue'"
+     },
+     "dimensions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Dimensions",
+      "default": []
+     },
+     "filters": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Filters",
+      "default": []
+     },
+     "period": {
+      "$ref": "#/components/schemas/Period"
+     },
+     "compare_to": {
+      "$ref": "#/components/schemas/Period"
+     },
+     "question": {
+      "type": "string",
+      "title": "Question",
+      "default": "Comparison typed in the app"
+     },
+     "llm": {
+      "type": "boolean",
+      "title": "Llm",
+      "description": "Summary written by the LLM (fact-checked)",
+      "default": false
+     },
+     "lang": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "fr",
+         "en"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lang",
+      "description": "Language of the texts (default: ?lang / Accept-Language / fr)"
+     }
+    },
+    "type": "object",
+    "required": [
+     "base_run",
+     "metric",
+     "period",
+     "compare_to"
+    ],
+    "title": "NewComparison"
+   },
+   "NewComparisonResult": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "report": {
+      "$ref": "#/components/schemas/ComparisonReport"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "report"
+    ],
+    "title": "NewComparisonResult"
+   },
+   "Period": {
+    "properties": {
+     "start": {
+      "type": "string",
+      "title": "Start"
+     },
+     "end": {
+      "type": "string",
+      "title": "End"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "start",
+     "end"
+    ],
+    "title": "Period",
+    "description": "A closed date interval, both ends INCLUDED. ISO dates: 'YYYY-MM-DD'."
+   },
+   "ProposedFix": {
+    "properties": {
+     "method": {
+      "$ref": "#/components/schemas/FixMethod"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "justification": {
+      "type": "string",
+      "title": "Justification"
+     },
+     "period": {
+      "$ref": "#/components/schemas/Period"
+     },
+     "compare_to": {
+      "$ref": "#/components/schemas/Period"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     },
+     "value_current": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value Current"
+     },
+     "value_previous": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value Previous"
+     },
+     "change_pct": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Change Pct"
+     },
+     "description_parts": {
+      "items": {
+       "$ref": "#/components/schemas/Msg"
+      },
+      "type": "array",
+      "title": "Description Parts"
+     },
+     "justification_parts": {
+      "items": {
+       "$ref": "#/components/schemas/Msg"
+      },
+      "type": "array",
+      "title": "Justification Parts"
+     },
+     "unit_parts": {
+      "items": {
+       "$ref": "#/components/schemas/Msg"
+      },
+      "type": "array",
+      "title": "Unit Parts"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "method",
+     "description",
+     "justification",
+     "period",
+     "compare_to",
+     "unit",
+     "value_current",
+     "value_previous",
+     "change_pct",
+     "description_parts",
+     "justification_parts",
+     "unit_parts"
+    ],
+    "title": "ProposedFix"
+   },
+   "Row": {
+    "properties": {
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "current": {
+      "type": "number",
+      "title": "Current"
+     },
+     "previous": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Previous"
+     }
+    },
+    "type": "object",
+    "required": [
+     "label",
+     "current"
+    ],
+    "title": "Row"
+   },
+   "RunInfo": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "base_run": {
+      "type": "string",
+      "title": "Base Run"
+     },
+     "journal": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Journal"
+     },
+     "has": {
+      "additionalProperties": {
+       "type": "boolean"
+      },
+      "type": "object",
+      "title": "Has"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "base_run",
+     "journal",
+     "has"
+    ],
+    "title": "RunInfo"
+   },
+   "RunSummary": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "base_run": {
+      "type": "string",
+      "title": "Base Run"
+     },
+     "journal": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Journal"
+     },
+     "request": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AnalysisRequest"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "comparison": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ComparisonReport"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "dashboard": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/DashboardState"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "integrity": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/IntegrityReport"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "anomalies": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Anomalies"
+     },
+     "drift_status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Drift Status"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "base_run",
+     "journal",
+     "request",
+     "comparison",
+     "dashboard",
+     "integrity",
+     "anomalies",
+     "drift_status"
+    ],
+    "title": "RunSummary",
+    "description": "Everything the result screen needs in ONE call."
+   },
+   "UserDecision": {
+    "type": "string",
+    "enum": [
+     "pending",
+     "accepted",
+     "rejected"
+    ],
+    "title": "UserDecision"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "WhyAnswer": {
+    "properties": {
+     "contract_version": {
+      "type": "string",
+      "title": "Contract Version",
+      "default": "1.6"
+     },
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "question": {
+      "type": "string",
+      "title": "Question"
+     },
+     "answer": {
+      "type": "string",
+      "title": "Answer"
+     },
+     "citations": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "Citations"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "verified": {
+      "type": "boolean",
+      "title": "Verified"
+     },
+     "tool_calls": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Tool Calls"
+     },
+     "rejected": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Rejected"
+     },
+     "lang": {
+      "type": "string",
+      "title": "Lang",
+      "default": "fr"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "contract_version",
+     "run_id",
+     "question",
+     "answer",
+     "citations",
+     "source",
+     "verified",
+     "tool_calls",
+     "rejected",
+     "lang"
+    ],
+    "title": "WhyAnswer",
+    "description": "Answer of the \"why?\" agent (auditor/why.py). Read by the API / app."
+   },
+   "WhyQuestion": {
+    "properties": {
+     "question": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 3,
+      "title": "Question"
+     },
+     "lang": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "fr",
+         "en"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lang",
+      "description": "Language of the answer (default: the question's)"
+     }
+    },
+    "type": "object",
+    "required": [
+     "question"
+    ],
+    "title": "WhyQuestion"
+   }
+  }
+ }
+}

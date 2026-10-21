@@ -7,7 +7,9 @@ hand-made input file at that path to test without waiting for the others.
 
 Input reference formats:
     "<step>.<output key>"     an output of another step, e.g. "etl.warehouse"
-    "static:<path>"           a file versioned in the repo, e.g. "static:kpi/catalog.yaml"
+    "static:<path>"           a file versioned in the repo, e.g. "static:kpi/catalog.yaml".
+                              A run may carry its own copy in runs/<run_id>/static/<path>
+                              (another dataset with another catalog): that copy wins.
 """
 from graphlib import TopologicalSorter
 from pathlib import Path
@@ -126,7 +128,9 @@ def resolve(ref: str, run_id: str, runs_root: Path = RUNS_ROOT,
             repo_root: Path = REPO_ROOT) -> Path:
     """Turn an input reference into a real path."""
     if ref.startswith("static:"):
-        return Path(repo_root) / ref.removeprefix("static:")
+        rel = ref.removeprefix("static:")
+        own = Path(runs_root) / run_id / "static" / rel          # this run's own copy, if any
+        return own if own.exists() else Path(repo_root) / rel
     step, key = ref.split(".", 1)
     return output_path(run_id, step, key, runs_root)
 
