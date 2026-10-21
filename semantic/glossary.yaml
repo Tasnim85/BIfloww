@@ -1,0 +1,108 @@
+# The glossary: the words a manager uses -> the names of the KPI catalog (owner: Rabeb).
+# Read by Malek's request agent. A synonym must belong to ONE term only.
+version: '1.1'
+terms:
+- term: Revenue
+  kind: metric
+  synonyms:
+  - sales
+  - turnover
+  - chiffre d'affaires
+  - CA
+  - ventes
+  definition: Money paid by customers for delivered orders.
+- term: Orders
+  kind: metric
+  synonyms:
+  - number of orders
+  - order count
+  - commandes
+  - nombre de commandes
+  definition: Distinct delivered orders.
+- term: Customers
+  kind: metric
+  synonyms:
+  - number of customers
+  - buyers
+  - clients
+  - nombre de clients
+  - acheteurs
+  definition: Distinct customers who paid for a delivered order.
+- term: ItemsSold
+  kind: metric
+  synonyms:
+  - items sold
+  - units sold
+  - products sold
+  - articles vendus
+  - quantité vendue
+  - nombre d'articles
+  definition: Items sold in delivered orders.
+- term: Freight
+  kind: metric
+  synonyms:
+  - shipping cost
+  - delivery cost
+  - frais de port
+  - frais de livraison
+  - coût de transport
+  definition: Shipping cost charged for the items of delivered orders.
+- term: AverageBasket
+  kind: metric
+  synonyms:
+  - average basket
+  - average order value
+  - AOV
+  - panier moyen
+  - montant moyen par commande
+  definition: Average amount paid per delivered order.
+- term: customer_state
+  kind: dimension
+  synonyms:
+  - state
+  - region
+  - région
+  - état
+  definition: State where the customer lives.
+- term: product_category
+  kind: dimension
+  synonyms:
+  - category
+  - product type
+  - catégorie
+  - catégorie de produit
+  - famille de produits
+  definition: Category of the product sold.
+- term: seller_state
+  kind: dimension
+  synonyms:
+  - seller state
+  - seller region
+  - état du vendeur
+  - région du vendeur
+  definition: State where the seller is located.
+- term: payment_type
+  kind: dimension
+  synonyms:
+  - payment method
+  - mode de paiement
+  - moyen de paiement
+  - type de paiement
+  definition: How the customer paid (credit card, boleto, voucher, debit card).
+- term: order_month
+  kind: dimension
+  synonyms:
+  - month
+  - monthly
+  - by month
+  - mois
+  - par mois
+  - mensuel
+  definition: Month of purchase.
+- term: last month
+  kind: time
+  synonyms:
+  - previous month
+  - mois dernier
+  - le mois précédent
+  definition: The calendar month before the current one.
