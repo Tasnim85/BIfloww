@@ -1,31 +1,40 @@
-"""tests/benchmark_request.py — BO4-06 Extended Benchmark.
+"""tests/benchmark_request.py — BO4-06 Extended Benchmark through run(ctx) Entrypoint.
 
-Evaluates 10 natural language questions against predefined expected JSON specifications,
-measuring each analytical component separately:
-  1. Top 5 / Limit constraint
-  2. Explicit day-range (du 5 au 20 juin / June 5 to June 20)
-  3. Average review score by seller (moyenne des avis par vendeur)
-  4. Typo tolerance (rewnue, catgorie)
-  5. French phrasing & accentuation (chiffre d'affaires, état, août)
-  6. Relative periods (last month / mois dernier)
-  7. Metric business synonyms (sales -> Revenue, commandes -> Orders)
-  8. Time comparisons (August vs July)
-  9. Exclusion filters (excluding SP, sauf SP)
- 10. Multi-criteria combination (FR + category + relative month + exclusion)
+Evaluates 10 natural language questions by executing the ACTUAL agent entrypoint
+`semantic.request.run(ctx)` for every question, validating that:
+  1. The agent returns AgentStatus.SUCCESS
+  2. The output artifact `analysis_request.json` is written and valid
+  3. The deserialized `AnalysisRequest` matches the predefined expected JSON specification:
+     - Top 5 / Limit constraint
+     - Explicit day-range (du 5 au 20 juin / June 5 to June 20)
+     - Average review score by seller (moyenne des avis par vendeur)
+     - Typo tolerance (rewnue, catgorie)
+     - French phrasing & accentuation (chiffre d'affaires, état, août)
+     - Relative periods (last month / mois dernier)
+     - Metric business synonyms (sales -> Revenue, commandes -> Orders)
+     - Time comparisons (August vs July)
+     - Exclusion filters (excluding SP, sauf SP)
+     - Multi-criteria combination (FR + category + relative month + exclusion)
 """
 from __future__ import annotations
 
 import json
-from pathlib import Path
+import shutil
 import sys
+import tempfile
+from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from contracts.semantic import Glossary, KpiCatalog, load_yaml
-from semantic.request import _find_dimensions, _find_filters, _find_metric, _find_period
+from contracts.agent import AgentStatus, RunContext
+from contracts.common import load, save
+from contracts.intake import Upload
+from contracts.semantic import AnalysisRequest
+from semantic.request import run as request_run
+
 CATALOG_PATH = REPO_ROOT / "kpi" / "catalog.yaml"
 GLOSSARY_PATH = REPO_ROOT / "semantic" / "glossary.yaml"
 
@@ -157,77 +166,120 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
 
 
 def run_benchmark() -> bool:
-    catalog = load_yaml(KpiCatalog, CATALOG_PATH)
-    glossary = load_yaml(Glossary, GLOSSARY_PATH)
+    tmp_root = Path(tempfile.mkdtemp(prefix="biflow_bench_"))
+    try:
+        print("\n" + "=" * 95)
+        print("BO4-06 EXTENDED BENCHMARK VIA ENTRYPOINT run(ctx) -- 10 NL Questions vs Predefined JSON Specs")
+        print("=" * 95)
 
-    print("\n" + "=" * 90)
-    print("BO4-06 EXTENDED BENCHMARK -- 10 NL Questions vs Predefined Expected JSON Specs")
-    print("=" * 90)
+        score_entrypoint = 0
+        score_metric = 0
+        score_dims = 0
+        score_period = 0
+        score_filters = 0
+        total_passed = 0
 
-    score_metric = 0
-    score_dims = 0
-    score_period = 0
-    score_filters = 0
-    total_passed = 0
+        for case in BENCHMARK_CASES:
+            cid = case["id"]
+            q = case["question"]
+            req_type = case["requirement"]
+            expected = case["expected"]
 
-    results = []
+            case_dir = tmp_root / cid
+            upload_dir = case_dir / "upload"
+            request_dir = case_dir / "request"
+            upload_dir.mkdir(parents=True)
+            request_dir.mkdir(parents=True)
 
-    for case in BENCHMARK_CASES:
-        cid = case["id"]
-        q = case["question"]
-        req_type = case["requirement"]
-        expected = case["expected"]
+            # 1. Create real Upload contract artifact
+            upload = Upload(
+                tables={"orders": "orders.csv"},
+                question=q,
+                uploaded_by="benchmark_tester",
+            )
+            upload_path = upload_dir / "upload.json"
+            save(upload, upload_path)
 
-        # Run extraction
-        q_lower = q.lower()
-        metric, conf = _find_metric(q_lower, catalog, glossary)
-        dims = _find_dimensions(q_lower, catalog, glossary)
-        period, compare_to = _find_period(q_lower)
-        filters = _find_filters(q_lower, catalog)
+            # 2. Build official RunContext for step 4 (request)
+            ctx = RunContext(
+                run_id=f"bench_{cid}",
+                agent="request",
+                output_dir=request_dir,
+                inputs={
+                    "upload": upload_path,
+                    "catalog": CATALOG_PATH,
+                    "glossary": GLOSSARY_PATH,
+                },
+            )
 
-        actual_json = {
-            "metric": metric,
-            "dimensions": dims,
-            "period": {"start": period.start, "end": period.end} if period else None,
-            "compare_to": {"start": compare_to.start, "end": compare_to.end} if compare_to else None,
-            "filters": filters,
-        }
+            # 3. Execute ACTUAL AGENT ENTRYPOINT run(ctx)
+            agent_result = request_run(ctx)
+            status_ok = (agent_result.status == AgentStatus.SUCCESS)
+            if status_ok:
+                score_entrypoint += 1
 
-        # Check each component
-        m_ok = (actual_json["metric"] == expected["metric"])
-        d_ok = (set(actual_json["dimensions"]) == set(expected["dimensions"]))
-        p_ok = (actual_json["period"] == expected["period"] and actual_json["compare_to"] == expected["compare_to"])
-        f_ok = (set(actual_json["filters"]) == set(expected["filters"]))
+            # 4. Load the written AnalysisRequest contract artifact
+            out_file = request_dir / "analysis_request.json"
+            assert out_file.exists(), f"Agent did not produce output artifact at {out_file}"
+            actual_request = load(AnalysisRequest, out_file)
 
-        if m_ok: score_metric += 1
-        if d_ok: score_dims += 1
-        if p_ok: score_period += 1
-        if f_ok: score_filters += 1
+            actual_json = {
+                "metric": actual_request.metric,
+                "dimensions": actual_request.dimensions,
+                "period": {
+                    "start": actual_request.period.start,
+                    "end": actual_request.period.end,
+                } if actual_request.period else None,
+                "compare_to": {
+                    "start": actual_request.compare_to.start,
+                    "end": actual_request.compare_to.end,
+                } if actual_request.compare_to else None,
+                "filters": actual_request.filters,
+            }
 
-        all_ok = m_ok and d_ok and p_ok and f_ok
-        if all_ok: total_passed += 1
+            # 5. Check each analytical component
+            m_ok = (actual_json["metric"] == expected["metric"])
+            d_ok = (set(actual_json["dimensions"]) == set(expected["dimensions"]))
+            p_ok = (
+                actual_json["period"] == expected["period"] and
+                actual_json["compare_to"] == expected["compare_to"]
+            )
+            f_ok = (set(actual_json["filters"]) == set(expected["filters"]))
 
-        status_str = "PASS" if all_ok else "FAIL"
-        print(f"\n[{status_str}] {cid} ({req_type})")
-        print(f"     Question  : \"{q}\"")
-        print(f"     Extracted : {json.dumps(actual_json, ensure_ascii=False)}")
-        print(f"     Expected  : {json.dumps(expected, ensure_ascii=False)}")
-        print(f"     Sub-checks: metric={'OK' if m_ok else 'FAIL'}, dims={'OK' if d_ok else 'FAIL'}, "
-              f"period={'OK' if p_ok else 'FAIL'}, filters={'OK' if f_ok else 'FAIL'}")
+            if m_ok: score_metric += 1
+            if d_ok: score_dims += 1
+            if p_ok: score_period += 1
+            if f_ok: score_filters += 1
 
-    n = len(BENCHMARK_CASES)
-    print("\n" + "=" * 90)
-    print(f"BENCHMARK COMPONENT ACCURACY SUMMARY (N={n})")
-    print("-" * 90)
-    print(f"  * Metrics Extraction    : {score_metric}/{n} ({score_metric/n*100:.1f}%)")
-    print(f"  * Exact Dimensions Match: {score_dims}/{n} ({score_dims/n*100:.1f}%)")
-    print(f"  * Periods & Comparisons : {score_period}/{n} ({score_period/n*100:.1f}%)")
-    print(f"  * Filters & Constraints : {score_filters}/{n} ({score_filters/n*100:.1f}%)")
-    print("-" * 90)
-    print(f"  GLOBAL FULL ACCURACY    : {total_passed}/{n} ({total_passed/n*100:.1f}%)")
-    print("=" * 90 + "\n")
+            all_ok = status_ok and m_ok and d_ok and p_ok and f_ok
+            if all_ok: total_passed += 1
 
-    return total_passed == n
+            status_str = "PASS" if all_ok else "FAIL"
+            print(f"\n[{status_str}] {cid} ({req_type})")
+            print(f"     Question  : \"{q}\"")
+            print(f"     Entrypoint: {agent_result.status.value} (msg: {agent_result.message[:65]}...)")
+            print(f"     Artifact  : {json.dumps(actual_json, ensure_ascii=False)}")
+            print(f"     Expected  : {json.dumps(expected, ensure_ascii=False)}")
+            print(f"     Sub-checks: entrypoint={'OK' if status_ok else 'FAIL'}, "
+                  f"metric={'OK' if m_ok else 'FAIL'}, dims={'OK' if d_ok else 'FAIL'}, "
+                  f"period={'OK' if p_ok else 'FAIL'}, filters={'OK' if f_ok else 'FAIL'}")
+
+        n = len(BENCHMARK_CASES)
+        print("\n" + "=" * 95)
+        print(f"BENCHMARK COMPONENT ACCURACY SUMMARY (N={n})")
+        print("-" * 95)
+        print(f"  * Entrypoint run(ctx) Success : {score_entrypoint}/{n} ({score_entrypoint/n*100:.1f}%)")
+        print(f"  * Metrics Extraction          : {score_metric}/{n} ({score_metric/n*100:.1f}%)")
+        print(f"  * Exact Dimensions Match      : {score_dims}/{n} ({score_dims/n*100:.1f}%)")
+        print(f"  * Periods & Comparisons       : {score_period}/{n} ({score_period/n*100:.1f}%)")
+        print(f"  * Filters & Constraints       : {score_filters}/{n} ({score_filters/n*100:.1f}%)")
+        print("-" * 95)
+        print(f"  GLOBAL FULL ACCURACY          : {total_passed}/{n} ({total_passed/n*100:.1f}%)")
+        print("=" * 95 + "\n")
+
+        return total_passed == n
+    finally:
+        shutil.rmtree(tmp_root, ignore_errors=True)
 
 
 if __name__ == "__main__":

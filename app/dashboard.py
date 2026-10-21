@@ -4,15 +4,13 @@ Reads the analysis result and comparison report, picks the best chart type
 for each metric/dimension combination, and writes a DashboardSpec contract.
 
 Chart selection rules (automatic):
-  - has comparison          -> bar  (color=period to show 2 bars side by side)
-  - time dimension          -> line
-  - 2+ dimensions           -> bar  (faceted; heatmap not in ChartType enum)
-  - 1 dimension, numeric    -> bar
   - no dimension            -> kpi_card
+  - 3+ dimensions           -> table
+  - time dimension          -> line
+  - 2 dimensions            -> bar (grouped/faceted: x=dim1, color=dim2)
+  - comparison              -> bar (x=dim1, color=period to show periods side by side)
+  - 1 dimension, categorical-> bar
   - comparison with warnings -> bar + warning strings in DashboardSpec.warnings
-
-FIX (audit 2026-10-21): replaced non-existent Panel/Warning imports with the
-real contracts: ChartSpec and DashboardSpec.warnings: list[str].
 """
 from __future__ import annotations
 
@@ -40,9 +38,11 @@ def _pick_chart(request: AnalysisRequest, has_comparison: bool) -> ChartType:
 
     if not dims:
         return ChartType.KPI_CARD
+    if len(dims) >= 3:
+        return ChartType.TABLE
     if is_time:
         return ChartType.LINE
-    # bar works for single/multi dim and for comparisons (color=period)
+    # Bar chart handles single/multi-dimensions (grouped via color) and comparisons
     return ChartType.BAR
 
 
@@ -78,6 +78,22 @@ def run(ctx: RunContext) -> AgentResult:
     chart_type = _pick_chart(request, has_comparison)
     warnings = _extract_warnings(comparisons)
 
+    # Determine dimensions binding:
+    # x = primary dimension
+    # color = comparison period OR secondary dimension (grouped bar)
+    x_col = request.dimensions[0] if request.dimensions else None
+    color_col = None
+    if has_comparison:
+        color_col = "period"
+    elif len(request.dimensions) > 1:
+        color_col = request.dimensions[1]
+
+    reason_desc = (
+        "comparison side-by-side" if has_comparison
+        else f"grouped {chart_type.value} across {', '.join(request.dimensions)}" if color_col
+        else f"{chart_type.value} for {request.dimensions}"
+    )
+
     # Primary chart: the main metric/dimension view
     charts: list[ChartSpec] = [
         ChartSpec(
@@ -85,13 +101,10 @@ def run(ctx: RunContext) -> AgentResult:
             chart_type=chart_type,
             title=f"{request.metric} -- {', '.join(request.dimensions) or 'Overall'}",
             data_file=str(ctx.inputs.get("data", "")),
-            x=request.dimensions[0] if request.dimensions else None,
+            x=x_col,
             y=request.metric.lower(),
-            color="period" if has_comparison else None,
-            reason=(
-                f"Automatic selection: {'comparison' if has_comparison else chart_type.value} "
-                f"for dims={request.dimensions}"
-            ),
+            color=color_col,
+            reason=f"Automatic selection: {reason_desc}",
         )
     ]
 
@@ -121,10 +134,18 @@ def run(ctx: RunContext) -> AgentResult:
 
     ctx.log(
         "build_spec", "SUCCESS",
+        inputs=[
+            str(ctx.inputs["request"]),
+            str(ctx.inputs["result"]),
+            str(ctx.inputs["comparisons"]),
+        ],
         outputs=[str(spec_path)],
+        rule_version="dashboard:spec@1.1",
         evidence={
             "chart_type": chart_type.value,
-            "charts": len(charts),
+            "charts": [c.chart_type.value for c in charts],
+            "x": x_col,
+            "color": color_col,
             "warnings": len(warnings),
         },
     )

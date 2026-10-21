@@ -76,12 +76,20 @@ class TestPickChart:
         assert _pick_chart(req, has_comparison=True) == ChartType.BAR
 
     def test_multiple_dims_gives_bar(self):
-        """T-DASH-05: multiple dims -> bar (faceted)."""
+        """T-DASH-05: 2 dims -> bar (grouped/faceted via color)."""
         from app.dashboard import _pick_chart
         req = _make_request(
             dimensions=["customer_state", "payment_type"], compare_to=None
         )
         assert _pick_chart(req, has_comparison=False) == ChartType.BAR
+
+    def test_three_or_more_dims_gives_table(self):
+        """T-DASH-05b: 3+ dims -> table view."""
+        from app.dashboard import _pick_chart
+        req = _make_request(
+            dimensions=["customer_state", "payment_type", "product_category"], compare_to=None
+        )
+        assert _pick_chart(req, has_comparison=False) == ChartType.TABLE
 
 
 # ---------------------------------------------------------------------------
