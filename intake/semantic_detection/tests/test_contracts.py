@@ -256,6 +256,14 @@ class TestSemanticMatch:
                 matches_found=5,  # wrong
             )
 
+    def test_c15b_empty_matches_with_nonzero_count_rejected(self):
+        """matches=[] with matches_found=99 must be rejected."""
+        with pytest.raises(ValueError, match="matches_found"):
+            SemanticMatchesReport(
+                matches=[],
+                matches_found=99,
+            )
+
     def test_c15_similarity_score_bounds(self):
         with pytest.raises(Exception):
             SemanticMatch(
