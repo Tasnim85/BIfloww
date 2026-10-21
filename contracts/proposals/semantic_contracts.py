@@ -121,8 +121,8 @@ class SemanticColumn(Contract):
                     f"Type '{self.semantic_type}' does not belong to group '{self.semantic_group}' "
                     f"(it belongs to '{real_group}')."
                 )
-        except (ImportError, FileNotFoundError):
-            pass  # If taxonomy file is not available in environment, pass
+        except (ImportError, FileNotFoundError) as exc:
+            raise RuntimeError(f"Taxonomy repository is required for validation: {exc}") from exc
         return self
 
     @field_validator("evidence")
@@ -226,7 +226,7 @@ class SemanticMatchesReport(Artifact):
 
     @model_validator(mode="after")
     def check_match_count(self) -> "SemanticMatchesReport":
-        if self.matches and self.matches_found != len(self.matches):
+        if self.matches_found != len(self.matches):
             raise ValueError(
                 f"matches_found ({self.matches_found}) != len(matches) ({len(self.matches)})"
             )

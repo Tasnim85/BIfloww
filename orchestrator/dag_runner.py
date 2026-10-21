@@ -66,6 +66,7 @@ def _execute_step(
     db: Path,
     params: dict,
     callback: ProgressCallback | None,
+    max_retries: int = 1,
 ) -> AgentResult:
     """Run one pipeline step synchronously and record its state."""
     step_def = STEPS[step_name]
@@ -103,16 +104,54 @@ def _execute_step(
             status=AgentStatus.FAILED, message=msg,
         )
     else:
-        # 2. Execution phase: any error during agent execution is FAILED
-        try:
-            result = agent_run(ctx)
-        except Exception as exc:
-            msg = f"Unhandled error in {step_name}: {exc}"
-            log.exception("Step %s failed", step_name)
+        # 2. Execution phase with retry support
+        attempt = 0
+        last_exc: Exception | None = None
+        result = None
+        while attempt <= max_retries:
+            try:
+                result = agent_run(ctx)
+                break
+            except Exception as exc:
+                last_exc = exc
+                attempt += 1
+                if attempt <= max_retries:
+                    log.warning("Step %s failed on attempt %d/%d, retrying: %s",
+                                step_name, attempt, max_retries, exc)
+
+        if result is None:
+            msg = f"Unhandled error in {step_name}: {last_exc}"
+            log.exception("Step %s failed after %d attempts", step_name, max_retries + 1)
             result = AgentResult(
                 run_id=run_id, agent=step_name,
                 status=AgentStatus.FAILED, message=msg,
             )
+
+        # 3. Output artifact validation: ensure SUCCESS actually produced declared outputs
+        if result.status == AgentStatus.SUCCESS and step_def.outputs:
+            missing_or_empty: list[str] = []
+            for out_key in step_def.outputs:
+                target_p = None
+                if out_key in result.outputs:
+                    val = result.outputs[out_key]
+                    if isinstance(val, (str, Path)):
+                        target_p = Path(val)
+                if target_p is None or not target_p.exists():
+                    target_p = Path(runs_root) / run_id / step_name / step_def.outputs[out_key]
+
+                if not target_p.exists():
+                    missing_or_empty.append(f"{out_key} (missing file)")
+                elif target_p.is_file() and target_p.stat().st_size == 0:
+                    missing_or_empty.append(f"{out_key} (empty file)")
+
+            if missing_or_empty:
+                msg = f"Step {step_name} declared SUCCESS without producing valid artifact(s): {', '.join(missing_or_empty)}"
+                log.error(msg)
+                result = AgentResult(
+                    run_id=run_id, agent=step_name,
+                    status=AgentStatus.FAILED, message=msg,
+                    outputs=result.outputs,
+                )
 
     task_status = {
         AgentStatus.SUCCESS:      TaskStatus.SUCCESS,
@@ -173,6 +212,7 @@ def run_pipeline(
 
     results: dict[str, AgentResult] = {}
     failed_steps: set[str] = set()
+    blocked_or_failed_steps: set[str] = set()
 
     sorter = TopologicalSorter(dag)
     sorter.prepare()
@@ -216,17 +256,37 @@ def run_pipeline(
                             sorter.done(step_name)
                             continue
 
-                    # Check if any dependency failed
-                    if stop_on_failure and any(
-                        dep in failed_steps for dep in STEPS[step_name].depends_on
-                    ):
-                        msg = f"Skipped — upstream failure in: {STEPS[step_name].depends_on & failed_steps}"
+                    # Check if any dependency failed, was skipped, or requires human review
+                    upstream_blocked = [
+                        dep for dep in STEPS[step_name].depends_on
+                        if dep in blocked_or_failed_steps
+                    ]
+                    if stop_on_failure and upstream_blocked:
+                        needs_review_deps = [
+                            d for d in upstream_blocked
+                            if results.get(d) and results[d].status == AgentStatus.NEEDS_REVIEW
+                        ]
+                        failed_deps = [
+                            d for d in upstream_blocked
+                            if results.get(d) and results[d].status == AgentStatus.FAILED
+                        ]
+                        if needs_review_deps:
+                            msg = f"Blocked — upstream step '{needs_review_deps[0]}' requires human review (NEEDS_REVIEW)"
+                        elif failed_deps:
+                            msg = f"Skipped — upstream failure in: {set(failed_deps)}"
+                        else:
+                            msg = f"Skipped — upstream dependency '{upstream_blocked[0]}' was not successful"
+
                         log.warning("Skipping step %s: %s", step_name, msg)
                         set_done(run_id, step_name, TaskStatus.SKIPPED, msg, db=db)
                         results[step_name] = AgentResult(
                             run_id=run_id, agent=step_name,
                             status=AgentStatus.SKIPPED, message=msg,
                         )
+                        # Transitive skip: propagate blockage to all descendants
+                        blocked_or_failed_steps.add(step_name)
+                        failed_steps.add(step_name)
+
                         if callback:
                             callback(step_name, "SKIPPED", msg)
                         sorter.done(step_name)
@@ -258,6 +318,8 @@ def run_pipeline(
                 step_name = futures.pop(future)
                 result = future.result()
                 results[step_name] = result
+                if result.status != AgentStatus.SUCCESS:
+                    blocked_or_failed_steps.add(step_name)
                 if result.status == AgentStatus.FAILED:
                     failed_steps.add(step_name)
                 sorter.done(step_name)
