@@ -1,4 +1,4 @@
-# BIFlow Core Dependencies — Étape 1: Semantic Foundation
+# BIFlow Core Dependencies — Étape 1 & BO1/BO4 Foundation
 # Python >= 3.11 required (developed on Python 3.13)
 # Install with: pip install -r requirements.txt
 
@@ -9,6 +9,14 @@ pyyaml>=6.0.1
 # Data processing
 pandas>=2.0.0
 matplotlib>=3.7.0
+pyarrow>=14.0.0
+
+# ML, NLP & Embeddings (BO1-06 & BO4-06)
+sentence-transformers>=2.2.0
+scikit-learn>=1.3.0
+
+# UI & Visualization (Samar)
+streamlit>=1.28.0
 
 # Testing & Quality
 pytest>=7.4.0
