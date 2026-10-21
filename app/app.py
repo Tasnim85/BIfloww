@@ -57,11 +57,12 @@ _init_state()
 
 STEP_ORDER = execution_order()
 STATUS_ICON = {
-    "PENDING":  "⏳",
-    "RUNNING":  "🔄",
-    "SUCCESS":  "✅",
-    "FAILED":   "❌",
-    "SKIPPED":  "⏭️",
+    "PENDING":      "⏳",
+    "RUNNING":      "🔄",
+    "SUCCESS":      "✅",
+    "FAILED":       "❌",
+    "SKIPPED":      "⏭️",
+    "NEEDS_REVIEW": "⚠️",
 }
 
 
@@ -135,7 +136,7 @@ if st.session_state["run_id"]:
     st.subheader(f"Run: `{st.session_state['run_id']}`")
 
     progress = st.session_state["progress"]
-    n_done = sum(1 for v in progress.values() if v["status"] in ("SUCCESS", "FAILED", "SKIPPED"))
+    n_done = sum(1 for v in progress.values() if v["status"] in ("SUCCESS", "FAILED", "SKIPPED", "NEEDS_REVIEW"))
     total  = len(STEP_ORDER)
     st.progress(n_done / total if total else 0, text=f"Steps: {n_done}/{total}")
 
