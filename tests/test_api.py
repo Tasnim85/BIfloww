@@ -171,3 +171,13 @@ def test_demo_journals_can_be_hidden_in_production(world, monkeypatch):
     assert {j["id"] for j in c.get("/api/journals").json()} == {"ui"}       # clinics hidden
     assert c.get("/api/journals/clinics/verify").status_code == 422
     assert c.get("/health").json()["journals"] == ["ui"]
+
+
+def test_datasets_lists_the_data_that_can_answer_new_questions(world):
+    c, *_ = world
+    d = c.get("/api/datasets").json()
+    clinic = next(x for x in d if x["run_id"] == RUN)
+    assert clinic["first_day"] == "2023-10-01" and clinic["last_day"] == "2024-03-20"
+    assert clinic["kpis"][0]["name"] == "Consultation revenue" and clinic["kpis"][0]["unit"] == "TND"
+    assert "region" in clinic["dimensions"]
+    assert not any(x["run_id"].startswith("custom_") for x in d)

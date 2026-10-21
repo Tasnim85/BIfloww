@@ -41,6 +41,23 @@ class DashboardState(BaseModel):
     compare_to: Period | None
 
 
+class DatasetKpi(BaseModel):
+    name: str
+    ref: str
+    unit: str
+    description: str
+    allowed_dimensions: list[str]
+
+
+class Dataset(BaseModel):
+    """A run whose data (coverage profile + warehouse + catalog) can answer new questions."""
+    run_id: str
+    first_day: str
+    last_day: str
+    kpis: list[DatasetKpi]
+    dimensions: dict[str, str]        # name -> description
+
+
 class RunSummary(BaseModel):
     """Everything the result screen needs in ONE call."""
     run_id: str

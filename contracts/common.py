@@ -17,7 +17,10 @@ class Contract(BaseModel):
     extra="forbid": a misspelled or unknown field raises an error immediately,
     instead of silently disappearing between two agents.
     """
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid",
+                              # in API responses every field is present (defaults included): the
+                              # generated TypeScript types (web/) then mark them as required
+                              json_schema_serialization_defaults_required=True)
 
 
 class Artifact(Contract):

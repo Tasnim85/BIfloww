@@ -5,3 +5,4 @@ __pycache__/
 data/olist/
 runs/
 .env
+.env.example

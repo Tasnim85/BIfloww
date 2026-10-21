@@ -1,0 +1,548 @@
+{
+ "common": {
+  "theme": "Thème",
+  "theme_light": "Clair",
+  "theme_dark": "Sombre",
+  "theme_system": "Système",
+  "language": "Langue",
+  "lang_en": "Anglais",
+  "lang_fr": "Français",
+  "menu": "Menu",
+  "loading": "Chargement…",
+  "retry": "Réessayer",
+  "back": "Retour",
+  "close": "Fermer",
+  "or": "ou",
+  "live": "Réel",
+  "demo": "Démo",
+  "error": "Une erreur est survenue."
+ },
+ "landing": {
+  "nav": {
+   "how": "Fonctionnement",
+   "agents": "Agents",
+   "trust": "Confiance",
+   "objectives": "Objectifs",
+   "get_started": "Commencer",
+   "open_app": "Ouvrir l'app"
+  },
+  "hero": {
+   "eyebrow": "Business intelligence multi-agents autonome",
+   "title_1": "Déposez un CSV.",
+   "title_2": "Posez une question.",
+   "title_3": "Obtenez votre dashboard.",
+   "subtitle": "Six agents IA nettoient vos données, les modélisent, définissent vos KPI et construisent votre dashboard. Chaque chiffre a sa preuve, et vous pouvez toujours demander pourquoi.",
+   "cta": "Commencer gratuitement",
+   "secondary": "Voir le fonctionnement",
+   "points": {
+    "no_engineer": "Aucun data engineer requis",
+    "languages": "Français & anglais",
+    "proof": "Chaque décision journalisée"
+   }
+  },
+  "demo": {
+   "aria": "Exemple animé : une question, les agents au travail, une comparaison trompeuse détectée et la réponse honnête.",
+   "question": "Chiffre d'affaires par État : août vs juillet ?",
+   "agents_at_work": "Agents au travail",
+   "agent_profile": "Profil",
+   "agent_clean": "Nettoie",
+   "agent_model": "Modèle",
+   "agent_kpi": "KPI",
+   "agent_analyze": "Analyse",
+   "agent_check": "Vérifie",
+   "agent_audit": "Audit",
+   "waiting": "En attente de votre question…",
+   "working": "Préparation des données…",
+   "caught_title": "Comparaison trompeuse détectée",
+   "caught_text": "Les données d'août s'arrêtent le 23 : les comparer à un mois de juillet complet serait injuste.",
+   "as_asked": "tel que demandé",
+   "answer_label": "Mêmes jours (1–23), août vs juillet",
+   "verified": "Vérifié",
+   "footer": "Chiffres réels du jeu Olist · 16 décisions dans le journal d'audit"
+  },
+  "stats": {
+   "agents": {
+    "value": "6",
+    "label": "agents IA spécialisés"
+   },
+   "checks": {
+    "value": "5",
+    "label": "contrôles de comparabilité"
+   },
+   "journal": {
+    "value": "100 %",
+    "label": "des décisions journalisées"
+   },
+   "languages": {
+    "value": "2",
+    "label": "langues, clair & sombre"
+   }
+  },
+  "how": {
+   "eyebrow": "Fonctionnement",
+   "title": "Du fichier brut à l'insight fiable en trois étapes",
+   "subtitle": "Pas de SQL, pas de pipeline à construire, pas de modélisation à apprendre. Vous apportez les données et la question.",
+   "steps": {
+    "drop": {
+     "title": "Déposez votre CSV",
+     "text": "Askboard profile votre fichier, détecte les données personnelles, les valeurs manquantes et aberrantes, et le nettoie avec des règles versionnées."
+    },
+    "ask": {
+     "title": "Demandez avec vos mots",
+     "text": "« Chiffre d'affaires par État, août vs juillet ? » Les agents comprennent votre vocabulaire métier et choisissent le bon KPI."
+    },
+    "trust": {
+     "title": "Un dashboard digne de confiance",
+     "text": "Les comparaisons trompeuses sont détectées avant que vous les voyiez, et chaque chiffre remonte à sa source."
+    }
+   }
+  },
+  "agents": {
+   "eyebrow": "L'équipe derrière chaque réponse",
+   "title": "Six agents, un orchestrateur",
+   "subtitle": "Chaque agent fait un seul travail, et bien. Il écrit ses décisions dans un journal commun et passe le relais au suivant.",
+   "list": {
+    "quality": {
+     "title": "Qualité des données",
+     "text": "Profile les données, signale anomalies et données personnelles, nettoie avec un playbook versionné."
+    },
+    "etl": {
+     "title": "Data engineering",
+     "text": "Ingère et transforme le fichier en un entrepôt propre et typé."
+    },
+    "semantic": {
+     "title": "Sémantique & KPI",
+     "text": "Comprend les termes métier et définit dimensions, mesures et KPI."
+    },
+    "analyst": {
+     "title": "Analyste",
+     "text": "Calcule la réponse et trouve l'insight derrière."
+    },
+    "dashboard": {
+     "title": "Dashboards",
+     "text": "Choisit le bon graphique et refuse les comparaisons trompeuses."
+    },
+    "auditor": {
+     "title": "Auditeur & explicabilité",
+     "text": "Explique chaque décision, tient un journal infalsifiable et surveille le drift."
+    }
+   },
+   "orchestrator_title": "L'orchestrateur",
+   "orchestrator_text": "lance les agents dans le bon ordre, en parallèle quand c'est possible, et s'arrête quand un humain doit décider."
+  },
+  "trust": {
+   "eyebrow": "La confiance dès la conception",
+   "title": "Des chiffres qu'on peut questionner",
+   "subtitle": "Un dashboard n'est utile que si on peut le croire. Askboard montre son travail.",
+   "compare": {
+    "title": "Comparaisons honnêtes",
+    "text": "Périodes incomplètes, durées ou populations différentes sont détectées et une correction justifiée est proposée. Vous décidez.",
+    "asked": "Août vs juillet, tel que demandé",
+    "fixed": "Mêmes jours 1–23"
+   },
+   "explain": {
+    "title": "Décisions expliquées",
+    "text": "Pourquoi ce paiement a-t-il été signalé ? SHAP montre ce qui a poussé le modèle, en mots simples.",
+    "f1": "Montant du paiement",
+    "f2": "Nombre d'échéances"
+   },
+   "journal": {
+    "title": "Journal infalsifiable",
+    "text": "Chaque décision est chaînée par SHA-256. Modifiez une ligne et la chaîne se brise."
+   }
+  },
+  "objectives": {
+   "eyebrow": "Objectifs métier",
+   "title": "Conçu pour quatre objectifs",
+   "bo1": {
+    "title": "Insight plus rapide",
+    "text": "Des données brutes à une réponse utilisable en minutes, pas en semaines."
+   },
+   "bo2": {
+    "title": "Gouvernance automatisée",
+    "text": "Règles déterministes et supervision par agents : fini les erreurs humaines de routine."
+   },
+   "bo3": {
+    "title": "Explicabilité & audit",
+    "text": "Une justification en langage naturel et une entrée de journal pour chaque transformation et KPI."
+   },
+   "bo4": {
+    "title": "La BI pour tous",
+    "text": "Les managers obtiennent leurs dashboards sans attendre un ingénieur."
+   }
+  },
+  "cta": {
+   "title": "Prêt à interroger vos données ?",
+   "text": "Créez votre compte et lancez votre première analyse sur un jeu préparé en moins d'une minute.",
+   "button": "Créer mon compte"
+  },
+  "footer": {
+   "text": "Projet BIFlow · Askboard 2026 · English & Français"
+  }
+ },
+ "auth": {
+  "signin": "Connexion",
+  "signup": "Inscription",
+  "signout": "Se déconnecter",
+  "signin_title": "Bon retour",
+  "signin_subtitle": "Connectez-vous pour retrouver vos dashboards.",
+  "signup_title": "Créez votre compte",
+  "signup_subtitle": "Interrogez vos données avec vos propres mots.",
+  "google": "Continuer avec Google",
+  "google_off": "La connexion Google n'est pas configurée sur ce serveur.",
+  "name": "Nom complet",
+  "email": "E-mail",
+  "password": "Mot de passe",
+  "password_hint": "Au moins 8 caractères, avec une lettre et un chiffre.",
+  "submit_signin": "Se connecter",
+  "submit_signup": "Créer le compte",
+  "no_account": "Pas encore de compte ?",
+  "have_account": "Déjà un compte ?",
+  "create_one": "En créer un",
+  "signin_link": "Se connecter",
+  "captcha_notice": "Protégé par reCAPTCHA : les Règles de confidentialité et Conditions d'utilisation de Google s'appliquent.",
+  "captcha_off": "reCAPTCHA n'est pas configuré : les contrôles sont ignorés (développement uniquement).",
+  "panel_title": "Chaque chiffre, avec sa preuve.",
+  "panel_points": {
+   "p1": "Les comparaisons trompeuses détectées avant que vous les voyiez",
+   "p2": "Chaque décision expliquée et journalisée",
+   "p3": "Demandez « pourquoi ? » sur n'importe quel chiffre"
+  },
+  "errors": {
+   "invalid_credentials": "E-mail ou mot de passe incorrect.",
+   "too_many_attempts": "Trop de tentatives. Attendez une minute puis réessayez.",
+   "email_taken": "Un compte existe déjà avec cet e-mail.",
+   "invalid_form": "Vérifiez le formulaire.",
+   "captcha_missing": "Cochez la case « Je ne suis pas un robot ».",
+   "captcha_invalid": "Échec du contrôle de sécurité. Réessayez.",
+   "captcha_low_score": "Échec du contrôle de sécurité. Réessayez.",
+   "captcha_unreachable": "Le serveur n'a pas pu joindre Google pour vérifier le contrôle de sécurité (internet, pare-feu ou antivirus).",
+   "captcha_not_configured": "Contrôle de sécurité non configuré sur le serveur.",
+   "AccessDenied": "Accès refusé.",
+   "OAuthAccountNotLinked": "Cet e-mail est déjà utilisé avec une autre méthode de connexion.",
+   "default": "La connexion a échoué. Réessayez.",
+   "captcha_widget_error": "Le contrôle de sécurité n'a pas pu démarrer. Vérifiez que les clés reCAPTCHA sont de type « v2 case à cocher » et que localhost fait partie des domaines autorisés."
+  }
+ },
+ "app": {
+  "nav": {
+   "label": "Navigation principale",
+   "overview": "Vue d'ensemble",
+   "new": "Nouvelle analyse",
+   "history": "Historique",
+   "monitoring": "Audit & surveillance",
+   "open": "Ouvrir le menu",
+   "close": "Fermer le menu"
+  },
+  "side": {
+   "title": "Chaque chiffre, avec sa preuve.",
+   "text": "Réels : contrôle des comparaisons et auditeur. Autres étapes : démo jusqu'à l'intégration de chaque agent."
+  },
+  "status": {
+   "running": "En cours",
+   "needs_review": "Attend votre décision",
+   "completed": "Terminée",
+   "failed": "Échec",
+   "api_ok": "API du pipeline en ligne",
+   "api_down": "API du pipeline hors ligne",
+   "llm_ok": "LLM prêt · {model}",
+   "llm_off": "Clé LLM absente : réponses gabarit"
+  },
+  "mode": {
+   "live": "Réel",
+   "demo": "Démo"
+  },
+  "overview": {
+   "hello": "Bonjour {name}",
+   "title": "Que voulez-vous savoir aujourd'hui ?",
+   "subtitle": "Déposez un fichier, posez une question avec vos mots, et obtenez un dashboard où chaque chiffre est vérifié et expliqué.",
+   "cta": "Nouvelle analyse",
+   "stats": {
+    "total": "Analyses",
+    "review": "En attente de votre décision",
+    "done": "Terminées"
+   },
+   "recent": "Analyses récentes",
+   "see_all": "Tout voir",
+   "empty_title": "Aucune analyse pour l'instant",
+   "empty_text": "Lancez votre première analyse sur un jeu préparé : moins d'une minute.",
+   "pipeline": "Le pipeline",
+   "pipeline_text": "Les étapes réelles tournent pour de vrai ; les étapes démo sont provisoires jusqu'à ce que chaque membre branche son agent."
+  },
+  "datasets": {
+   "olist": {
+    "name": "E-commerce Olist · Brésil",
+    "text": "100 000 commandes, paiements et clients réels (2016–2018), en BRL."
+   },
+   "clinics": {
+    "name": "Réseau de cliniques · Tunisie",
+    "text": "Visites et honoraires synthétiques de 9 cliniques (2023–2024), en TND."
+   }
+  },
+  "pipeline": {
+   "title": "Pipeline",
+   "subtitle": "{live} étapes réelles sur {total}",
+   "running": "En cours…",
+   "step": "étape {n}",
+   "details": "Voir le résultat de chaque étape",
+   "compact": "Vue compacte"
+  },
+  "stages": {
+   "upload": {
+    "name": "Réception",
+    "out": "Fichier reçu.",
+    "file": "{name} : {rows} lignes, {cols} colonnes profilées dans votre navigateur.",
+    "dataset": "Jeu préparé : {name}."
+   },
+   "similarity": {
+    "name": "Détection de similarité",
+    "out": "Aucun jeu similaire : un nouveau pipeline est construit."
+   },
+   "column_types": {
+    "name": "Types sémantiques des colonnes",
+    "out": "Colonnes classées : identifiants, montants, dates, lieux.",
+    "file": "{n} colonnes classées (montant, date, identifiant, lieu…)."
+   },
+   "pii": {
+    "name": "Masquage des données personnelles",
+    "out": "Identifiants clients pseudonymisés avant toute analyse."
+   },
+   "profiling": {
+    "name": "Profilage & anomalies",
+    "out": "Valeurs manquantes, doublons et valeurs aberrantes détectés.",
+    "real": "{n} lignes anormales signalées par le profiler."
+   },
+   "cleaning": {
+    "name": "Nettoyage",
+    "out": "Playbook versionné appliqué : valeurs manquantes complétées, doublons retirés."
+   },
+   "etl": {
+    "name": "ETL & entrepôt",
+    "out": "Entrepôt construit : une table de faits et ses dimensions."
+   },
+   "request": {
+    "name": "Compréhension de la question",
+    "out": "Termes métier reliés au catalogue de KPI.",
+    "real": "Compris comme le KPI « {kpi} » par {dim}."
+   },
+   "analysis": {
+    "name": "Analyse",
+    "out": "KPI calculé pour les deux périodes."
+   },
+   "comparisons": {
+    "name": "Contrôle des comparaisons (BO4-12)",
+    "out": "5 contrôles de comparabilité.",
+    "blocked": "Trompeuse telle que demandée ({kinds}) : une correction justifiée est proposée.",
+    "warning": "Valide, avec avertissements ({kinds}).",
+    "valid": "Comparaison valide : 5 contrôles passés."
+   },
+   "dashboard": {
+    "name": "Dashboard",
+    "out": "Graphiques dessinés pour les périodes que vous validez."
+   },
+   "lineage": {
+    "name": "Lignage",
+    "out": "KPI → transformations → colonnes sources tracés."
+   },
+   "auditor": {
+    "name": "Auditeur & XAI",
+    "out": "Décisions expliquées et journalisées.",
+    "real": "{n} anomalies expliquées par SHAP · journal {intact, select, ok {intact} other {CASSÉ}} ({entries} entrées) · drift : {drift}."
+   }
+  },
+  "new": {
+   "title": "Nouvelle analyse",
+   "subtitle": "Trois étapes : votre fichier, les données qui répondent, votre question.",
+   "s1_title": "Votre fichier",
+   "s1_text": "Facultatif : déposez un CSV pour voir comment Askboard le lit.",
+   "drop": "Déposez un fichier CSV ici",
+   "drop_hint": "CSV, TSV ou TXT · jusqu'à 50 Mo · lu uniquement dans votre navigateur",
+   "browse": "Choisir un fichier",
+   "file_type": "Choisissez un fichier .csv, .tsv ou .txt.",
+   "file_big": "Fichier volumineux : seuls les 50 premiers Mo sont prévisualisés.",
+   "file_meta": "{rows} lignes · {cols} colonnes · {kb} Ko",
+   "remove_file": "Retirer le fichier",
+   "types": {
+    "number": "nombre",
+    "date": "date",
+    "text": "texte",
+    "empty": "vide"
+   },
+   "file_note": "Tant que les agents d'ingestion (réception, PII, profilage, nettoyage, ETL) ne sont pas branchés, votre fichier est profilé dans votre navigateur et l'analyse tourne sur le jeu préparé choisi ci-dessous.",
+   "s2_title": "Données qui répondent",
+   "s2_text": "Préparées par les agents données : nettoyées, modélisées, avec un catalogue de KPI.",
+   "err_datasets": "L'API du pipeline est injoignable.",
+   "s3_title": "Votre question",
+   "s3_text": "Écrivez-la avec vos mots, puis vérifiez le KPI et les périodes à comparer.",
+   "question": "Question",
+   "auto_question": "{kpi} par {dim} : {p1} vs {p2} ?",
+   "overall": "global",
+   "kpi": "KPI",
+   "dimension": "Ventilé par",
+   "period": "Période étudiée",
+   "compare_to": "Comparée à",
+   "period_hint": "Prérempli avec une question d'exemple. Changez les périodes librement : l'agent de comparaison vérifie que la comparaison est équitable.",
+   "llm": "Résumé rédigé par le LLM",
+   "llm_hint": "Chaque chiffre écrit est vérifié contre les faits ; sinon le gabarit est gardé.",
+   "run": "Lancer les agents",
+   "err_pipeline": "Le pipeline n'a pas pu répondre. L'API Python est-elle lancée ?",
+   "err_generic": "Une erreur est survenue. Réessayez.",
+   "working_title": "Les agents travaillent",
+   "working_text": "Vérification que votre comparaison est équitable, puis préparation du dashboard…"
+  },
+  "run": {
+   "not_found": "Cette analyse n'existe pas ou ne vous appartient pas.",
+   "back": "Historique",
+   "vs": "vs",
+   "failed": "Le pipeline n'a pas pu terminer cette analyse. Vérifiez que l'API Python tourne, puis relancez une analyse.",
+   "wait_pipeline": "Les résultats apparaissent à la fin du pipeline.",
+   "tabs_label": "Résultats",
+   "tabs": {
+    "dashboard": "Dashboard",
+    "checks": "Contrôles",
+    "explanations": "Explications",
+    "journal": "Journal d'audit",
+    "drift": "Drift",
+    "why": "Demander pourquoi"
+   },
+   "no_run": "Aucun résultat pour cette analyse."
+  },
+  "cmp": {
+   "source_llm": "Rédigé par le LLM, vérifié",
+   "source_template": "Gabarit déterministe",
+   "adjusted": "Comparaison ajustée appliquée",
+   "review": "Revoir ce choix",
+   "kept": "Comparaison gardée telle que demandée, malgré l'avertissement",
+   "valid": "Comparaison valide",
+   "misleading": "Cette comparaison est trompeuse telle que demandée",
+   "adjustable": "Un ajustement est possible",
+   "recommended": "Recommandée",
+   "alternative": "Alternative",
+   "accept": "Utiliser cette comparaison",
+   "as_asked": "Telle que demandée",
+   "as_asked_text": "Afficher la comparaison demandée, en sachant qu'elle est biaisée.",
+   "keep": "Garder telle quelle",
+   "journaled": "Votre choix est inscrit dans le journal d'audit. Rien n'est appliqué sans lui.",
+   "waiting_title": "En attente de votre décision",
+   "waiting_text": "Le dashboard n'est pas dessiné tant que la comparaison est trompeuse. Choisissez une option ci-dessus.",
+   "chart_error": "Le dashboard n'a pas pu être chargé.",
+   "change": "Évolution",
+   "previous": "Période comparée",
+   "current": "Période étudiée",
+   "chart_note": "{kpi} par {dim} · calculé en SQL depuis le catalogue de KPI · périodes : {source}. Graphique provisoire : l'agent dashboard de Samar le remplace.",
+   "more": "Voir l'explication complète",
+   "less": "Réduire"
+  },
+  "checks": {
+   "kind": {
+    "coverage": "Couverture",
+    "population": "Population",
+    "unit": "Unité",
+    "scale": "Échelle",
+    "grain": "Niveau d'agrégation"
+   },
+   "status": {
+    "ok": "OK",
+    "warning": "Avertissement",
+    "blocking": "Bloquant"
+   },
+   "what": {
+    "coverage": "Les deux périodes sont-elles complètes ?",
+    "population": "Même périmètre des deux côtés ?",
+    "unit": "Même unité ?",
+    "scale": "Même durée, pour des totaux ?",
+    "grain": "Même sens de ligne, sans doublons ?"
+   },
+   "evidence": "Preuves"
+  },
+  "shap": {
+   "none": "Aucune explication SHAP pour ces données.",
+   "intro": "Pourquoi le profiler a-t-il signalé ces lignes ? Chaque barre montre combien une variable a poussé le modèle vers l'anomalie (ambre) ou vers la normale (teal).",
+   "count": "{n} anomalies · {model}",
+   "error": "Les explications n'ont pas pu être chargées.",
+   "score": "score",
+   "toward_normal": "vers la normale",
+   "toward_anomaly": "vers l'anomalie",
+   "prev": "Précédent",
+   "next": "Suivant",
+   "page": "{from}–{to} sur {total}"
+  },
+  "journal": {
+   "rule": "Règle",
+   "evidence": "Preuves",
+   "chain_title": "Journal en ajout seul, chaîné par SHA-256",
+   "chain_text": "Chaque entrée contient le hash de la précédente : modifier ou supprimer une ligne brise la chaîne.",
+   "verify": "Vérifier la chaîne",
+   "intact": "Chaîne intacte : {n} entrées vérifiées.",
+   "tampered": "Falsification détectée :",
+   "this_analysis": "Décisions de cette analyse",
+   "empty": "Aucune entrée.",
+   "data_prep": "Décisions de la préparation des données",
+   "data_prep_text": "Écrites par les autres agents lors de la préparation du jeu de données."
+  },
+  "drift": {
+   "this_data": "Drift de ce jeu de données",
+   "none": "Aucun rapport de drift.",
+   "status": {
+    "stable": "Stable",
+    "data_drift": "Les données ont changé",
+    "data_drift_only": "Données changées, décisions stables",
+    "agent_changed": "Un agent a changé",
+    "not_available": "Pas encore de référence",
+    "reference": "Référence"
+   },
+   "monitor_title": "Surveillance mensuelle",
+   "monitor_text": "Chaque mois est comparé à 6 mois de référence pour distinguer « les données ont changé » de « un agent a changé ».",
+   "monitor_empty": "Lancez la simulation de drift côté Python pour voir la surveillance mensuelle."
+  },
+  "why": {
+   "title": "Demander pourquoi",
+   "subtitle": "L'agent auditeur enquête dans le journal et les rapports, puis répond avec ses sources. Chaque chiffre est vérifié.",
+   "s1": "Pourquoi la comparaison a-t-elle été bloquée ?",
+   "s2": "D'où vient le chiffre « {kpi} » ?",
+   "s3": "Quelles décisions ont été prises sur cette analyse ?",
+   "thinking": "Enquête dans le journal…",
+   "error": "L'agent n'a pas pu répondre. Réessayez.",
+   "verified_llm": "Réponse LLM, vérifiée",
+   "template": "Réponse automatique depuis le journal",
+   "sources": "Sources {ids}",
+   "tools": "{n} appels d'outils",
+   "placeholder": "Posez une question sur ces chiffres…",
+   "not_owner": "Seul le propriétaire de l'analyse peut poser une question.",
+   "send": "Envoyer"
+  },
+  "history": {
+   "title": "Historique",
+   "subtitle": "Toutes vos analyses, avec leur statut et vos décisions.",
+   "search": "Rechercher une question, un KPI…",
+   "filter": "Filtrer par statut",
+   "all": "Toutes",
+   "no_match": "Aucune analyse ne correspond.",
+   "confirm": "Retirer cette analyse de votre historique ? Le journal d'audit garde ses décisions.",
+   "remove": "Retirer de l'historique",
+   "note": "Retirer une analyse la masque seulement de votre historique : le journal d'audit est en ajout seul et garde chaque décision.",
+   "decision": {
+    "accepted": "Correction acceptée",
+    "rejected": "Gardée telle quelle"
+   }
+  },
+  "monitoring": {
+   "title": "Audit & surveillance",
+   "subtitle": "L'intégrité de chaque journal d'audit et le comportement des agents dans le temps (BO3).",
+   "journals": "Journaux d'audit",
+   "names": {
+    "demo": "Run de démo (Olist)",
+    "drift": "Drift mensuel",
+    "clinics": "Cliniques (2e jeu)",
+    "ui": "Analyses de l'app",
+    "real": "Journal de production"
+   },
+   "meta": "{n} entrées · {runs} runs",
+   "intact": "Chaîne intacte à la dernière lecture.",
+   "broken": "Chaîne cassée !",
+   "intact_now": "Vérifié à l'instant : {n} entrées, chaîne intacte.",
+   "verify": "Vérifier maintenant",
+   "drift": "Drift"
+  }
+ }
+}

@@ -31,6 +31,32 @@
     }
    }
   },
+  "/api/datasets": {
+   "get": {
+    "tags": [
+     "runs"
+    ],
+    "summary": "Datasets",
+    "description": "Runs whose data can answer a NEW question (POST /comparisons): coverage profile,\nwarehouse and catalog present. Custom runs (custom_*) reuse another run's data: left out.",
+    "operationId": "datasets_api_datasets_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/Dataset"
+         },
+         "type": "array",
+         "title": "Response Datasets Api Datasets Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/runs/{run_id}": {
    "get": {
     "tags": [
@@ -1139,9 +1165,15 @@
     "additionalProperties": false,
     "type": "object",
     "required": [
+     "contract_version",
      "question",
      "metric",
-     "period"
+     "dimensions",
+     "period",
+     "compare_to",
+     "filters",
+     "confidence",
+     "matched_terms"
     ],
     "title": "AnalysisRequest",
     "description": "Sarra's question turned into something a program can compute."
@@ -1196,7 +1228,8 @@
      "base_value",
      "model_output",
      "contributions",
-     "narrative"
+     "narrative",
+     "narrative_parts"
     ],
     "title": "AnomalyExplanation"
    },
@@ -1250,7 +1283,9 @@
     "required": [
      "kind",
      "status",
-     "message"
+     "message",
+     "evidence",
+     "message_parts"
     ],
     "title": "ComparisonCheck"
    },
@@ -1340,7 +1375,18 @@
     "additionalProperties": false,
     "type": "object",
     "required": [
-     "has_comparison"
+     "contract_version",
+     "has_comparison",
+     "rules_version",
+     "summary",
+     "summary_source",
+     "summary_parts",
+     "summary_lang",
+     "checks",
+     "proposed_fix",
+     "alternatives",
+     "user_decision",
+     "chosen_fix"
     ],
     "title": "ComparisonReport"
    },
@@ -1378,6 +1424,82 @@
      "compare_to"
     ],
     "title": "DashboardState"
+   },
+   "Dataset": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "first_day": {
+      "type": "string",
+      "title": "First Day"
+     },
+     "last_day": {
+      "type": "string",
+      "title": "Last Day"
+     },
+     "kpis": {
+      "items": {
+       "$ref": "#/components/schemas/DatasetKpi"
+      },
+      "type": "array",
+      "title": "Kpis"
+     },
+     "dimensions": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "type": "object",
+      "title": "Dimensions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "first_day",
+     "last_day",
+     "kpis",
+     "dimensions"
+    ],
+    "title": "Dataset",
+    "description": "A run whose data (coverage profile + warehouse + catalog) can answer new questions."
+   },
+   "DatasetKpi": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "ref": {
+      "type": "string",
+      "title": "Ref"
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "allowed_dimensions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Allowed Dimensions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "ref",
+     "unit",
+     "description",
+     "allowed_dimensions"
+    ],
+    "title": "DatasetKpi"
    },
    "Decision": {
     "properties": {
@@ -1460,10 +1582,15 @@
     "additionalProperties": false,
     "type": "object",
     "required": [
+     "contract_version",
      "reference_runs",
      "current_run",
      "status",
-     "narrative"
+     "input_checks",
+     "metric_checks",
+     "flagged_agents",
+     "narrative",
+     "narrative_parts"
     ],
     "title": "DriftReport"
    },
@@ -1655,6 +1782,7 @@
     "required": [
      "ok",
      "entries_checked",
+     "first_bad_entry",
      "problem"
     ],
     "title": "IntegrityReport"
@@ -1732,6 +1860,11 @@
      "agent",
      "step",
      "decision",
+     "timestamp",
+     "inputs",
+     "outputs",
+     "rule_version",
+     "evidence",
      "entry_id",
      "prev_hash",
      "entry_hash"
@@ -1944,7 +2077,8 @@
     "additionalProperties": false,
     "type": "object",
     "required": [
-     "key"
+     "key",
+     "params"
     ],
     "title": "Msg",
     "description": "One sentence (or piece of sentence) to render in any language."
@@ -2150,7 +2284,14 @@
      "description",
      "justification",
      "period",
-     "compare_to"
+     "compare_to",
+     "unit",
+     "value_current",
+     "value_previous",
+     "change_pct",
+     "description_parts",
+     "justification_parts",
+     "unit_parts"
     ],
     "title": "ProposedFix"
    },
@@ -2427,11 +2568,16 @@
     "additionalProperties": false,
     "type": "object",
     "required": [
+     "contract_version",
      "run_id",
      "question",
      "answer",
+     "citations",
      "source",
-     "verified"
+     "verified",
+     "tool_calls",
+     "rejected",
+     "lang"
     ],
     "title": "WhyAnswer",
     "description": "Answer of the \"why?\" agent (auditor/why.py). Read by the API / app."

@@ -100,6 +100,35 @@ python -m api.export_openapi
 
 
 ------------------------------------------------------------------------------------------
+ 5b. APPLICATION WEB ASKBOARD (Next.js) - dossier web\
+------------------------------------------------------------------------------------------
+
+   Prerequis : Node.js 22 ou 24 (https://nodejs.org), et l'API Python lancee (etape 5).
+
+   Une seule fois :
+cd /d D:\5ds3\pi\BIFLOW\web
+npm install
+copy .env.example .env.local
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   -> coller le resultat dans .env.local, ligne NEXTAUTH_SECRET=
+
+   A chaque fois (2 terminaux) :
+   terminal 1 (venv active, a la racine)   uvicorn api.main:app --port 8000
+   terminal 2 (dans web\)                  npm run dev
+   -> http://localhost:3000   (anglais par defaut, FR/EN et clair/sombre en haut a droite)
+
+   Cles Google + reCAPTCHA (optionnelles en dev) : voir web\README.md section 2.
+   Apres un changement de contrat ou de route Python :
+python -m api.export_openapi
+cd web
+npm run types:api
+
+   Verifier avant un push :
+npm run typecheck
+npm run build
+
+
+------------------------------------------------------------------------------------------
  6. LANCER MES AGENTS A LA MAIN (sans interface)
 ------------------------------------------------------------------------------------------
 
@@ -163,6 +192,9 @@ git restore <fichier>
  Groq "model not found"            -> python -m contracts.llm --models, puis changer BIFLOW_LLM_MODEL dans .env
  Page Streamlit vide / "Manquant"  -> relancer les commandes de l'etape 2
  Rapports en anglais seulement     -> rapports anciens : relancer les commandes de l'etape 2
- Port 8000 ou 8501 deja pris       -> fermer l'autre terminal, ou --port 8001 / --server.port 8502
+ npm install echoue (better-sqlite3)-> verifier Node 22 ou 24 (node --version), supprimer node_modules, relancer npm install
+ npm install : EPERM / ECONNRESET  -> fermer 'npm run dev' et VS Code, rmdir /s /q node_modules, relancer npm install
+ Sign up refuse 'captcha'          -> en production il faut les cles reCAPTCHA ; en dev : npm run dev
+ Port 8000/8501/3000 deja pris       -> fermer l'autre terminal, ou --port 8001 / --server.port 8502 / npm run dev -- -p 3001
 
 ==========================================================================================

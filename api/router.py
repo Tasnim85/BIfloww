@@ -18,7 +18,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Path as PathParam, Query
 
-from api.schemas import (DashboardState, Decision, ExplanationPage, JournalInfo, NewComparison,
+from api.schemas import (Dataset, DatasetKpi, DashboardState, Decision, ExplanationPage, JournalInfo, NewComparison,
                          NewComparisonResult, RunInfo, RunSummary, WhyQuestion)
 from auditor import journals
 from auditor.why import WhyAgent
@@ -93,6 +93,28 @@ def make_router(runs_root: Path = RUNS_ROOT, repo_root: Path = REPO_ROOT, llm=No
                         journal=journals.journal_id_for(r, runs_root),
                         has={k: path_of(r, ref).exists() for k, ref in refs.items()})
                 for r in run_ids()]
+
+    @router.get("/datasets", response_model=list[Dataset], tags=["runs"])
+    def datasets():
+        """Runs whose data can answer a NEW question (POST /comparisons): coverage profile,
+        warehouse and catalog present. Custom runs (custom_*) reuse another run's data: left out."""
+        out = []
+        for r in run_ids():
+            if r.startswith("custom_"):
+                continue
+            ctx = context_for("comparisons", r, runs_root, repo_root)
+            paths = ctx.inputs
+            if not all(Path(paths[k]).exists() for k in ("coverage", "warehouse", "manifest", "catalog")):
+                continue
+            cov = load(CONTRACT_OF["profiling.coverage"], paths["coverage"])
+            catalog = load_yaml(KpiCatalog, paths["catalog"])
+            out.append(Dataset(
+                run_id=r, first_day=min(t.first_day for t in cov.tables),
+                last_day=max(t.last_day for t in cov.tables),
+                kpis=[DatasetKpi(name=k.name, ref=k.ref, unit=k.unit, description=k.description,
+                                 allowed_dimensions=k.allowed_dimensions) for k in catalog.kpis],
+                dimensions={d.name: d.description for d in catalog.dimensions}))
+        return out
 
     @router.get("/runs/{run_id}", response_model=RunSummary, tags=["runs"])
     def run_summary(run_id: RunId, lang: Lang):
