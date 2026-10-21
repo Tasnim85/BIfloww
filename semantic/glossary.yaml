@@ -9,6 +9,7 @@ terms:
   - CA
   - ventes
   - revenue
+  - revenu
   definition: Money paid by customers for delivered orders.
 - term: Orders
   kind: metric
@@ -18,12 +19,24 @@ terms:
   - nombre de commandes
   - order count
   - nb orders
+  - orders
   definition: Distinct delivered orders.
+- term: ReviewScore
+  kind: metric
+  synonyms:
+  - review score
+  - average review
+  - rating
+  - note moyenne
+  - moyenne des avis
+  - avis
+  - satisfaction
+  - review score average
+  definition: Average rating given by customers.
 - term: customer_state
   kind: dimension
   synonyms:
   - state
-  - region
   - region
   - etat
   - customer state
@@ -56,9 +69,19 @@ terms:
   - mois
   - order month
   definition: Month of purchase in YYYY-MM format.
+- term: seller_id
+  kind: dimension
+  synonyms:
+  - seller
+  - vendor
+  - vendeur
+  - seller_id
+  - seller id
+  definition: Unique identifier of the seller.
 - term: last month
   kind: time
   synonyms:
   - previous month
   - mois dernier
+  - dernier mois
   definition: The calendar month before the current one.

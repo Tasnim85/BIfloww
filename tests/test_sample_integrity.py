@@ -112,3 +112,14 @@ class TestSampleDatasetIntegrity:
         order_set = {o["order_id"] for o in orders}
         for r in reviews:
             assert r["order_id"] in order_set, f"Orphan order_id in review: {r['review_id']}"
+
+    def test_category_translation_table_coverage(self):
+        """Verify product_category_name_translation.csv exists and covers all product categories."""
+        trans_file = SAMPLE_DIR / "product_category_name_translation.csv"
+        assert trans_file.exists(), "product_category_name_translation.csv is missing"
+        trans_rows = _read_table("product_category_name_translation.csv")
+        trans_cats = {r["product_category_name"] for r in trans_rows}
+        products = _read_table("olist_products_dataset.csv")
+        product_cats = {p["product_category_name"] for p in products if p.get("product_category_name")}
+        untranslated = product_cats - trans_cats
+        assert not untranslated, f"Untranslated categories: {untranslated}"

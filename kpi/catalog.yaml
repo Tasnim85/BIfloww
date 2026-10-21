@@ -31,6 +31,20 @@ kpis:
   - product_category
   - seller_state
   - order_month
+- name: ReviewScore
+  version: '1.0'
+  description: Average customer review score (1 to 5).
+  expression: AVG(review_score)
+  table: fact_order_reviews
+  grain: review
+  date_column: review_creation_date
+  unit: score
+  filters: []
+  population: Customer reviews with valid scores.
+  allowed_dimensions:
+  - seller_id
+  - customer_state
+  - product_category
 dimensions:
 - name: customer_state
   table: dim_customer
@@ -52,3 +66,7 @@ dimensions:
   table: dim_date
   column: year_month
   description: Month of purchase, 'YYYY-MM'.
+- name: seller_id
+  table: dim_seller
+  column: seller_id
+  description: Unique identifier of the seller.
