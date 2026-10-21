@@ -1,0 +1,27 @@
+{
+  "description": "Reference schema annotations for Olist dataset columns (manual ground truth).",
+  "dataset": "olist_e-commerce",
+  "annotations": [
+    {"source_table": "olist_customers", "column_name": "customer_id", "expected_group": "PERSONAL_DATA", "expected_type": "PERSON_ID", "privacy_hint": "POTENTIAL_PII"},
+    {"source_table": "olist_customers", "column_name": "customer_unique_id", "expected_group": "PERSONAL_DATA", "expected_type": "PERSON_ID", "privacy_hint": "POTENTIAL_PII"},
+    {"source_table": "olist_customers", "column_name": "customer_zip_code_prefix", "expected_group": "GEOGRAPHICAL_DATA", "expected_type": "POSTAL_CODE", "privacy_hint": "CONTEXT_DEPENDENT"},
+    {"source_table": "olist_customers", "column_name": "customer_city", "expected_group": "GEOGRAPHICAL_DATA", "expected_type": "CITY", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_customers", "column_name": "customer_state", "expected_group": "GEOGRAPHICAL_DATA", "expected_type": "STATE", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_orders", "column_name": "order_id", "expected_group": "BUSINESS_ENTITY_DATA", "expected_type": "ORDER_ID", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_orders", "column_name": "customer_id", "expected_group": "PERSONAL_DATA", "expected_type": "PERSON_ID", "privacy_hint": "POTENTIAL_PII"},
+    {"source_table": "olist_orders", "column_name": "order_status", "expected_group": "CATEGORICAL_DATA", "expected_type": "STATUS", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_orders", "column_name": "order_purchase_timestamp", "expected_group": "TEMPORAL_DATA", "expected_type": "DATETIME", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_order_payments", "column_name": "payment_type", "expected_group": "CATEGORICAL_DATA", "expected_type": "PAYMENT_METHOD", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_order_payments", "column_name": "payment_value", "expected_group": "FINANCIAL_DATA", "expected_type": "PAYMENT_AMOUNT", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_products", "column_name": "product_id", "expected_group": "BUSINESS_ENTITY_DATA", "expected_type": "PRODUCT_ID", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_products", "column_name": "product_category_name", "expected_group": "CATEGORICAL_DATA", "expected_type": "PRODUCT_CATEGORY", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_products", "column_name": "product_weight_g", "expected_group": "QUANTITATIVE_DATA", "expected_type": "WEIGHT", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_order_reviews", "column_name": "review_score", "expected_group": "QUANTITATIVE_DATA", "expected_type": "RATING", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_order_reviews", "column_name": "review_comment_message", "expected_group": "TEXTUAL_DATA", "expected_type": "COMMENT", "privacy_hint": "CONTEXT_DEPENDENT"},
+    {"source_table": "olist_sellers", "column_name": "seller_id", "expected_group": "BUSINESS_ENTITY_DATA", "expected_type": "SELLER_ID", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_order_items", "column_name": "freight_value", "expected_group": "FINANCIAL_DATA", "expected_type": "FREIGHT_COST", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_order_items", "column_name": "price", "expected_group": "FINANCIAL_DATA", "expected_type": "PRICE", "privacy_hint": "NO_DIRECT_PII_INDICATOR"},
+    {"source_table": "olist_geolocation", "column_name": "geolocation_lat", "expected_group": "GEOGRAPHICAL_DATA", "expected_type": "LATITUDE", "privacy_hint": "CONTEXT_DEPENDENT"},
+    {"source_table": "olist_geolocation", "column_name": "geolocation_lng", "expected_group": "GEOGRAPHICAL_DATA", "expected_type": "LONGITUDE", "privacy_hint": "CONTEXT_DEPENDENT"}
+  ]
+}

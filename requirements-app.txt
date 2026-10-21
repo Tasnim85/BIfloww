@@ -1,0 +1,6 @@
+# BIFlow Application Dependencies (Samar — BO1-01 Orchestrator & Streamlit UI)
+# Install in addition to requirements.txt:
+#   pip install -r requirements.txt
+#   pip install -r requirements-app.txt
+duckdb>=0.9.0
+streamlit>=1.30.0
