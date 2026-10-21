@@ -3,6 +3,16 @@
 Turns a user's natural-language question into a validated AnalysisRequest
 by searching the business glossary with sentence embeddings (Sentence-Transformers),
 keyword matching, typo tolerance, filter detection, and period extraction.
+
+Alignment with the contracts and the Analyst (v1.4):
+  - glossary phrases are matched as whole words and the longest phrase wins
+    ("seller state" -> seller_state, "state" -> customer_state, "mois de mai" is a period)
+  - a dimension the KPI does not allow (`allowed_dimensions`) gives NEEDS_REVIEW
+  - `filters` only holds SQL WHERE parts the Analyst accepts (contract AnalysisRequest):
+    "Top N" is not a WHERE part, it goes to the audit evidence only
+  - months are read in question order; "compared with", "comparé à", "contre"… are connectors;
+    a year written after a month belongs to that month; a year alone is the whole year
+  - matched_terms keeps the words of the question, as in contracts/examples
 """
 from __future__ import annotations
 
@@ -11,15 +21,19 @@ import difflib
 import logging
 import re
 import unicodedata
+from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
 from contracts.agent import AgentResult, AgentStatus, RunContext
 from contracts.common import Period, load, save
 from contracts.intake import Upload
-from contracts.semantic import AnalysisRequest, Glossary, KpiCatalog, load_yaml
+from contracts.semantic import AnalysisRequest, Glossary, KpiCatalog, KpiDefinition, load_yaml
 
 logger = logging.getLogger(__name__)
+
+RULE_VERSION = "request:embeddings+keyword@1.4"
+DEFAULT_YEAR = "2018"   # Olist dataset reference year, used only when the question has no year
 
 # Cache for sentence-transformers model (BO4-06 embedding search)
 _EMB_MODEL: Any = None
@@ -63,13 +77,113 @@ _MONTH_MAP: dict[str, str] = {
     "janvier":   "01", "fevrier":  "02", "mars":      "03", "avril":    "04",
     "mai":       "05", "juin":     "06", "juillet":   "07", "aout":     "08",
     "septembre": "09", "octobre":  "10", "novembre":  "11", "decembre": "12",
+    # English abbreviations
+    "jan": "01", "feb": "02", "apr": "04", "jun": "06", "jul": "07", "aug": "08",
+    "sep": "09", "sept": "09", "oct": "10", "nov": "11", "dec": "12",
 }
 
-# Comparison connectors -- the month AFTER these words is compare_to
+# Comparison connectors -- a month written AFTER one of these words is compare_to
 _COMPARE_PATTERNS = re.compile(
-    r"\b(?:vs\.?|versus|compared\s+to|than|against|par\s+rapport\s+a)\s+(\w+)",
+    r"\b(?:vs\.?|versus|compared\s+(?:to|with)|than|against|"
+    r"par\s+rapport\s+(?:a|au|aux)|compare(?:e|s|es)?\s+(?:a|au|aux|avec)|contre|face\s+a)\b",
     re.IGNORECASE,
 )
+
+# "August", "August 2018", "mois de mai", "month of May" -- one span, so "month"/"mois"
+# around a month name is part of the period, not the order_month dimension.
+_MONTH_PATTERN = re.compile(
+    r"\b(?:(?:the\s+)?month\s+of\s+|(?:le\s+|au\s+|du\s+)?mois\s+(?:de\s+|d')?)?"
+    r"(" + "|".join(sorted(_MONTH_MAP, key=len, reverse=True)) + r")\b\.?"
+    r"(?:\s+(?:of\s+)?((?:19|20)\d{2})\b)?",
+    re.IGNORECASE,
+)
+_YEAR_PATTERN = re.compile(r"\b((?:19|20)\d{2})\b")
+
+
+def _plain(text: str) -> str:
+    """Like _normalize, but every character keeps its position ('Région' -> 'region'),
+    so a phrase found in the plain text points at the same words in the question."""
+    out = []
+    for ch in text.replace("\u2019", "'").replace("\u2018", "'"):
+        base = unicodedata.normalize("NFD", ch)[0]
+        out.append(base.lower() if len(base.lower()) == 1 else base)
+    return "".join(out)
+
+
+def _words(name: str) -> str:
+    """KPI or dimension name -> words: 'AverageBasket' -> 'average basket', 'customer_state' -> 'customer state'."""
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", name).replace("_", " ")
+    return " ".join(spaced.split()).lower()
+
+
+def _is_acronym(phrase: str) -> bool:
+    """CA, AOV: matched on the lower-case question WITH its accents, so 'ça' is not 'CA'."""
+    return phrase.strip().isupper() and len(phrase.strip()) <= 4
+
+
+def _phrase_regex(phrase: str) -> re.Pattern:
+    """Whole words only; a plural 's' (or 'y' -> 'ies') is accepted; spaces are flexible."""
+    if _is_acronym(phrase):
+        return re.compile(r"(?<!\w)" + re.escape(phrase.strip().lower()) + r"(?!\w)")
+    body = r"\s+".join(re.escape(w) for w in _plain(phrase.strip()).split())
+    body = body[:-1] + r"(?:y|ies)" if body.endswith("y") else body + r"(?:s|es)?"
+    return re.compile(r"(?<!\w)" + body + r"(?!\w)")
+
+
+@dataclass(frozen=True)
+class _Hit:
+    start: int
+    end: int
+    words: str      # as written in the question, e.g. "chiffre d'affaires"
+    term: str       # catalog name, e.g. "Revenue"
+    kind: str       # "metric" | "dimension" | "time" | "month"
+    is_name: bool   # the KPI / dimension name itself, not a synonym
+
+
+def _vocabulary(catalog: KpiCatalog | None, glossary: Glossary | None) -> list[tuple[str, str, str, bool]]:
+    """(phrase, catalog name, kind, is_name) for every name and synonym the question may use.
+
+    A glossary term that is not in the catalog is skipped: the request only names
+    KPIs and dimensions the Analyst knows.
+    """
+    kpis = {k.name for k in catalog.kpis} if catalog else set()
+    dims = {d.name for d in catalog.dimensions} if catalog else set()
+    vocab: list[tuple[str, str, str, bool]] = []
+    for names, kind in ((kpis, "metric"), (dims, "dimension")):
+        for name in names:
+            vocab += [(name, name, kind, True), (_words(name), name, kind, True)]
+    for term in (glossary.terms if glossary else []):
+        kind = term.kind.lower()
+        if catalog and kind == "metric" and term.term not in kpis:
+            continue
+        if catalog and kind == "dimension" and term.term not in dims:
+            continue
+        vocab += [(phrase, term.term, kind, False) for phrase in [term.term, *term.synonyms]]
+    return vocab
+
+
+def _scan(question: str, catalog: KpiCatalog | None, glossary: Glossary | None) -> list[_Hit]:
+    """Every glossary phrase and month found in the question, without overlaps, in question order.
+
+    When two phrases overlap the longest wins: "number of orders" beats "orders",
+    "seller state" beats "state", "last month" beats "month", "mois de mai" is a month.
+    """
+    plain, lower = _plain(question), question.lower()
+    if len(lower) != len(question):          # rare characters that change length: no accents kept
+        lower = plain
+    found: list[_Hit] = []
+    for phrase, term, kind, is_name in _vocabulary(catalog, glossary):
+        text = lower if _is_acronym(phrase) else plain
+        for m in _phrase_regex(phrase).finditer(text):
+            found.append(_Hit(m.start(), m.end(), question[m.start():m.end()], term, kind, is_name))
+    for m in _MONTH_PATTERN.finditer(plain):
+        found.append(_Hit(m.start(), m.end(), question[m.start():m.end()], "month", "month", False))
+
+    chosen: list[_Hit] = []
+    for hit in sorted(found, key=lambda h: (-(h.end - h.start), h.start)):
+        if all(hit.end <= c.start or hit.start >= c.end for c in chosen):
+            chosen.append(hit)
+    return sorted(chosen, key=lambda h: h.start)
 
 
 def _find_metric(
@@ -81,41 +195,32 @@ def _find_metric(
 
     Resolution order:
       1. Direct KPI name match           (conf 0.90)
-      2. KPI name word-split token       (conf 0.60)
       3. Glossary synonym match          (conf 0.75)
+      2. KPI name word-split token       (conf 0.60)
       4. Embedding cosine similarity     (conf 0.80)  -- NEW: sentence-transformers vector search
       5. Typo-tolerant fuzzy match       (conf 0.65)
       6. Return (None, 0.0)
     """
     q = question_lower
     q_norm = _normalize(q)
+    metric_hits = [h for h in _scan(q, catalog, glossary) if h.kind == "metric"]
 
-    # Tier 1: exact KPI name in question
-    for kpi in catalog.kpis:
-        if kpi.name.lower() in q:
-            return kpi.name, 0.90
+    # Tier 1: exact KPI name in question (whole words, first one in the question)
+    names = [h for h in metric_hits if h.is_name]
+    if names:
+        return names[0].term, 0.90
 
-    # Tier 2: KPI name word-split (e.g. "revenue" splits to ["revenue"])
+    # Tier 3 (before tier 2, so "number of orders" is a synonym, not a piece of a name):
+    # glossary synonyms for metric terms, whole words, longest phrase wins
+    if metric_hits:
+        return metric_hits[0].term, 0.75
+
+    # Tier 2: one word of a KPI name ("basket" -> AverageBasket), whole words only
+    plain = _plain(q)
     for kpi in catalog.kpis:
-        for kw in kpi.name.lower().split("_"):
-            if len(kw) > 3 and kw in q:
+        for kw in _words(kpi.name).split():
+            if len(kw) > 3 and _phrase_regex(kw).search(plain):
                 return kpi.name, 0.60
-
-    # Tier 3: glossary synonyms for metric terms
-    if glossary is not None:
-        kpi_names_lower = {kpi.name.lower(): kpi.name for kpi in catalog.kpis}
-        for term in glossary.terms:
-            if term.kind != "metric":
-                continue
-            candidates = [term.term.lower()] + [s.lower() for s in term.synonyms]
-            for candidate in candidates:
-                norm_cand = _normalize(candidate)
-                # Word-boundary matching to avoid "ca" matching inside "categorie"
-                pattern = r"(?<![a-z0-9])" + re.escape(norm_cand) + r"(?![a-z0-9])"
-                if re.search(pattern, q_norm):
-                    for kpi_lower, kpi_name in kpi_names_lower.items():
-                        if kpi_lower == term.term.lower() or term.term.lower() in kpi_lower:
-                            return kpi_name, 0.75
 
     # Tier 4: Embedding cosine similarity search against Glossary & Catalog descriptions
     emb_model = _get_embedding_model()
@@ -169,44 +274,20 @@ def _find_dimensions(
     catalog: KpiCatalog,
     glossary: Glossary | None = None,
 ) -> list[str]:
-    """Return catalog dimension names mentioned in the question.
+    """Return catalog dimension names mentioned in the question, in question order.
 
-    Checks dimension name, word-split tokens, glossary synonyms, and fuzzy matching.
-    Distinguishes between customer_state and seller_state, and only adds order_month
-    when grouping by month is explicitly requested ('by month', 'par mois').
+    Dimension names and glossary synonyms, whole words, the longest phrase wins:
+    "seller state" -> seller_state, "state" alone -> customer_state, the word "order"
+    never adds order_month. Fuzzy matching only when nothing was found.
     """
     q_norm = _normalize(question_lower)
     found: list[str] = []
     dim_names = {dim.name for dim in catalog.dimensions}
 
-    # 1. Specific checks for states to avoid collision
-    has_seller_state = bool(re.search(r"\b(?:seller state|vendor state|etat vendeur|region vendeur)\b", q_norm))
-    has_customer_state = bool(re.search(r"\b(?:customer state|state|etat|region)\b", q_norm)) and not has_seller_state
-
-    if has_seller_state and "seller_state" in dim_names:
-        found.append("seller_state")
-    elif has_customer_state and "customer_state" in dim_names:
-        found.append("customer_state")
-
-    # 2. Check for seller_id / vendor
-    if bool(re.search(r"\b(?:seller|vendor|vendeur|seller_id)\b", q_norm)) and not has_seller_state:
-        if "seller_id" in dim_names and "seller_id" not in found:
-            found.append("seller_id")
-
-    # 3. Check for product_category
-    if bool(re.search(r"\b(?:category|categorie|categories|product category|type produit)\b", q_norm)):
-        if "product_category" in dim_names and "product_category" not in found:
-            found.append("product_category")
-
-    # 4. Check for payment_type
-    if bool(re.search(r"\b(?:payment type|payment method|payment|mode paiement|type paiement)\b", q_norm)):
-        if "payment_type" in dim_names and "payment_type" not in found:
-            found.append("payment_type")
-
-    # 5. Check for order_month (only if explicit grouping by month, not just a month date)
-    if bool(re.search(r"\b(?:by month|per month|par mois|mensuel|monthly|group by month)\b", q_norm)):
-        if "order_month" in dim_names and "order_month" not in found:
-            found.append("order_month")
+    # 1. Glossary phrases (catalog dimensions only)
+    for hit in _scan(question_lower, catalog, glossary):
+        if hit.kind == "dimension" and hit.term not in found:
+            found.append(hit.term)
 
     # 6. Typo check for dimensions if none found
     if not found:
@@ -240,6 +321,16 @@ def _make_period(year: str, month: str) -> Period:
     return Period(start=start_str, end=end_str)
 
 
+def _day_range(year: str, month: str, d_start: int, d_end: int) -> Period | None:
+    """'du 5 au 20 juin' -> 2018-06-05..2018-06-20; None if a day does not exist (31 juin)."""
+    try:
+        start = date(int(year), int(month), d_start)
+        end = date(int(year), int(month), d_end)
+    except ValueError:
+        return None
+    return Period(start=start.isoformat(), end=end.isoformat()) if start <= end else None
+
+
 def _find_period(question_lower: str) -> tuple[Period | None, Period | None]:
     """Extract main period and optional comparison period from the question.
 
@@ -250,8 +341,8 @@ def _find_period(question_lower: str) -> tuple[Period | None, Period | None]:
     """
     q_norm = _normalize(question_lower)
 
-    year_match = re.search(r"\b(20\d{2})\b", q_norm)
-    year = year_match.group(1) if year_match else "2018"  # Olist dataset reference year
+    year_match = _YEAR_PATTERN.search(q_norm)
+    year = year_match.group(1) if year_match else DEFAULT_YEAR  # Olist dataset reference year
 
     # 1. Explicit day-range check: "du 5 au 20 juin", "from 5 to 20 june", "from june 5 to june 20"
     range_match_fr = re.search(r"\b(?:du\s+(\d{1,2})\s+au\s+(\d{1,2})\s+([a-z]+))", q_norm)
@@ -259,24 +350,21 @@ def _find_period(question_lower: str) -> tuple[Period | None, Period | None]:
         d_start, d_end, m_name = int(range_match_fr.group(1)), int(range_match_fr.group(2)), range_match_fr.group(3)
         if m_name in _MONTH_MAP:
             m_num = _MONTH_MAP[m_name]
-            p = Period(start=f"{year}-{m_num}-{d_start:02d}", end=f"{year}-{m_num}-{d_end:02d}")
-            return p, None
+            return _day_range(year, m_num, d_start, d_end), None
 
     range_match_en = re.search(r"\b(?:from\s+([a-z]+)\s+(\d{1,2})\s+to\s+(?:[a-z]+\s+)?(\d{1,2}))", q_norm)
     if range_match_en:
         m_name, d_start, d_end = range_match_en.group(1), int(range_match_en.group(2)), int(range_match_en.group(3))
         if m_name in _MONTH_MAP:
             m_num = _MONTH_MAP[m_name]
-            p = Period(start=f"{year}-{m_num}-{d_start:02d}", end=f"{year}-{m_num}-{d_end:02d}")
-            return p, None
+            return _day_range(year, m_num, d_start, d_end), None
 
     range_match_en_alt = re.search(r"\b(?:from\s+(\d{1,2})\s+to\s+(\d{1,2})\s+([a-z]+))", q_norm)
     if range_match_en_alt:
         d_start, d_end, m_name = int(range_match_en_alt.group(1)), int(range_match_en_alt.group(2)), range_match_en_alt.group(3)
         if m_name in _MONTH_MAP:
             m_num = _MONTH_MAP[m_name]
-            p = Period(start=f"{year}-{m_num}-{d_start:02d}", end=f"{year}-{m_num}-{d_end:02d}")
-            return p, None
+            return _day_range(year, m_num, d_start, d_end), None
 
     # 2. Relative period check: "last month", "mois dernier", "previous month"
     if any(rel in q_norm for rel in ["last month", "mois dernier", "previous month", "dernier mois"]):
@@ -287,61 +375,54 @@ def _find_period(question_lower: str) -> tuple[Period | None, Period | None]:
         else:
             return _make_period(year, "07"), None
 
-    # 3. Standard month extraction
-    compare_months: set[str] = set()
-    for m in _COMPARE_PATTERNS.finditer(q_norm):
-        word = m.group(1).lower()
-        word_norm = _normalize(word)
-        if word_norm in _MONTH_MAP:
-            compare_months.add(_MONTH_MAP[word_norm])
+    # 3. Months in question order. A month written after a connector ("vs", "compared with",
+    #    "par rapport a"...) is compare_to; the first other month is the main period.
+    #    A year written right after a month belongs to that month.
+    months: list[tuple[str, str, bool]] = []      # (month, year, after a connector)
+    previous_end = 0
+    for m in _MONTH_PATTERN.finditer(q_norm):
+        is_compare = bool(_COMPARE_PATTERNS.search(q_norm, previous_end, m.start()))
+        months.append((_MONTH_MAP[m.group(1).lower()], m.group(2) or year, is_compare))
+        previous_end = m.end()
 
-    mentioned: list[str] = []
-    for name, num in _MONTH_MAP.items():
-        if re.search(r"\b" + re.escape(name) + r"\b", q_norm) and num not in mentioned:
-            mentioned.append(num)
-
-    if not mentioned:
+    if not months:
+        if year_match:   # "Revenue by month in 2017" -> the whole year
+            return Period(start=f"{year}-01-01", end=f"{year}-12-31"), None
         return None, None
 
-    main_month: str | None = None
-    for num in mentioned:
-        if num not in compare_months:
-            main_month = num
-            break
-    if main_month is None:
-        main_month = mentioned[0]
+    main = next((mo for mo in months if not mo[2]), months[0])
+    others = [mo for mo in months if mo is not main and mo[:2] != main[:2]]
+    compare = next((mo for mo in others if mo[2]), others[0] if others else None)
 
-    compare_month: str | None = None
-    for num in mentioned:
-        if num != main_month:
-            compare_month = num
-            break
+    period  = _make_period(main[1], main[0])
+    compare_to = _make_period(compare[1], compare[0]) if compare else None
+    return period, compare_to
 
-    period  = _make_period(year, main_month)
-    compare = _make_period(year, compare_month) if compare_month else None
-    return period, compare
+
+_NOT_A_CODE = {"de", "du", "la", "le", "un", "en", "au", "si", "on", "of", "in", "to", "me", "us",
+               "it", "an", "at", "by", "my", "ca"}
+
+
+def _find_top_n(question_lower: str) -> int | None:
+    """'Top 5 categories' -> 5. Not a WHERE part, so it never goes into `filters`."""
+    top_match = re.search(r"\b(?:top|premiers?)\s*(\d+)\b", _normalize(question_lower))
+    return int(top_match.group(1)) if top_match else None
 
 
 def _find_filters(question_lower: str, catalog: KpiCatalog) -> list[str]:
-    """Extract exclusion filters, limits and constraints from the question.
+    """Extract exclusion filters from the question, as SQL WHERE parts (contract AnalysisRequest).
 
     Examples:
-      - "Top 5" -> ["LIMIT 5"]
       - "sauf SP", "excluding SP", "hors SP" -> ["customer_state != 'SP'"]
       - "excluding canceled" -> ["order_status != 'canceled'"]
+    "Top 5" is a limit, not a WHERE part: see _find_top_n.
     """
     q_norm = _normalize(question_lower)
     filters: list[str] = []
 
-    # 1. Top N / Limits
-    top_match = re.search(r"\b(?:top|premiers?)\s*(\d+)\b", q_norm)
-    if top_match:
-        limit_val = top_match.group(1)
-        filters.append(f"LIMIT {limit_val}")
-
-    # 2. Exclusion filters: "sauf SP", "hors SP", "excluding SP", "without SP"
+    # Exclusion filters: "sauf SP", "hors SP", "excluding SP", "without SP"
     excl_state_match = re.search(r"\b(?:sauf|hors|excluding|without|except)\s+([a-z]{2})\b", q_norm)
-    if excl_state_match:
+    if excl_state_match and excl_state_match.group(1) not in _NOT_A_CODE:
         st_code = excl_state_match.group(1).upper()
         filters.append(f"customer_state != '{st_code}'")
 
@@ -352,14 +433,29 @@ def _find_filters(question_lower: str, catalog: KpiCatalog) -> list[str]:
     return filters
 
 
-def _match_terms(question_lower: str, glossary: Glossary) -> dict[str, str]:
-    matched: dict[str, str] = {}
-    q_norm = _normalize(question_lower)
-    for term in glossary.terms:
-        for syn in term.synonyms:
-            if re.search(r"(?<![a-z0-9])" + re.escape(_normalize(syn)) + r"(?![a-z0-9])", q_norm):
-                matched[syn.lower()] = term.term
-    return matched
+def _match_terms(question: str, glossary: Glossary,
+                 catalog: KpiCatalog | None = None) -> dict[str, str]:
+    """Words of the question -> glossary term, e.g. {"sales": "Revenue", "region": "customer_state"}."""
+    return {h.words: h.term for h in _scan(question, catalog, glossary)
+            if h.kind in ("metric", "dimension", "time")}
+
+
+def _check_filters(filters: list[str], dimensions: list[str],
+                   kpi: KpiDefinition) -> tuple[list[str], list[str], list[str], list[str]]:
+    """Keep only filters the Analyst accepts: a simple condition on a dimension the KPI allows,
+    present in the breakdown. Returns (filters, dimensions, redundant, refused)."""
+    kept, dims, redundant, refused = [], list(dimensions), [], []
+    for flt in filters:
+        column = re.match(r"\s*(\w+)", flt).group(1)
+        if column in kpi.allowed_dimensions:
+            if column not in dims:
+                dims.append(column)     # the Analyst filters only on a dimension of the breakdown
+            kept.append(flt)
+        elif any(re.match(rf"\s*{column}\s*=", f) for f in kpi.filters):
+            redundant.append(flt)       # e.g. "order_status != 'canceled'" when the KPI keeps 'delivered'
+        else:
+            refused.append(flt)
+    return kept, dims, redundant, refused
 
 
 def run(ctx: RunContext) -> AgentResult:
@@ -383,7 +479,7 @@ def run(ctx: RunContext) -> AgentResult:
     metric, confidence = _find_metric(q_lower, catalog, glossary)
     if metric is None:
         ctx.log(
-            "parse_request", "NEEDS_REVIEW",
+            "parse_request", "NEEDS_REVIEW", rule_version=RULE_VERSION,
             evidence={"question": question, "reason": "no KPI matched"},
         )
         return AgentResult(
@@ -398,7 +494,7 @@ def run(ctx: RunContext) -> AgentResult:
     period, compare_to = _find_period(q_lower)
     if period is None:
         ctx.log(
-            "parse_request", "NEEDS_REVIEW",
+            "parse_request", "NEEDS_REVIEW", rule_version=RULE_VERSION,
             evidence={"question": question, "reason": "no time period found"},
         )
         return AgentResult(
@@ -411,8 +507,29 @@ def run(ctx: RunContext) -> AgentResult:
         )
 
     dimensions    = _find_dimensions(q_lower, catalog, glossary)
-    filters       = _find_filters(q_lower, catalog)
-    matched_terms = _match_terms(q_lower, glossary)
+    top_n         = _find_top_n(q_lower)
+    kpi = next(k for k in catalog.kpis if k.name == metric)
+    filters, dimensions, redundant, refused_filters = _check_filters(
+        _find_filters(q_lower, catalog), dimensions, kpi)
+    refused_dims = [d for d in dimensions if d not in kpi.allowed_dimensions]
+    if refused_dims or refused_filters:
+        ctx.log(
+            "parse_request", "NEEDS_REVIEW", rule_version=RULE_VERSION,
+            evidence={"question": question, "metric": metric,
+                      "reason": "dimension or filter not allowed for this KPI",
+                      "dimensions": refused_dims, "filters": refused_filters,
+                      "allowed_dimensions": kpi.allowed_dimensions},
+        )
+        refused = ", ".join(refused_dims + refused_filters)
+        return AgentResult(
+            run_id=ctx.run_id, agent=ctx.agent,
+            status=AgentStatus.NEEDS_REVIEW,
+            message=(
+                f"{metric} cannot be split or filtered by {refused}. "
+                f"Allowed: {', '.join(kpi.allowed_dimensions)}."
+            ),
+        )
+    matched_terms = _match_terms(question, glossary, catalog)
 
     request = AnalysisRequest(
         question=question,
@@ -431,7 +548,7 @@ def run(ctx: RunContext) -> AgentResult:
     ctx.log(
         "parse_request", "SUCCESS",
         outputs=[str(out_path)],
-        rule_version="request:embeddings+keyword@1.3",
+        rule_version=RULE_VERSION,
         evidence={
             "metric": metric,
             "dimensions": dimensions,
@@ -439,6 +556,9 @@ def run(ctx: RunContext) -> AgentResult:
             "period": f"{period.start}...{period.end}",
             "compare_to": compare_to.model_dump() if compare_to else None,
             "filters": filters,
+            "redundant_filters": redundant,
+            "top_n": top_n,              # no field for it in AnalysisRequest v1.1
+            "matched_terms": matched_terms,
             "embedding_used": _get_embedding_model() is not None,
         },
     )

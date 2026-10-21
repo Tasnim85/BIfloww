@@ -13,6 +13,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 import streamlit as st
 from profiling.profiler import run
+from profiling.autodetect import is_key, words
 from bo2.artifact_io import read_artifact_text
 from contracts.agent import RunContext
 from bo2.pii_ui import MAX_DOWNLOAD_BYTES
@@ -214,7 +215,9 @@ def show(root):
             blocked={item["column"] for item in decisions if item.get("table")==table and (item.get("action")!="keep" or item.get("semantic_type") in {"PERSONAL_ID","INTERNAL_KEY","BUSINESS_KEY","POSTAL_CODE"})}
             candidates=[]
             for column in sample:
-                if column in blocked or column.lower().endswith(("_id","_key")):
+                # Identifiers in any language (id_client, num_commande, zip codes); a line number such as
+                # payment_sequential stays a possible feature, as before.
+                if column in blocked or (is_key(column) and not words(column)&{"sequential","seq"}):
                     continue
                 values=pd.to_numeric(sample[column],errors="coerce").replace([np.inf,-np.inf],np.nan)
                 present=sample[column].notna().sum()
