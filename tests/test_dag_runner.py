@@ -363,3 +363,34 @@ def test_t08_cycle_raises_error(tmp_dirs):
         with pytest.raises((RuntimeError, CycleError)):
             runner.run_pipeline(run_id=run_id, max_workers=2,
                                 runs_root=runs, db=db)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# T09 — Internal dependency ModuleNotFoundError -> FAILED (not SKIPPED)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_t09_internal_dependency_missing_gives_failed(tmp_dirs):
+    """Un ModuleNotFoundError declenche par une dependance interne d'un agent doit FAILED, pas SKIPPED."""
+    tmp_path, db, runs = tmp_dirs
+    run_id = _make_run_id()
+
+    step_A = _make_step("A", set(), "existing_agent.module:run")
+    steps = {"A": step_A}
+    dag = {"A": set()}
+
+    import orchestrator.dag_runner as runner
+
+    def fake_import(ep):
+        err = ModuleNotFoundError("No module named 'missing_internal_pkg'")
+        err.name = "missing_internal_pkg"
+        raise err
+
+    with _PipelineContext(steps, dag, runs, run_id):
+        with mock.patch.object(runner, "_import_run", side_effect=fake_import):
+            results = runner.run_pipeline(run_id=run_id, max_workers=2,
+                                          runs_root=runs, db=db)
+
+    assert results["A"].status == AgentStatus.FAILED, (
+        f"Une dependance interne manquante doit FAILED (pas SKIPPED), got {results['A'].status}: {results['A'].message}"
+    )
+    assert "missing_internal_pkg" in results["A"].message

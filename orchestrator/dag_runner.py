@@ -75,24 +75,44 @@ def _execute_step(
     if callback:
         callback(step_name, "RUNNING", f"Starting {step_name}…")
 
+    # 1. Import phase: distinguish unbuilt agent from broken internal dependency
     try:
         agent_run = _import_run(step_def.entrypoint)
-        result: AgentResult = agent_run(ctx)
     except ModuleNotFoundError as exc:
-        # Agent not yet implemented — treat as SKIPPED
-        msg = f"Agent not yet implemented: {exc}"
-        log.warning("Step %s skipped — %s", step_name, msg)
-        result = AgentResult(
-            run_id=run_id, agent=step_name,
-            status=AgentStatus.SKIPPED, message=msg,
-        )
+        mod_name = step_def.entrypoint.rsplit(":", 1)[0]
+        top_pkg = mod_name.split(".")[0]
+        if exc.name in (mod_name, top_pkg):
+            msg = f"Agent not yet implemented: {exc}"
+            log.warning("Step %s skipped — %s", step_name, msg)
+            result = AgentResult(
+                run_id=run_id, agent=step_name,
+                status=AgentStatus.SKIPPED, message=msg,
+            )
+        else:
+            msg = f"Agent dependency missing for {step_name} ({exc.name}): {exc}"
+            log.error("Step %s failed due to missing dependency — %s", step_name, msg)
+            result = AgentResult(
+                run_id=run_id, agent=step_name,
+                status=AgentStatus.FAILED, message=msg,
+            )
     except Exception as exc:
-        msg = f"Unhandled error in {step_name}: {exc}"
-        log.exception("Step %s failed", step_name)
+        msg = f"Unhandled error importing {step_name}: {exc}"
+        log.exception("Step %s failed on import", step_name)
         result = AgentResult(
             run_id=run_id, agent=step_name,
             status=AgentStatus.FAILED, message=msg,
         )
+    else:
+        # 2. Execution phase: any error during agent execution is FAILED
+        try:
+            result = agent_run(ctx)
+        except Exception as exc:
+            msg = f"Unhandled error in {step_name}: {exc}"
+            log.exception("Step %s failed", step_name)
+            result = AgentResult(
+                run_id=run_id, agent=step_name,
+                status=AgentStatus.FAILED, message=msg,
+            )
 
     task_status = {
         AgentStatus.SUCCESS:      TaskStatus.SUCCESS,
