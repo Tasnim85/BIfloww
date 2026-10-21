@@ -1,9 +1,52 @@
+Dataset/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+test-work/
+/runs/
 *.db
 *.duckdb
-.venv/
-__pycache__/
-data/olist/
-# only the runs/ folder at the root (not web/src/app/app/runs/, the analysis page)
-/runs/
+*.duckdb.wal
+*.joblib
 .env
-/.env.example
+.env.*
+!.env.example
+data/*
+!data/sample/
+README_LOCAL_STACK.md
+convertir_parquet_csv.py
+lancer_pii.cmd
+README_CLEANING.md
+README_PII_GENERIC.md
+README_STREAMLIT_PII.md
+README_ETL.md
+README_LOCAL_STACK.md
+README_PROFILING.md
+README_LINEAGE.md
+pytest.ini
+.streamlit/
+# Journaux et rapports de tests
+*.log
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Fichiers temporaires Windows
+Thumbs.db
+Desktop.ini
+
+# Ajouts de la branche de Malek
+*.pyo
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+*.parquet
+*.zip
+
+# from feature/tasnim
+data/olist/

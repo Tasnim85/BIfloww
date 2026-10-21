@@ -1,0 +1,24 @@
+# Names and grains of the analytical views in the shared manifest (etl/analytics.py).
+# The Olist files get the table list agreed in contracts/examples/run_001/etl/warehouse_manifest.json
+# (README section 9), so the KPI catalog and the other agents keep the same names.
+# A file not listed here gets a generic name: fact_<file> or dim_<file>, grain = <file> in the singular.
+# date_from: the source column of the main date of a fact (else: chosen from the data).
+olist_order_payments_dataset:
+  name: fact_payments
+  grain: payment
+  primary_key: [order_id, payment_sequential]
+  date_from: order_purchase_timestamp
+olist_order_items_dataset:
+  name: fact_order_items
+  grain: order_item
+  primary_key: [order_id, order_item_id]
+  date_from: order_purchase_timestamp
+olist_customers_dataset:
+  name: dim_customer
+  grain: customer
+olist_products_dataset:
+  name: dim_product
+  grain: product
+olist_sellers_dataset:
+  name: dim_seller
+  grain: seller

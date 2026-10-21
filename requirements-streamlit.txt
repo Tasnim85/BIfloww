@@ -1,0 +1,2 @@
+-r requirements-bo2.txt
+streamlit>=1.50,<2
