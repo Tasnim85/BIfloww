@@ -27,7 +27,7 @@ Every agent communicates via standardized data contracts located in `contracts/`
 
 ## 2. Installation
 
-Prerequisites: Python 3.10+ (tested on Python 3.13).
+Prerequisites: Python 3.11+ (tested on Python 3.13).
 
 ```bash
 # Clone the repository and checkout branch
@@ -42,8 +42,11 @@ source .venv/bin/activate
 # Windows PowerShell:
 .venv\Scripts\Activate.ps1
 
-# Install dependencies
+# Install core dependencies (Étape 1: Semantic Foundation)
 pip install -r requirements.txt
+
+# Optional: install Samar's application dependencies (Orchestrator + Streamlit UI)
+pip install -r requirements-app.txt
 ```
 
 ---
