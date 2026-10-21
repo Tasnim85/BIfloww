@@ -107,3 +107,36 @@ def test_chart_spec_table(tmp_path):
     assert spec.chart_type == ChartType.TABLE
     read_df = pd.read_parquet(spec.data_file)
     assert "seller_id" in read_df.columns
+
+
+def test_chart_spec_grouped_bar_chart(tmp_path):
+    """Test data handling for grouped BAR chart (2 dimensions: x=state, color=payment_type)."""
+    df = pd.DataFrame({
+        "customer_state": ["SP", "SP", "RJ", "RJ"],
+        "payment_type": ["credit_card", "boleto", "credit_card", "boleto"],
+        "revenue": [35000.0, 15000.0, 20000.0, 10000.0],
+    })
+    data_file = tmp_path / "grouped_bar.parquet"
+    df.to_parquet(data_file)
+
+    spec = ChartSpec(
+        chart_id="c_grouped_bar",
+        chart_type=ChartType.BAR,
+        title="Revenue by State and Payment Type",
+        data_file=str(data_file),
+        x="customer_state",
+        y="revenue",
+        color="payment_type",
+        reason="Automatic selection: grouped bar across customer_state, payment_type",
+    )
+    assert spec.chart_type == ChartType.BAR
+    assert spec.color == "payment_type"
+    read_df = pd.read_parquet(spec.data_file)
+    # Streamlit uses df with x, y, and color directly in st.bar_chart(df, x=x, y=y, color=color)
+    assert spec.x in read_df.columns
+    assert spec.y in read_df.columns
+    assert spec.color in read_df.columns
+    pivoted = read_df.pivot(index=spec.x, columns=spec.color, values=spec.y)
+    assert pivoted.shape == (2, 2)
+    assert pivoted.loc["SP", "credit_card"] == 35000.0
+

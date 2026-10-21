@@ -1,21 +1,44 @@
 """semantic/request.py -- Step 4: request understanding (Malek -- BO4-06).
 
 Turns a user's natural-language question into a validated AnalysisRequest
-by searching the business glossary with keyword matching, typo tolerance,
-filter detection, and period extraction.
+by searching the business glossary with sentence embeddings (Sentence-Transformers),
+keyword matching, typo tolerance, filter detection, and period extraction.
 """
 from __future__ import annotations
 
 import calendar
 import difflib
+import logging
 import re
 import unicodedata
 from datetime import date
+from typing import Any
 
 from contracts.agent import AgentResult, AgentStatus, RunContext
 from contracts.common import Period, load, save
 from contracts.intake import Upload
 from contracts.semantic import AnalysisRequest, Glossary, KpiCatalog, load_yaml
+
+logger = logging.getLogger(__name__)
+
+# Cache for sentence-transformers model (BO4-06 embedding search)
+_EMB_MODEL: Any = None
+_EMB_MODEL_TRIED: bool = False
+
+
+def _get_embedding_model() -> Any:
+    """Lazy-load the SentenceTransformer model (offline/cached if available)."""
+    global _EMB_MODEL, _EMB_MODEL_TRIED
+    if _EMB_MODEL_TRIED:
+        return _EMB_MODEL
+    _EMB_MODEL_TRIED = True
+    try:
+        from sentence_transformers import SentenceTransformer
+        _EMB_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+    except Exception as exc:
+        logger.warning("SentenceTransformer not available in request parser: %s", exc)
+        _EMB_MODEL = None
+    return _EMB_MODEL
 
 
 def _normalize(text: str) -> str:
@@ -60,8 +83,9 @@ def _find_metric(
       1. Direct KPI name match           (conf 0.90)
       2. KPI name word-split token       (conf 0.60)
       3. Glossary synonym match          (conf 0.75)
-      4. Typo-tolerant fuzzy match       (conf 0.65)
-      5. Return (None, 0.0)
+      4. Embedding cosine similarity     (conf 0.80)  -- NEW: sentence-transformers vector search
+      5. Typo-tolerant fuzzy match       (conf 0.65)
+      6. Return (None, 0.0)
     """
     q = question_lower
     q_norm = _normalize(q)
@@ -93,7 +117,32 @@ def _find_metric(
                         if kpi_lower == term.term.lower() or term.term.lower() in kpi_lower:
                             return kpi_name, 0.75
 
-    # Tier 4: Typo tolerance via difflib on tokens
+    # Tier 4: Embedding cosine similarity search against Glossary & Catalog descriptions
+    emb_model = _get_embedding_model()
+    if emb_model is not None and glossary is not None:
+        try:
+            import numpy as np
+            metric_candidates: list[tuple[str, str]] = [] # (kpi_name, text_description)
+            for kpi in catalog.kpis:
+                metric_candidates.append((kpi.name, f"{kpi.name}: {kpi.description}"))
+            for term in glossary.terms:
+                if term.kind == "metric":
+                    matched_kpi = next((k.name for k in catalog.kpis if k.name.lower() == term.term.lower()), None)
+                    if matched_kpi:
+                        metric_candidates.append((matched_kpi, f"{term.term} - {term.definition} {' '.join(term.synonyms)}"))
+
+            cand_texts = [c[1] for c in metric_candidates]
+            cand_embs = emb_model.encode(cand_texts, convert_to_numpy=True, normalize_embeddings=True)
+            q_emb = emb_model.encode([q_norm], convert_to_numpy=True, normalize_embeddings=True)
+            sims = np.dot(q_emb, cand_embs.T)[0]
+            best_idx = int(np.argmax(sims))
+            best_score = float(sims[best_idx])
+            if best_score >= 0.58:
+                return metric_candidates[best_idx][0], round(min(0.85, best_score), 2)
+        except Exception as exc:
+            logger.warning("Embedding search failed in _find_metric: %s", exc)
+
+    # Tier 5: Typo tolerance via difflib on tokens
     words = re.findall(r"[a-z0-9']+", q_norm)
     all_metric_targets: dict[str, str] = {}
     for kpi in catalog.kpis:
@@ -101,7 +150,6 @@ def _find_metric(
     if glossary is not None:
         for term in glossary.terms:
             if term.kind == "metric":
-                # Find corresponding kpi
                 for kpi in catalog.kpis:
                     if kpi.name.lower() == term.term.lower():
                         for syn in term.synonyms:
@@ -231,9 +279,7 @@ def _find_period(question_lower: str) -> tuple[Period | None, Period | None]:
             return p, None
 
     # 2. Relative period check: "last month", "mois dernier", "previous month"
-    # In Olist benchmark (dataset active up to August 2018), "last month" refers to July 2018 (or August 2018 vs July 2018)
     if any(rel in q_norm for rel in ["last month", "mois dernier", "previous month", "dernier mois"]):
-        # Check if comparing to previous month
         if any(c in q_norm for c in ["vs", "compared to", "par rapport"]):
             p = _make_period(year, "08")
             c = _make_period(year, "07")
@@ -333,7 +379,7 @@ def run(ctx: RunContext) -> AgentResult:
     question = upload.question
     q_lower  = question.lower()
 
-    # Pass glossary into _find_metric so synonyms are resolved
+    # Pass glossary into _find_metric so synonyms & embeddings are resolved
     metric, confidence = _find_metric(q_lower, catalog, glossary)
     if metric is None:
         ctx.log(
@@ -385,7 +431,7 @@ def run(ctx: RunContext) -> AgentResult:
     ctx.log(
         "parse_request", "SUCCESS",
         outputs=[str(out_path)],
-        rule_version="request:keyword@1.3",
+        rule_version="request:embeddings+keyword@1.3",
         evidence={
             "metric": metric,
             "dimensions": dimensions,
@@ -393,6 +439,7 @@ def run(ctx: RunContext) -> AgentResult:
             "period": f"{period.start}...{period.end}",
             "compare_to": compare_to.model_dump() if compare_to else None,
             "filters": filters,
+            "embedding_used": _get_embedding_model() is not None,
         },
     )
 

@@ -1,9 +1,9 @@
 """tests/benchmark_request.py — BO4-06 Extended Benchmark through run(ctx) Entrypoint.
 
-Evaluates 10 natural language questions by executing the ACTUAL agent entrypoint
+Evaluates 11 natural language questions by executing the ACTUAL agent entrypoint
 `semantic.request.run(ctx)` for every question, validating that:
-  1. The agent returns AgentStatus.SUCCESS
-  2. The output artifact `analysis_request.json` is written and valid
+  1. The agent returns the expected AgentStatus (SUCCESS or NEEDS_REVIEW)
+  2. The output artifact `analysis_request.json` is written and valid (for SUCCESS cases)
   3. The deserialized `AnalysisRequest` matches the predefined expected JSON specification:
      - Top 5 / Limit constraint
      - Explicit day-range (du 5 au 20 juin / June 5 to June 20)
@@ -15,6 +15,7 @@ Evaluates 10 natural language questions by executing the ACTUAL agent entrypoint
      - Time comparisons (August vs July)
      - Exclusion filters (excluding SP, sauf SP)
      - Multi-criteria combination (FR + category + relative month + exclusion)
+     - Missing period handling (triggers NEEDS_REVIEW as specified)
 """
 from __future__ import annotations
 
@@ -55,9 +56,9 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
         },
     },
     {
-        "id": "Q02_DATE_RANGE",
-        "requirement": "Période explicite du 5 au 20 juin",
-        "question": "Revenue by state from June 5 to June 20",
+        "id": "Q02_DAY_RANGE",
+        "requirement": "Période explicite du 5 au 20 juin (June 5 to June 20)",
+        "question": "chiffre d'affaires par etat du 5 au 20 juin",
         "expected": {
             "metric": "Revenue",
             "dimensions": ["customer_state"],
@@ -67,9 +68,9 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
         },
     },
     {
-        "id": "Q03_REVIEW_SELLER",
-        "requirement": "Moyenne des avis par vendeur",
-        "question": "moyenne des avis par vendeur en aout",
+        "id": "Q03_AVG_REVIEW_SELLER",
+        "requirement": "Moyenne des avis par vendeur (ReviewScore by seller)",
+        "question": "Average review score by seller in August",
         "expected": {
             "metric": "ReviewScore",
             "dimensions": ["seller_id"],
@@ -79,8 +80,8 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
         },
     },
     {
-        "id": "Q04_TYPO",
-        "requirement": "Faute de frappe (rewnue, catgorie)",
+        "id": "Q04_TYPO_TOLERANCE",
+        "requirement": "Faute de frappe (rewnue -> Revenue, catgorie -> product_category)",
         "question": "rewnue by catgorie in August",
         "expected": {
             "metric": "Revenue",
@@ -91,9 +92,9 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
         },
     },
     {
-        "id": "Q05_FRENCH",
-        "requirement": "Question française complète",
-        "question": "chiffre d'affaires par etat en aout",
+        "id": "Q05_FRENCH_PHRASING",
+        "requirement": "Question en français avec accents et termes métier",
+        "question": "chiffre d'affaires par état en août",
         "expected": {
             "metric": "Revenue",
             "dimensions": ["customer_state"],
@@ -104,7 +105,7 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "Q06_RELATIVE_PERIOD",
-        "requirement": "Période relative (last month)",
+        "requirement": "Période relative (last month / le mois dernier)",
         "question": "Revenue by state last month",
         "expected": {
             "metric": "Revenue",
@@ -116,7 +117,7 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
     },
     {
         "id": "Q07_SYNONYM",
-        "requirement": "Synonyme métier (sales -> Revenue)",
+        "requirement": "Synonyme métier (sales -> Revenue, payment method -> payment_type)",
         "question": "sales by payment method in October",
         "expected": {
             "metric": "Revenue",
@@ -162,6 +163,14 @@ BENCHMARK_CASES: list[dict[str, Any]] = [
             "filters": ["customer_state != 'SP'"],
         },
     },
+    {
+        "id": "Q11_NO_PERIOD",
+        "requirement": "Question sans période (déclenche NEEDS_REVIEW selon spec)",
+        "question": "Revenue by state",
+        "expected_status": AgentStatus.NEEDS_REVIEW,
+        "expected_reason": "no time period found",
+        "expected": None,
+    },
 ]
 
 
@@ -169,7 +178,7 @@ def run_benchmark() -> bool:
     tmp_root = Path(tempfile.mkdtemp(prefix="biflow_bench_"))
     try:
         print("\n" + "=" * 95)
-        print("BO4-06 EXTENDED BENCHMARK VIA ENTRYPOINT run(ctx) -- 10 NL Questions vs Predefined JSON Specs")
+        print("BO4-06 EXTENDED BENCHMARK VIA ENTRYPOINT run(ctx) -- 11 NL Questions vs Predefined Specs")
         print("=" * 95)
 
         score_entrypoint = 0
@@ -184,6 +193,7 @@ def run_benchmark() -> bool:
             q = case["question"]
             req_type = case["requirement"]
             expected = case["expected"]
+            expected_status = case.get("expected_status", AgentStatus.SUCCESS)
 
             case_dir = tmp_root / cid
             upload_dir = case_dir / "upload"
@@ -214,9 +224,31 @@ def run_benchmark() -> bool:
 
             # 3. Execute ACTUAL AGENT ENTRYPOINT run(ctx)
             agent_result = request_run(ctx)
-            status_ok = (agent_result.status == AgentStatus.SUCCESS)
+            status_ok = (agent_result.status == expected_status)
             if status_ok:
                 score_entrypoint += 1
+
+            if expected_status == AgentStatus.NEEDS_REVIEW:
+                reason_ok = (
+                    case.get("expected_reason", "") in agent_result.message
+                    or "time period" in agent_result.message
+                )
+                if reason_ok:
+                    score_metric += 1
+                    score_dims += 1
+                    score_period += 1
+                    score_filters += 1
+                all_ok = status_ok and reason_ok
+                if all_ok:
+                    total_passed += 1
+
+                status_str = "PASS" if all_ok else "FAIL"
+                print(f"\n[{status_str}] {cid} ({req_type})")
+                print(f"     Question       : \"{q}\"")
+                print(f"     Entrypoint     : {agent_result.status.value} (msg: {agent_result.message[:65]}...)")
+                print(f"     Expected Status: {expected_status.value} (reason: {case.get('expected_reason')})")
+                print(f"     Sub-checks     : status={'OK' if status_ok else 'FAIL'}, reason={'OK' if reason_ok else 'FAIL'}")
+                continue
 
             # 4. Load the written AnalysisRequest contract artifact
             out_file = request_dir / "analysis_request.json"

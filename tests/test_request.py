@@ -1,11 +1,12 @@
 """tests/test_request.py — Golden tests for semantic/request.py (Tâche 4).
 
 Tests verified against the fixed implementation (calendar.monthrange, correct
-month ordering, NEEDS_REVIEW on no-match).
+month ordering, NEEDS_REVIEW on no-match, embeddings, and run(ctx) entrypoint).
 """
 from __future__ import annotations
 
 import sys
+import uuid
 from datetime import date
 from pathlib import Path
 
@@ -15,17 +16,26 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from semantic.request import _find_metric, _find_period, _make_period
-from contracts.semantic import KpiCatalog, load_yaml
+from semantic.request import _find_metric, _find_period, _make_period, _get_embedding_model, run
+from contracts.agent import AgentStatus, RunContext
+from contracts.common import save
+from contracts.intake import Upload
+from contracts.semantic import Glossary, KpiCatalog, load_yaml
 
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
-CATALOG_PATH = REPO_ROOT / "contracts" / "examples" / "static" / "kpi" / "catalog.yaml"
+CATALOG_PATH = REPO_ROOT / "kpi" / "catalog.yaml"
+GLOSSARY_PATH = REPO_ROOT / "semantic" / "glossary.yaml"
 
 
 @pytest.fixture
 def catalog() -> KpiCatalog:
     return load_yaml(KpiCatalog, CATALOG_PATH)
+
+
+@pytest.fixture
+def glossary() -> Glossary:
+    return load_yaml(Glossary, GLOSSARY_PATH)
 
 
 # ── _make_period: calendar.monthrange correctness ─────────────────────────────
@@ -116,3 +126,76 @@ def test_metric_not_found_returns_none(catalog):
     metric, conf = _find_metric("xyzzy frob quux", catalog)
     assert metric is None
     assert conf   == 0.0
+
+
+# ── Embedding search & run(ctx) entrypoint tests ─────────────────────────────
+
+def test_embedding_search_model_available():
+    """Verify SentenceTransformer model loads properly for semantic similarity search."""
+    model = _get_embedding_model()
+    # If installed, should load all-MiniLM-L6-v2
+    assert model is not None, "SentenceTransformer model should load in offline or cached mode"
+
+
+def test_run_without_period_returns_needs_review(tmp_path):
+    """A question with a valid KPI but no time period must return NEEDS_REVIEW."""
+    run_id = f"test_no_period_{uuid.uuid4().hex[:6]}"
+    upload_dir = tmp_path / "upload"
+    request_dir = tmp_path / "request"
+    upload_dir.mkdir(parents=True)
+    request_dir.mkdir(parents=True)
+
+    upload = Upload(
+        tables={"orders": "orders.csv"},
+        question="Revenue by state",
+        uploaded_by="tester",
+    )
+    upload_path = upload_dir / "upload.json"
+    save(upload, upload_path)
+
+    ctx = RunContext(
+        run_id=run_id,
+        agent="request",
+        output_dir=request_dir,
+        inputs={
+            "upload": upload_path,
+            "catalog": CATALOG_PATH,
+            "glossary": GLOSSARY_PATH,
+        },
+    )
+
+    agent_result = run(ctx)
+    assert agent_result.status == AgentStatus.NEEDS_REVIEW
+    assert "time period" in agent_result.message
+
+
+def test_run_without_metric_returns_needs_review(tmp_path):
+    """An unrecognizable question must return NEEDS_REVIEW."""
+    run_id = f"test_no_metric_{uuid.uuid4().hex[:6]}"
+    upload_dir = tmp_path / "upload"
+    request_dir = tmp_path / "request"
+    upload_dir.mkdir(parents=True)
+    request_dir.mkdir(parents=True)
+
+    upload = Upload(
+        tables={"orders": "orders.csv"},
+        question="xyzzy quux frob in August 2018",
+        uploaded_by="tester",
+    )
+    upload_path = upload_dir / "upload.json"
+    save(upload, upload_path)
+
+    ctx = RunContext(
+        run_id=run_id,
+        agent="request",
+        output_dir=request_dir,
+        inputs={
+            "upload": upload_path,
+            "catalog": CATALOG_PATH,
+            "glossary": GLOSSARY_PATH,
+        },
+    )
+
+    agent_result = run(ctx)
+    assert agent_result.status == AgentStatus.NEEDS_REVIEW
+    assert "Could not match any KPI" in agent_result.message
