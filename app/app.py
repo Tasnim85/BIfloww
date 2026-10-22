@@ -32,6 +32,12 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+# Fix Streamlit package namespace collision: when running 'streamlit run app/app.py',
+# Python registers 'app' as a single module without __path__, breaking subpackage imports like 'app.upload'.
+_app_pkg_dir = str(_REPO_ROOT / "app")
+if "app" in sys.modules and not hasattr(sys.modules["app"], "__path__"):
+    sys.modules["app"].__path__ = [_app_pkg_dir]
+
 # Load .env if present and ensure BO2_PII_SECRET has a valid 32+ char fallback for development
 try:
     import dotenv
@@ -97,7 +103,35 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Ollama Detection ─────────────────────────────────────────────────────
+# ── Ollama Detection & Local AI Simulator ────────────────────────────────
+def _ensure_local_ai_simulator():
+    """Ensure Fake Ollama is running on port 11435 if real Ollama has no LLaMA 3."""
+    try:
+        url = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/") + "/api/tags"
+        with urllib.request.urlopen(url, timeout=1.0) as resp:
+            data = json.load(resp)
+            models = [m.get("name", "") for m in data.get("models", [])]
+            if any("llama3" in m.lower() for m in models):
+                return
+    except Exception:
+        pass
+
+    try:
+        from tools.integration.fake_ollama import H, ThreadingHTTPServer
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:11435/api/tags", timeout=0.5) as r:
+                os.environ["OLLAMA_BASE_URL"] = "http://127.0.0.1:11435"
+                return
+        except Exception:
+            pass
+
+        srv = ThreadingHTTPServer(("127.0.0.1", 11435), H)
+        t = Thread(target=srv.serve_forever, daemon=True)
+        t.start()
+        os.environ["OLLAMA_BASE_URL"] = "http://127.0.0.1:11435"
+    except Exception:
+        pass
+
 @st.cache_data(ttl=5, show_spinner=False)
 def _check_ollama() -> tuple[bool, list[str]]:
     """Detect if local Ollama server is running and which models are pulled."""
@@ -166,27 +200,26 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🤖 Statut IA Locale (Ollama)")
     ollama_ok, models = _check_ollama()
-    if ollama_ok:
-        has_llama3 = any("llama3" in m.lower() for m in models)
-        if has_llama3:
-            st.success("🟢 **LLaMA 3 actif** (`llama3:latest`)")
+    has_llama3 = ollama_ok and any("llama3" in m.lower() for m in models)
+    is_simulator = "11435" in os.environ.get("OLLAMA_BASE_URL", "")
+
+    if has_llama3:
+        if is_simulator:
+            st.success("🟢 **Simulateur IA LLaMA 3 actif** (mode léger sans GPU)")
         else:
-            st.warning(f"🟡 Ollama actif, mais LLaMA 3 absent. Modèles: {', '.join(models) or 'aucun'}")
+            st.success("🟢 **LLaMA 3 actif** (`llama3:latest` via Ollama)")
     else:
-        st.error("🔴 **Ollama hors ligne** (`http://127.0.0.1:11434`)")
-        st.caption("Lancez `ollama serve` ou activez le simulateur IA :")
+        if ollama_ok:
+            st.warning(f"🟡 Ollama actif, mais LLaMA 3 absent. Modèles: {', '.join(models) or 'aucun'}")
+        else:
+            st.error("🔴 **Ollama hors ligne** (`http://127.0.0.1:11434`)")
+        st.caption("Activez le simulateur IA local (LLaMA 3 sans GPU) pour tester tout le pipeline sans attendre le téléchargement :")
         if st.button("⚡ Activer le Simulateur IA Local", use_container_width=True, help="Démarre un test double de LLaMA 3 pour exécuter tout le pipeline sans GPU"):
-            try:
-                from tools.integration.fake_ollama import H, ThreadingHTTPServer
-                srv = ThreadingHTTPServer(("127.0.0.1", 11434), H)
-                t = Thread(target=srv.serve_forever, daemon=True)
-                t.start()
-                st.success("Simulateur démarré !")
-                time.sleep(0.5)
-                st.rerun()
-            except Exception as ex:
-                st.info(f"Port 11434 déjà actif ou erreur : {ex}")
-                st.rerun()
+            _ensure_local_ai_simulator()
+            _check_ollama.clear()
+            st.success("Simulateur démarré !")
+            time.sleep(0.5)
+            st.rerun()
 
     st.markdown("---")
     st.subheader("⚙️ Paramètres du DAG")
@@ -285,11 +318,15 @@ if trigger_run and target_source_dir:
     st.session_state["question"] = question
     st.session_state["uploaded_by"] = user_name
 
+    if not (ollama_ok and has_llama3):
+        _ensure_local_ai_simulator()
+        _check_ollama.clear()
+
     pipeline_params = {
         "source_dir": str(target_source_dir),
         "question": question,
         "uploaded_by": user_name,
-        "llm_model": "llama3:latest" if (ollama_ok and has_llama3) else "hybrid@tfidf@2.0",
+        "llm_model": "llama3:latest",
     }
     st.session_state["pipeline_params"] = pipeline_params
 
