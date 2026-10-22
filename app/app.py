@@ -68,8 +68,12 @@ try:
 except Exception:
     _AUDITOR_UI_AVAILABLE = False
 
-# Process-level worker thread tracker
-_ACTIVE_THREADS: dict[str, Thread] = {}
+# Process-level worker thread tracker across Streamlit reruns
+@st.cache_resource
+def _get_threads() -> dict[str, Thread]:
+    return {}
+
+_ACTIVE_THREADS = _get_threads()
 
 # ── Theme and CSS Styling ───────────────────────────────────────────────
 st.markdown("""
@@ -263,7 +267,7 @@ tab_sample, tab_archive, tab_upload = st.tabs([
 ])
 
 sample_dir = _REPO_ROOT / "data" / "sample"
-archive_dir = Path(r"C:\Users\moham\Downloads\archive")
+archive_dir = Path(os.environ.get("BIFLOW_ARCHIVE_DIR", r"C:\Users\moham\Downloads\archive"))
 source_dir: Path | None = None
 uploaded_files = []
 
@@ -431,10 +435,23 @@ if run_id:
                     # Resume pipeline in thread
                     st.session_state["running"] = True
                     st.session_state["done"] = False
-                    params = st.session_state.get("pipeline_params", {})
+                    params = dict(st.session_state.get("pipeline_params", {}))
                     # For PII, auto-redact unconfirmed attributes when approved
                     if rev_step == "pii":
                         params["uncertain_policy"] = "redact"
+                    elif rev_step == "etl":
+                        proposal_p = _REPO_ROOT / "runs" / run_id / "etl" / "warehouse_proposal.json"
+                        if proposal_p.is_file():
+                            import hashlib
+                            with open(proposal_p, "rb") as stream:
+                                params["etl_approval"] = hashlib.file_digest(stream, "sha256").hexdigest()
+                    elif rev_step == "comparisons":
+                        try:
+                            from comparisons.checker import record_decision
+                            from contracts.comparisons import UserDecision, FixMethod
+                            record_decision(run_id, UserDecision.ACCEPTED, chosen_fix=FixMethod.SAME_DAYS)
+                        except Exception:
+                            pass
 
                     worker = Thread(
                         target=run_pipeline,
@@ -454,6 +471,10 @@ if run_id:
             with col_app2:
                 if rev_step == "pii":
                     st.caption("💡 L'approbation appliquera la politique de protection automatique sur les colonnes incertaines (redact/hash) et débloquera Profiling, Cleaning, ETL et Analyst.")
+                elif rev_step == "etl":
+                    st.caption("💡 L'approbation valide la modélisation en constellation (Faits et Dimensions DuckDB) recommandée par l'agent.")
+                elif rev_step == "comparisons":
+                    st.caption("💡 L'approbation valide l'ajustement 'same_days' (période coupée au 23 août 2018) pour débloquer le Dashboard décisionnel.")
 
     # ── Multi-Agent Step Accordion ──────────────────────────────────────
     st.markdown("#### 📋 Détail des Agents et Artéfacts")
@@ -466,7 +487,8 @@ if run_id:
 
         expander_title = f"{icon} **{step}** — `{info['status']}` · *{phase}* (Responsable : {owner_name})"
         with st.expander(expander_title, expanded=(info["status"] in ("RUNNING", "NEEDS_REVIEW"))):
-            st.markdown(f"**Message de statut :** {info.get('message') or 'En attente...'}")
+            default_msg = "Exécution en cours…" if info["status"] == "RUNNING" else "En attente..."
+            st.markdown(f"**Message de statut :** {info.get('message') or default_msg}")
 
             # Inspect step outputs if available
             step_dir = _REPO_ROOT / "runs" / run_id / step
