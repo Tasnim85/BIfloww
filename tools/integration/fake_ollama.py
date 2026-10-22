@@ -4,11 +4,13 @@ pii -> profiling -> cleaning -> etl -> analysis -> comparisons -> auditor can be
 import json, os
 SCENARIO = os.environ.get("FAKE_SCENARIO", "ideal")   # ideal | orders_fact | star | drop_links | pii_unsure
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
 MAP = {"ID": "INTERNAL_KEY", "EMAIL": "EMAIL", "PHONE": "PHONE", "PERSON_NAME": "PERSON_NAME", "AGE": "AGE",
        "AMOUNT": "MEASURE", "QUANTITY": "MEASURE", "NUMBER": "MEASURE", "DATE": "TIMESTAMP", "DATETIME": "TIMESTAMP",
        "CITY": "ADDRESS", "STATE": "CATEGORY", "ZIP_CODE": "POSTAL_CODE", "CATEGORY": "CATEGORY", "TEXT": "FREE_TEXT",
        "BOOLEAN": "CATEGORY", "OTHER": "UNKNOWN"}
 PERSON_KEYS = {"customer_unique_id"}
+
 def by_name(col, examples):
     # PII never receives Malek's hints (table names differ), so decide from the name like a model would
     w = set(col.split("_"))
@@ -21,6 +23,7 @@ def by_name(col, examples):
         [float(e) for e in examples]; return "MEASURE" if examples else "CATEGORY"
     except ValueError:
         return "CATEGORY"
+
 def column_answer(desc):
     hint = desc.get("upstream_hint") or {}
     col = desc["column"].lstrip("﻿").lower()
@@ -30,8 +33,22 @@ def column_answer(desc):
     else: kind = by_name(col, desc.get("examples_local_only", []))
     conf = 0.6 if SCENARIO == "pii_unsure" and kind in ("CATEGORY", "MEASURE") and "state" in col else 0.95
     return {"semantic_type": kind, "confidence": conf}
+
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
+
+    def do_GET(self):
+        if self.path.endswith("/api/tags"):
+            data = json.dumps({"models": [{"name": "llama3:latest", "model": "llama3:latest"}]}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(data)
+        else:
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"status":"ok"}')
+
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         meta = json.loads(body["messages"][-1]["content"])
@@ -65,4 +82,10 @@ class H(BaseHTTPRequestHandler):
             self.send_response(500); self.end_headers(); self.wfile.write(b'{"error":"fake ollama: unknown prompt"}'); return
         data = json.dumps({"done": True, "done_reason": "stop", "message": {"role": "assistant", "content": json.dumps(out)}}).encode()
         self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(data)
-ThreadingHTTPServer(("127.0.0.1", 11434), H).serve_forever()
+
+def run_server(port=11434):
+    server = ThreadingHTTPServer(("127.0.0.1", port), H)
+    server.serve_forever()
+
+if __name__ == "__main__":
+    run_server()
