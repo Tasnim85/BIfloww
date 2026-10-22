@@ -256,19 +256,35 @@ st.markdown("Pipeline automatisé : **Ingestion** → **Similarité** → **Clas
 
 # ── Launch Form ─────────────────────────────────────────────────────────
 st.markdown("### 🚀 Nouveau Lancement")
-tab_sample, tab_upload = st.tabs(["⚡ Mode Démo : Olist Sample (9 tables)", "📁 Mode Personnalisé : Téléversement CSV"])
+tab_sample, tab_archive, tab_upload = st.tabs([
+    "⚡ Mode Démo : Olist Sample (9 tables)",
+    "📦 Dataset Complet : Archive Olist (125 Mo)",
+    "📁 Mode Personnalisé : Téléversement / Dossier Local",
+])
 
 sample_dir = _REPO_ROOT / "data" / "sample"
+archive_dir = Path(r"C:\Users\moham\Downloads\archive")
 source_dir: Path | None = None
 uploaded_files = []
 
 with tab_sample:
-    st.markdown("Utilisez le dataset d'e-commerce Olist préparé (Commandes, Clients, Produits, Paiements, Avis, Vendeurs).")
+    st.markdown("Utilisez l'échantillon d'e-commerce Olist préparé (9 tables de test rapide).")
     if sample_dir.exists():
         csv_list = sorted(sample_dir.glob("*.csv"))
         st.info(f"**9 tables disponibles dans `data/sample/`** : {', '.join(c.stem for c in csv_list)}")
     else:
         st.warning("Répertoire `data/sample` non trouvé.")
+
+with tab_archive:
+    st.markdown("### 📦 Dataset Olist Réel Complet (125 Mo)")
+    st.markdown(f"Emplacement détecté : `{archive_dir}`")
+    if archive_dir.exists():
+        archive_csvs = sorted(archive_dir.glob("*.csv"))
+        total_mb = sum(f.stat().st_size for f in archive_csvs) / (1024 * 1024)
+        st.success(f"**9 tables complètes prêtes ({total_mb:.1f} Mo)** : {', '.join(f.stem for f in archive_csvs)}")
+        st.caption("Ce dataset contient les 100 000 commandes réelles, 1 000 000 de coordonnées géographiques, paiements, avis et vendeurs.")
+    else:
+        st.error(f"Dossier `{archive_dir}` introuvable.")
 
 with tab_upload:
     custom_files = st.file_uploader(
@@ -276,6 +292,10 @@ with tab_upload:
         type=["csv"],
         accept_multiple_files=True,
         help="Déposez vos tables CSV brutes",
+    )
+    custom_folder_input = st.text_input(
+        "Ou entrez le chemin absolu d'un dossier local de CSV :",
+        value=str(archive_dir) if archive_dir.exists() else "",
     )
 
 col_q, col_u = st.columns([3, 1])
@@ -288,11 +308,14 @@ with col_q:
 with col_u:
     user_name = st.text_input("Auteur du run :", value=st.session_state["uploaded_by"])
 
-col_btn1, col_btn2 = st.columns([1, 4])
+col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 2])
 with col_btn1:
-    launch_sample = st.button("⚡ Lancer la Démo Olist", type="primary", use_container_width=True)
+    launch_sample = st.button("⚡ Lancer la Démo Olist", type="secondary", use_container_width=True)
 with col_btn2:
-    launch_custom = st.button("▶ Lancer avec mes CSV téléversés", use_container_width=False, disabled=not custom_files)
+    launch_archive = st.button("🚀 Lancer avec l'Archive Complète", type="primary", use_container_width=True, disabled=not archive_dir.exists())
+with col_btn3:
+    has_custom = bool(custom_files or (custom_folder_input and Path(custom_folder_input).is_dir()))
+    launch_custom = st.button("▶ Lancer avec mes CSV téléversés", use_container_width=False, disabled=not has_custom)
 
 # Trigger logic
 trigger_run = False
@@ -301,14 +324,21 @@ target_source_dir: Path | None = None
 if launch_sample:
     trigger_run = True
     target_source_dir = sample_dir
-elif launch_custom and custom_files:
+elif launch_archive:
     trigger_run = True
-    temp_run_id = f"run_{uuid.uuid4().hex[:8]}"
-    upload_dest = _REPO_ROOT / "runs" / temp_run_id / "_upload_src"
-    upload_dest.mkdir(parents=True, exist_ok=True)
-    for f in custom_files:
-        (upload_dest / f.name).write_bytes(f.read())
-    target_source_dir = upload_dest
+    target_source_dir = archive_dir
+elif launch_custom:
+    if custom_folder_input and Path(custom_folder_input).is_dir() and not custom_files:
+        trigger_run = True
+        target_source_dir = Path(custom_folder_input)
+    elif custom_files:
+        trigger_run = True
+        temp_run_id = f"run_{uuid.uuid4().hex[:8]}"
+        upload_dest = _REPO_ROOT / "runs" / temp_run_id / "_upload_src"
+        upload_dest.mkdir(parents=True, exist_ok=True)
+        for f in custom_files:
+            (upload_dest / f.name).write_bytes(f.read())
+        target_source_dir = upload_dest
 
 if trigger_run and target_source_dir:
     new_run_id = f"run_{uuid.uuid4().hex[:8]}"
