@@ -420,6 +420,24 @@ if run_id:
             rev_info = status_by_step.get(rev_step, {})
             st.markdown(f"L'agent **{rev_step}** demande une validation humaine :")
             st.info(f"**Motif :** {rev_info.get('message', 'Validation humaine requise')}")
+            if rev_step == "etl":
+                prop = _REPO_ROOT / "runs" / run_id / "etl" / "warehouse_proposal.json"
+                if prop.exists():
+                    try:
+                        data = json.loads(prop.read_text(encoding="utf-8"))
+                        st.caption("📐 **Plan proposé par l'agent ETL (rôles fait/dimension, relations) :**")
+                        st.json(data.get("design", data), expanded=False)
+                    except Exception:
+                        pass
+            elif rev_step == "comparisons":
+                rep = _REPO_ROOT / "runs" / run_id / "comparisons" / "comparison_report.json"
+                if rep.exists():
+                    try:
+                        data = json.loads(rep.read_text(encoding="utf-8"))
+                        st.caption("⚖️ **Analyse de comparabilité temporelle :**")
+                        st.write(data.get("summary", "Ajustement requis pour période incomplète."))
+                    except Exception:
+                        pass
 
             col_app1, col_app2 = st.columns([1, 1])
             with col_app1:
@@ -452,6 +470,7 @@ if run_id:
                             record_decision(run_id, UserDecision.ACCEPTED, chosen_fix=FixMethod.SAME_DAYS)
                         except Exception:
                             pass
+                    st.session_state["pipeline_params"] = params
 
                     worker = Thread(
                         target=run_pipeline,

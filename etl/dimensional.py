@@ -282,7 +282,7 @@ def run(ctx):
         success=True
         return AgentResult(run_id=ctx.run_id,agent='etl',status=AgentStatus.SUCCESS,outputs=outputs,message='Built validated dimensional layout '+plan.schema_type)
     except Exception as exc:
-        return AgentResult(run_id=ctx.run_id,agent='etl',status=AgentStatus.FAILED,message='DIMENSIONAL_ETL_'+type(exc).__name__+': proposal or construction could not be validated')
+        return AgentResult(run_id=ctx.run_id,agent='etl',status=AgentStatus.FAILED,message='DIMENSIONAL_ETL_'+type(exc).__name__+f': {exc}')
     finally:
         if connection is not None:
             connection.close()
