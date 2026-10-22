@@ -20,6 +20,7 @@ Hardened multi-agent DAG runner:
 from __future__ import annotations
 
 import importlib
+import sys
 import json
 import logging
 import time
