@@ -32,6 +32,16 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+# Load .env if present and ensure BO2_PII_SECRET has a valid 32+ char fallback for development
+try:
+    import dotenv
+    dotenv.load_dotenv(_REPO_ROOT / ".env")
+except Exception:
+    pass
+
+if not os.environ.get("BO2_PII_SECRET") or len(os.environ.get("BO2_PII_SECRET", "")) < 32:
+    os.environ["BO2_PII_SECRET"] = "biflow_development_hmac_secret_key_32chars_min"
+
 # ── Page config ─────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="BIFlow — Multi-Agent BI Platform",
@@ -164,7 +174,19 @@ with st.sidebar:
             st.warning(f"🟡 Ollama actif, mais LLaMA 3 absent. Modèles: {', '.join(models) or 'aucun'}")
     else:
         st.error("🔴 **Ollama hors ligne** (`http://127.0.0.1:11434`)")
-        st.caption("Lancez `ollama serve` pour activer LLaMA 3.")
+        st.caption("Lancez `ollama serve` ou activez le simulateur IA :")
+        if st.button("⚡ Activer le Simulateur IA Local", use_container_width=True, help="Démarre un test double de LLaMA 3 pour exécuter tout le pipeline sans GPU"):
+            try:
+                from tools.integration.fake_ollama import H, ThreadingHTTPServer
+                srv = ThreadingHTTPServer(("127.0.0.1", 11434), H)
+                t = Thread(target=srv.serve_forever, daemon=True)
+                t.start()
+                st.success("Simulateur démarré !")
+                time.sleep(0.5)
+                st.rerun()
+            except Exception as ex:
+                st.info(f"Port 11434 déjà actif ou erreur : {ex}")
+                st.rerun()
 
     st.markdown("---")
     st.subheader("⚙️ Paramètres du DAG")

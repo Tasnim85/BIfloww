@@ -40,41 +40,52 @@ def make_stub_module(name: str, run_fn):
     sys.modules[name] = mod
     return mod
 
-def stub_pii(ctx: RunContext) -> AgentResult:
+def _populate_mock_outputs(ctx: RunContext):
     ctx.output_dir.mkdir(parents=True, exist_ok=True)
-    out_rep = ctx.output("report")
-    out_rep.write_text('{"anonymized_columns": []}', encoding="utf-8")
-    tables_out = ctx.output_dir / "tables"
-    tables_out.mkdir(parents=True, exist_ok=True)
+    import pandas as pd
+    import shutil
+    ex_dir = REPO_ROOT / "contracts" / "examples" / "run_001" / ctx.agent
+    for key, fname in STEPS[ctx.agent].outputs.items():
+        out_p = ctx.output(key)
+        if fname.endswith("/"):
+            out_p.mkdir(parents=True, exist_ok=True)
+        elif fname.endswith(".parquet"):
+            pd.DataFrame([{"dummy": 1.0}]).to_parquet(out_p)
+        elif fname.endswith(".duckdb"):
+            import duckdb
+            con = duckdb.connect(str(out_p))
+            con.execute("CREATE TABLE dummy (x INT)")
+            con.close()
+        elif fname.endswith(".joblib"):
+            import joblib
+            joblib.dump({"dummy": 1}, out_p)
+        else:
+            ex_file = ex_dir / fname
+            if ex_file.exists():
+                shutil.copy2(ex_file, out_p)
+            else:
+                out_p.write_text('{"status": "ok"}', encoding="utf-8")
+
+def stub_pii(ctx: RunContext) -> AgentResult:
+    _populate_mock_outputs(ctx)
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
-                       outputs={"report": out_rep, "tables": tables_out}, message="PII stub: pass-through")
+                       outputs={"report": ctx.output("report"), "tables": ctx.output_dir / "tables"},
+                       message="PII stub: pass-through")
 
 def stub_profiling(ctx: RunContext) -> AgentResult:
-    ctx.output_dir.mkdir(parents=True, exist_ok=True)
-    p = ctx.output("profile"); p.write_text("{}", encoding="utf-8")
-    c = ctx.output("coverage"); c.write_text("{}", encoding="utf-8")
-    a = ctx.output("anomalies"); a.write_text("{}", encoding="utf-8")
-    m = ctx.output("model"); m.write_text('{"model": "isolation_forest_stub"}', encoding="utf-8")
-    s = ctx.output("scores"); import pandas as pd; pd.DataFrame([{"anomaly_score": 0.0}]).to_parquet(s)
+    _populate_mock_outputs(ctx)
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
-                       outputs={"profile": p, "coverage": c, "anomalies": a, "model": m, "scores": s},
                        message="Profiling stub: pass-through")
 
 def stub_cleaning(ctx: RunContext) -> AgentResult:
-    ctx.output_dir.mkdir(parents=True, exist_ok=True)
-    rep = ctx.output("report"); rep.write_text("{}", encoding="utf-8")
-    tables_out = ctx.output_dir / "tables"
-    tables_out.mkdir(parents=True, exist_ok=True)
+    _populate_mock_outputs(ctx)
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
-                       outputs={"report": rep, "tables": tables_out}, message="Cleaning stub: pass-through")
+                       message="Cleaning stub: pass-through")
 
 def stub_etl(ctx: RunContext) -> AgentResult:
-    ctx.output_dir.mkdir(parents=True, exist_ok=True)
-    wh = ctx.output("warehouse"); wh.write_text("DUCKDB_WAREHOUSE_STUB", encoding="utf-8")
-    mf = ctx.output("manifest"); mf.write_text("{}", encoding="utf-8")
-    rc = ctx.output("receipts"); rc.write_text("{}", encoding="utf-8")
+    _populate_mock_outputs(ctx)
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
-                       outputs={"warehouse": wh, "manifest": mf, "receipts": rc}, message="ETL stub: pass-through")
+                       message="ETL stub: pass-through")
 
 def stub_analysis(ctx: RunContext) -> AgentResult:
     ctx.output_dir.mkdir(parents=True, exist_ok=True)
@@ -108,18 +119,16 @@ def stub_comparisons(ctx: RunContext) -> AgentResult:
                        outputs={"report": out_p}, message="Comparisons stub: generated ComparisonReport")
 
 def stub_lineage(ctx: RunContext) -> AgentResult:
-    ctx.output_dir.mkdir(parents=True, exist_ok=True)
-    g = ctx.output("graph"); g.write_text("{}", encoding="utf-8")
+    _populate_mock_outputs(ctx)
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
-                       outputs={"graph": g}, message="Lineage stub")
+                       outputs={"graph": ctx.output("graph")}, message="Lineage stub")
 
 def stub_auditor(ctx: RunContext) -> AgentResult:
-    ctx.output_dir.mkdir(parents=True, exist_ok=True)
-    ex = ctx.output("explanations"); ex.write_text("{}", encoding="utf-8")
-    dr = ctx.output("drift"); dr.write_text("{}", encoding="utf-8")
-    ig = ctx.output("integrity"); ig.write_text("{}", encoding="utf-8")
+    _populate_mock_outputs(ctx)
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
-                       outputs={"explanations": ex, "drift": dr, "integrity": ig}, message="Auditor stub")
+                       outputs={"explanations": ctx.output("explanations"),
+                                "drift": ctx.output("drift"),
+                                "integrity": ctx.output("integrity")}, message="Auditor stub")
 
 # Inject stubs
 make_stub_module("privacy.pii", stub_pii)
