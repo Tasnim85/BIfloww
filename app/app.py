@@ -169,6 +169,26 @@ def _init_state():
 
 _init_state()
 
+
+def _resume_pipeline(run_id: str, params: dict) -> None:
+    """Relance le DAG sur le même run_id (les étapes SUCCESS sont réutilisées)."""
+    st.session_state["pipeline_params"] = params
+    st.session_state["running"] = True
+    st.session_state["done"] = False
+    worker = Thread(
+        target=run_pipeline,
+        kwargs={
+            "run_id": run_id,
+            "max_workers": st.session_state["max_workers"],
+            "params": params,
+            "stop_on_failure": st.session_state["stop_on_failure"],
+        },
+        daemon=True,
+    )
+    worker.start()
+    _ACTIVE_THREADS[run_id] = worker
+    st.rerun()
+
 STEP_ORDER = execution_order()
 STATUS_ICON = {
     "PENDING":      "⏳",
@@ -414,21 +434,29 @@ if run_id:
 
     # ── Human-in-the-Loop Review Panel ──────────────────────────────────
     review_steps = [s for s in STEP_ORDER if status_by_step.get(s, {}).get("status") == "NEEDS_REVIEW"]
-    if review_steps:
+    if review_steps and not thread_alive:
         st.warning("### ⚠️ Intervention Humaine Requise (Human-in-the-Loop)")
+        reviewer = user_name or "ComplianceOfficer"
+
         for rev_step in review_steps:
             rev_info = status_by_step.get(rev_step, {})
             st.markdown(f"L'agent **{rev_step}** demande une validation humaine :")
             st.info(f"**Motif :** {rev_info.get('message', 'Validation humaine requise')}")
+
+            proposal_path = _REPO_ROOT / "runs" / run_id / "etl" / "warehouse_proposal.json"
+
+            # Montrer ce qu'on valide (ETL)
             if rev_step == "etl":
-                prop = _REPO_ROOT / "runs" / run_id / "etl" / "warehouse_proposal.json"
-                if prop.exists():
-                    try:
-                        data = json.loads(prop.read_text(encoding="utf-8"))
-                        st.caption("📐 **Plan proposé par l'agent ETL (rôles fait/dimension, relations) :**")
-                        st.json(data.get("design", data), expanded=False)
-                    except Exception:
-                        pass
+                if proposal_path.exists():
+                    prop = json.loads(proposal_path.read_text(encoding="utf-8"))
+                    design = prop.get("design", {})
+                    st.markdown(f"**Schéma recommandé :** `{design.get('schema_type', '?')}`")
+                    if design.get("rationale"):
+                        st.caption(design["rationale"])
+                    with st.expander("Voir la proposition complète (rôles fait/dimension, relations)"):
+                        st.json(design, expanded=False)
+                else:
+                    st.error("warehouse_proposal.json introuvable : relancez un nouveau run.")
             elif rev_step == "comparisons":
                 rep = _REPO_ROOT / "runs" / run_id / "comparisons" / "comparison_report.json"
                 if rep.exists():
@@ -439,61 +467,38 @@ if run_id:
                     except Exception:
                         pass
 
-            col_app1, col_app2 = st.columns([1, 1])
-            with col_app1:
-                if st.button(f"✅ Approuver et Débloquer la suite du Pipeline ({rev_step})", type="primary", key=f"btn_app_{rev_step}"):
-                    approved_reviews = {
-                        rev_step: {
-                            "decision": "APPROVED",
-                            "reviewer": user_name or "ComplianceOfficer",
-                            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                            "run_id": run_id,
-                        }
-                    }
-                    # Resume pipeline in thread
-                    st.session_state["running"] = True
-                    st.session_state["done"] = False
+            col_ok, col_ko = st.columns(2)
+
+            # ── APPROUVER ──
+            with col_ok:
+                if st.button(f"✅ Approuver ({rev_step})", type="primary", key=f"ok_{run_id}_{rev_step}"):
                     params = dict(st.session_state.get("pipeline_params", {}))
-                    # For PII, auto-redact unconfirmed attributes when approved
-                    if rev_step == "pii":
-                        params["uncertain_policy"] = "redact"
-                    elif rev_step == "etl":
-                        proposal_p = _REPO_ROOT / "runs" / run_id / "etl" / "warehouse_proposal.json"
-                        if proposal_p.is_file():
-                            import hashlib
-                            with open(proposal_p, "rb") as stream:
-                                params["etl_approval"] = hashlib.file_digest(stream, "sha256").hexdigest()
-                    elif rev_step == "comparisons":
-                        try:
+                    try:
+                        if rev_step == "pii":
+                            params["uncertain_policy"] = "redact"
+                        elif rev_step == "etl":
+                            params["etl_approval"] = hashlib.sha256(proposal_path.read_bytes()).hexdigest()
+                        elif rev_step == "comparisons":
                             from comparisons.checker import record_decision
-                            from contracts.comparisons import UserDecision, FixMethod
-                            record_decision(run_id, UserDecision.ACCEPTED, chosen_fix=FixMethod.SAME_DAYS)
-                        except Exception:
-                            pass
-                    st.session_state["pipeline_params"] = params
+                            record_decision(run_id, "accepted")
+                    except Exception as exc:
+                        st.error(f"Impossible d'enregistrer l'approbation : {exc}")
+                    else:
+                        _resume_pipeline(run_id, params)
 
-                    worker = Thread(
-                        target=run_pipeline,
-                        kwargs={
-                            "run_id": run_id,
-                            "max_workers": st.session_state["max_workers"],
-                            "params": params,
-                            "approved_reviews": approved_reviews,
-                            "stop_on_failure": st.session_state["stop_on_failure"],
-                        },
-                        daemon=True,
-                    )
-                    worker.start()
-                    _ACTIVE_THREADS[run_id] = worker
-                    st.rerun()
-
-            with col_app2:
-                if rev_step == "pii":
-                    st.caption("💡 L'approbation appliquera la politique de protection automatique sur les colonnes incertaines (redact/hash) et débloquera Profiling, Cleaning, ETL et Analyst.")
-                elif rev_step == "etl":
-                    st.caption("💡 L'approbation valide la modélisation en constellation (Faits et Dimensions DuckDB) recommandée par l'agent.")
-                elif rev_step == "comparisons":
-                    st.caption("💡 L'approbation valide l'ajustement 'same_days' (période coupée au 23 août 2018) pour débloquer le Dashboard décisionnel.")
+            # ── REJETER ──
+            with col_ko:
+                if st.button(f"❌ Rejeter ({rev_step})", key=f"ko_{run_id}_{rev_step}"):
+                    if rev_step == "comparisons":
+                        from comparisons.checker import record_decision
+                        record_decision(run_id, "rejected")
+                        _resume_pipeline(run_id, dict(st.session_state.get("pipeline_params", {})))
+                    else:
+                        if rev_step == "etl":
+                            proposal_path.unlink(missing_ok=True)   # forcera une nouvelle proposition
+                        st.session_state["running"] = False
+                        st.session_state["done"] = False
+                        st.error(f"Proposition « {rev_step} » rejetée par {reviewer} : le pipeline reste arrêté. Lancez un nouveau run.")
 
     # ── Multi-Agent Step Accordion ──────────────────────────────────────
     st.markdown("#### 📋 Détail des Agents et Artéfacts")
