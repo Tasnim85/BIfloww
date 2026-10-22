@@ -76,7 +76,15 @@ ProgressCallback = Callable[[str, str, str], None]
 
 def _import_run(entrypoint: str) -> Callable[[RunContext], AgentResult]:
     """Dynamically import an agent's run() function from 'module:function'."""
+    repo_root = Path(__file__).resolve().parent.parent
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
     module_path, func_name = entrypoint.rsplit(":", 1)
+    if module_path.startswith("app.") and "app" in sys.modules:
+        if not hasattr(sys.modules["app"], "__path__"):
+            sys.modules["app"].__path__ = [str(repo_root / "app")]
+
     module = importlib.import_module(module_path)
     return getattr(module, func_name)
 

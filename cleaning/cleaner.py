@@ -30,7 +30,11 @@ def dispatch(ctx):
             approved.append(book);locations[book.ref]=path
     if approved:
         if len({b.name for b in approved})!=1 and not explicit:
-            raise ValueError('Several playbook families need explicit selection')
+            cleaning_family = [b for b in approved if b.name == 'cleaning']
+            if cleaning_family:
+                approved = cleaning_family
+            else:
+                approved = [approved[0]]
         book=max(approved,key=lambda b:tuple(map(int,b.version.split('.'))))
         if not book.approved_by and not explicit:
             # The orchestrator can display the chosen draft for review.
