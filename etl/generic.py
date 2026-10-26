@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 from typing import Literal
 
-import duckdb
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field
 from bo2.local_llm import request_json
@@ -189,6 +188,7 @@ def propose(metadata, candidates):
 
 
 def run(ctx):
+    import duckdb  # deferred: avoid WDAC crash at module load
     temporary = ctx.output_dir / "warehouse.building.duckdb"
     connection = None
     owned = False
