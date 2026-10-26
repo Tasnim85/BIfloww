@@ -13,10 +13,15 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
 from contracts.registry import CONTRACT_OF
+
+# When set to "1", skips the real DuckDB connection check (useful in CI/stub environments
+# where the duckdb native library is blocked by OS policy, e.g. Windows WDAC).
+_SKIP_DUCKDB = os.environ.get("BIFLOW_SKIP_DUCKDB_VALIDATION", "0") == "1"
 
 log = logging.getLogger(__name__)
 
@@ -114,6 +119,9 @@ def validate_single_artifact(
 
     # 8. DuckDB validity check
     if declared_filename.endswith(".duckdb"):
+        if _SKIP_DUCKDB:
+            # Stub/CI mode: skip real DuckDB connection (e.g. WDAC blocks native .pyd)
+            return True, ""
         try:
             import duckdb
             con = duckdb.connect(str(target_p), read_only=True)
