@@ -240,7 +240,7 @@ with st.sidebar:
         else:
             st.error("🔴 **Ollama hors ligne** (`http://127.0.0.1:11434`)")
         st.caption("Activez le simulateur IA local (LLaMA 3 sans GPU) pour tester tout le pipeline sans attendre le téléchargement :")
-        if st.button("⚡ Activer le Simulateur IA Local", use_container_width=True, help="Démarre un test double de LLaMA 3 pour exécuter tout le pipeline sans GPU"):
+        if st.button("⚡ Activer le Simulateur IA Local", width='stretch', help="Démarre un test double de LLaMA 3 pour exécuter tout le pipeline sans GPU"):
             _ensure_local_ai_simulator()
             _check_ollama.clear()
             st.success("Simulateur démarré !")
@@ -265,7 +265,7 @@ with st.sidebar:
             if past_runs:
                 selected_run = st.selectbox("Inspecter un run précédent", options=["-- Sélectionner --"] + past_runs)
                 if selected_run != "-- Sélectionner --":
-                    if st.button("Charger ce run", use_container_width=True):
+                    if st.button("Charger ce run", width='stretch'):
                         st.session_state["run_id"] = selected_run
                         st.session_state["running"] = False
                         st.session_state["done"] = True
@@ -336,12 +336,12 @@ with col_u:
 
 col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 2])
 with col_btn1:
-    launch_sample = st.button("⚡ Lancer la Démo Olist", type="secondary", use_container_width=True)
+    launch_sample = st.button("⚡ Lancer la Démo Olist", type="secondary", width='stretch')
 with col_btn2:
-    launch_archive = st.button("🚀 Lancer avec l'Archive Complète", type="primary", use_container_width=True, disabled=not archive_dir.exists())
+    launch_archive = st.button("🚀 Lancer avec l'Archive Complète", type="primary", width='stretch', disabled=not archive_dir.exists())
 with col_btn3:
     has_custom = bool(custom_files or (custom_folder_input and Path(custom_folder_input).is_dir()))
-    launch_custom = st.button("▶ Lancer avec mes CSV téléversés", use_container_width=False, disabled=not has_custom)
+    launch_custom = st.button("▶ Lancer avec mes CSV téléversés", width='content', disabled=not has_custom)
 
 # Trigger logic
 trigger_run = False
@@ -635,13 +635,13 @@ if st.session_state.get("done") and run_id:
                                         bargroupgap=0.1,
                                     )
                                     fig.update_traces(marker_line_width=0)
-                                    st.plotly_chart(fig, use_container_width=True)
+                                    st.plotly_chart(fig, width='stretch')
                                 except ImportError:
                                     import altair as alt
                                     chart_obj = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#4C72B0").encode(
                                         x=alt.X(x_col, sort="-y"), y=alt.Y(y_col), tooltip=[x_col, y_col]
                                     ).properties(height=380)
-                                    st.altair_chart(chart_obj, use_container_width=True)
+                                    st.altair_chart(chart_obj, width='stretch')
                             elif c_type == "line" and x_col and y_col and x_col in df.columns and y_col in df.columns:
                                 try:
                                     import plotly.express as px
@@ -660,7 +660,7 @@ if st.session_state.get("done") and run_id:
                                         font=dict(color="#e0e0e0"),
                                         title=dict(text=c_title, font=dict(size=18, color="#00c8ff")),
                                     )
-                                    st.plotly_chart(fig, use_container_width=True)
+                                    st.plotly_chart(fig, width='stretch')
                                 except ImportError:
                                     st.line_chart(df[[x_col, y_col]].set_index(x_col))
                             elif c_type == "pie" and x_col and y_col and x_col in df.columns and y_col in df.columns:
@@ -671,11 +671,11 @@ if st.session_state.get("done") and run_id:
                                                  color_discrete_sequence=px.colors.qualitative.Vivid,
                                                  height=480)
                                     fig.update_layout(paper_bgcolor="rgba(26,26,46,0.95)", font=dict(color="#e0e0e0"))
-                                    st.plotly_chart(fig, use_container_width=True)
+                                    st.plotly_chart(fig, width='stretch')
                                 except ImportError:
-                                    st.dataframe(df, use_container_width=True)
+                                    st.dataframe(df, width='stretch')
                             else:
-                                st.dataframe(df, use_container_width=True)
+                                st.dataframe(df, width='stretch')
                         except Exception as ex:
                             st.warning(f"Impossible de tracer les données : {ex}")
                     else:
@@ -715,6 +715,6 @@ if st.session_state.get("done") and run_id:
         summary = get_run_status(run_id, db=DEFAULT_DB)
         if summary:
             import pandas as pd
-            st.dataframe(pd.DataFrame(summary), use_container_width=True)
+            st.dataframe(pd.DataFrame(summary), width='stretch')
         else:
             st.caption("Aucun enregistrement trouvé dans la base des tâches.")

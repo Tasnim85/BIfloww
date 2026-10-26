@@ -232,6 +232,7 @@ def build(connection,frames,metadata,profiles,plan):
 
 
 def run(ctx):
+    import duckdb  # needed here: build() only imports it locally
     temporary=ctx.output_dir/'warehouse.building.duckdb';connection=None;owned=False;published=[];success=False
     try:
         ctx.output_dir.mkdir(parents=True,exist_ok=True)
