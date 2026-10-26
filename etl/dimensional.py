@@ -4,7 +4,6 @@ from decimal import Decimal
 import re
 import unicodedata
 import pandas as pd
-import duckdb
 from contracts.agent import AgentResult, AgentStatus
 from contracts.warehouse import TransformationReceipt
 from contracts.audit import AuditEvent, log_event
@@ -29,6 +28,7 @@ def names_for(roles, metadata):
 
 
 def build(connection,frames,metadata,profiles,plan):
+    import duckdb  # deferred — fails fast if WDAC blocks the native extension
     roles = {r.table:r for r in plan.tables}
     names = names_for(plan.tables,metadata)
     candidates = relationships(frames,metadata)
