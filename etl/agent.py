@@ -3,6 +3,7 @@ import json
 import os
 import hashlib
 from decimal import Decimal
+from pathlib import Path
 import pandas as pd
 
 from contracts.agent import AgentResult, AgentStatus, RunContext
@@ -110,6 +111,7 @@ def run(ctx: RunContext) -> AgentResult:
 
 
 def run_olist(ctx: RunContext) -> AgentResult:
+    import duckdb  # deferred import: only called when build.py probe succeeds
     connection = None
     owns_temporary = False
     published = []
