@@ -136,7 +136,7 @@ def test_stubbed_pipeline_produces_dashboard_spec(tmp_path, monkeypatch):
         res_p = ctx.output("result")
         save(result, res_p)
         import pandas as pd
-        pd.DataFrame([{"customer_state": "SP", "Revenue": 5000.0}]).to_parquet(ctx.output("data"))
+        pd.DataFrame({"customer_state": ["SP", "RJ"], "period": ["current"] * 2, "value": [3000.0, 2000.0]}).to_parquet(ctx.output("data"))  # real result.parquet: <dims>, period, value
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
                            outputs={"result": res_p, "data": ctx.output("data")})
 

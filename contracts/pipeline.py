@@ -91,7 +91,7 @@ _STEPS = [
                  "receipts": "etl.receipts", "catalog": "static:kpi/catalog.yaml"},
          outputs={"report": "comparison_report.json"}),
 
-    Step(name=AgentName.DASHBOARD, owner="Samar", entrypoint="app.dashboard:run",
+    Step(name=AgentName.DASHBOARD, owner="Samar", entrypoint="dashboard_ai.agent:run",
          inputs={"request": "request.request", "result": "analysis.result",
                  "data": "analysis.data", "comparisons": "comparisons.report"},
          outputs={"spec": "dashboard_spec.json"}),
