@@ -3,7 +3,6 @@ import json
 import os
 import hashlib
 from decimal import Decimal
-import duckdb
 import pandas as pd
 
 from contracts.agent import AgentResult, AgentStatus, RunContext
@@ -26,6 +25,23 @@ REQUIRED = {
 
 
 def run(ctx: RunContext) -> AgentResult:
+    # Guard: catch DuckDB unavailability (e.g. Windows WDAC policy blocks _duckdb.pyd)
+    try:
+        import duckdb as _ddb  # noqa: F401 -- probe only
+    except (ImportError, OSError) as _exc:
+        from contracts.agent import AgentStatus
+        return AgentResult(
+            run_id=ctx.run_id,
+            agent=ctx.agent,
+            status=AgentStatus.NEEDS_REVIEW,
+            outputs={},
+            message=(
+                f"DuckDB non disponible sur cette machine (bloqué par la politique OS). "
+                f"Détail : {_exc}. "
+                "Appuyez sur Approuver pour continuer avec le mode Parquet-only, "
+                "ou Rejeter pour arrêter le pipeline."
+            ),
+        )
     mode = ctx.params.get("warehouse_mode", "auto")
     if mode == "dimensional":
         from .dimensional import run as run_dimensional

@@ -478,7 +478,13 @@ if run_id:
                         if rev_step == "pii":
                             params["uncertain_policy"] = "redact"
                         elif rev_step == "etl":
-                            params["etl_approval"] = hashlib.sha256(proposal_path.read_bytes()).hexdigest()
+                            # If proposal file exists, hash it; otherwise use parquet-only fallback
+                            if proposal_path.exists():
+                                params["etl_approval"] = hashlib.sha256(proposal_path.read_bytes()).hexdigest()
+                            else:
+                                # DuckDB unavailable → approve parquet-only warehouse mode
+                                params["warehouse_mode"] = "parquet_only"
+                                params["etl_approval"] = "parquet_only_approved"
                         elif rev_step == "comparisons":
                             from comparisons.checker import record_decision
                             record_decision(run_id, "accepted")
@@ -510,7 +516,7 @@ if run_id:
         owner_name = getattr(step_def, "owner", "Équipe BIFlow")
         phase = STEP_PHASES.get(step, "Exécution")
 
-        expander_title = f"{icon} **{step}** — `{info['status']}` · *{phase}* (Responsable : {owner_name})"
+        expander_title = f"{icon} **{step}** — `{info['status']}` · *{phase}*"
         with st.expander(expander_title, expanded=(info["status"] in ("RUNNING", "NEEDS_REVIEW"))):
             default_msg = "Exécution en cours…" if info["status"] == "RUNNING" else "En attente..."
             st.markdown(f"**Message de statut :** {info.get('message') or default_msg}")
@@ -588,15 +594,39 @@ if st.session_state.get("done") and run_id:
                                 formatted_val = f"{val:,.2f} BRL" if isinstance(val, (int, float)) else str(val)
                                 st.metric(label=c_title, value=formatted_val)
                             elif c_type == "bar" and x_col and y_col and x_col in df.columns and y_col in df.columns:
+                                import altair as alt
+                                base = alt.Chart(df).properties(height=380)
                                 if color_col and color_col in df.columns:
-                                    st.bar_chart(df, x=x_col, y=y_col, color=color_col)
+                                    chart_obj = base.mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
+                                        x=alt.X(x_col, sort="-y", title=x_col, axis=alt.Axis(labelAngle=-35)),
+                                        y=alt.Y(y_col, title=y_col),
+                                        color=alt.Color(color_col, legend=alt.Legend(title=color_col)),
+                                        tooltip=[x_col, y_col, color_col],
+                                    )
                                 else:
-                                    st.bar_chart(df[[x_col, y_col]].set_index(x_col))
+                                    chart_obj = base.mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#4C72B0").encode(
+                                        x=alt.X(x_col, sort="-y", title=x_col, axis=alt.Axis(labelAngle=-35)),
+                                        y=alt.Y(y_col, title=y_col),
+                                        tooltip=[x_col, y_col],
+                                    )
+                                st.altair_chart(chart_obj, use_container_width=True)
                             elif c_type == "line" and x_col and y_col and x_col in df.columns and y_col in df.columns:
+                                import altair as alt
+                                base = alt.Chart(df).properties(height=380)
                                 if color_col and color_col in df.columns:
-                                    st.line_chart(df, x=x_col, y=y_col, color=color_col)
+                                    chart_obj = base.mark_line(point=True, strokeWidth=2).encode(
+                                        x=alt.X(x_col, title=x_col),
+                                        y=alt.Y(y_col, title=y_col),
+                                        color=alt.Color(color_col, legend=alt.Legend(title=color_col)),
+                                        tooltip=[x_col, y_col, color_col],
+                                    )
                                 else:
-                                    st.line_chart(df[[x_col, y_col]].set_index(x_col))
+                                    chart_obj = base.mark_line(point=True, strokeWidth=2, color="#4C72B0").encode(
+                                        x=alt.X(x_col, title=x_col),
+                                        y=alt.Y(y_col, title=y_col),
+                                        tooltip=[x_col, y_col],
+                                    )
+                                st.altair_chart(chart_obj, use_container_width=True)
                             elif c_type == "pie" and x_col and y_col and x_col in df.columns and y_col in df.columns:
                                 import altair as alt
                                 st.altair_chart(alt.Chart(df).mark_arc().encode(
