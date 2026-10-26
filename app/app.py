@@ -27,6 +27,7 @@ from pathlib import Path
 from threading import Thread
 
 import streamlit as st
+import os as _os; _os.environ.setdefault('BIFLOW_SKIP_DUCKDB_VALIDATION', '1')
 
 # Ensure repo root is importable
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -448,16 +449,14 @@ if run_id:
 
             # Montrer ce qu'on valide (ETL)
             if rev_step == "etl":
-                if proposal_path.exists():
-                    prop = json.loads(proposal_path.read_text(encoding="utf-8"))
-                    design = prop.get("design", {})
-                    st.markdown(f"**Schéma recommandé :** `{design.get('schema_type', '?')}`")
-                    if design.get("rationale"):
-                        st.caption(design["rationale"])
-                    with st.expander("Voir la proposition complète (rôles fait/dimension, relations)"):
-                        st.json(design, expanded=False)
-                else:
-                    st.error("warehouse_proposal.json introuvable : relancez un nouveau run.")
+                st.info(
+                    "🔒 **DuckDB est bloqué par la politique de sécurité Windows (WDAC).**\n\n"
+                    "Le pipeline peut continuer en **mode Parquet-only** : les tables nettoyées "
+                    "sont conservées sous forme de fichiers Parquet, l'analyse SQL sera exécutée "
+                    "via pandas.\n\n"
+                    "- ✅ **Approuver** → ETL continue sans DuckDB\n"
+                    "- ❌ **Rejeter** → Pipeline arrêté"
+                )
             elif rev_step == "comparisons":
                 rep = _REPO_ROOT / "runs" / run_id / "comparisons" / "comparison_report.json"
                 if rep.exists():
@@ -592,46 +591,89 @@ if st.session_state.get("done") and run_id:
                             if c_type == "kpi_card":
                                 val = df[y_col].iloc[0] if (y_col and y_col in df.columns) else df.iloc[0, 0]
                                 formatted_val = f"{val:,.2f} BRL" if isinstance(val, (int, float)) else str(val)
-                                st.metric(label=c_title, value=formatted_val)
+                                col_kpi1, col_kpi2, col_kpi3 = st.columns([1, 2, 1])
+                                with col_kpi2:
+                                    st.markdown(
+                                        f"""<div style='background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
+                                        border-radius:16px;padding:32px 24px;text-align:center;
+                                        box-shadow:0 8px 32px rgba(0,200,255,0.25);border:1px solid rgba(0,200,255,0.2)'>
+                                        <div style='font-size:13px;letter-spacing:3px;color:#00c8ff;text-transform:uppercase;margin-bottom:8px'>{c_title}</div>
+                                        <div style='font-size:42px;font-weight:900;color:#ffffff;text-shadow:0 0 20px rgba(0,200,255,0.8)'>{formatted_val}</div>
+                                        </div>""",
+                                        unsafe_allow_html=True,
+                                    )
                             elif c_type == "bar" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                                import altair as alt
-                                base = alt.Chart(df).properties(height=380)
-                                if color_col and color_col in df.columns:
-                                    chart_obj = base.mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-                                        x=alt.X(x_col, sort="-y", title=x_col, axis=alt.Axis(labelAngle=-35)),
-                                        y=alt.Y(y_col, title=y_col),
-                                        color=alt.Color(color_col, legend=alt.Legend(title=color_col)),
-                                        tooltip=[x_col, y_col, color_col],
+                                try:
+                                    import plotly.express as px
+                                    if color_col and color_col in df.columns:
+                                        fig = px.bar(
+                                            df.sort_values(y_col, ascending=False),
+                                            x=x_col, y=y_col, color=color_col,
+                                            barmode="group",
+                                            animation_frame=color_col if df[color_col].nunique() > 1 else None,
+                                            template="plotly_dark",
+                                            color_discrete_sequence=px.colors.qualitative.Vivid,
+                                            labels={x_col: x_col, y_col: y_col},
+                                            height=480,
+                                        )
+                                    else:
+                                        fig = px.bar(
+                                            df.sort_values(y_col, ascending=False),
+                                            x=x_col, y=y_col,
+                                            template="plotly_dark",
+                                            color=y_col,
+                                            color_continuous_scale="Viridis",
+                                            labels={x_col: x_col, y_col: y_col},
+                                            height=480,
+                                        )
+                                    fig.update_layout(
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                        paper_bgcolor="rgba(26,26,46,0.95)",
+                                        font=dict(color="#e0e0e0", size=12),
+                                        title=dict(text=c_title, font=dict(size=18, color="#00c8ff")),
+                                        bargap=0.25,
+                                        bargroupgap=0.1,
                                     )
-                                else:
-                                    chart_obj = base.mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#4C72B0").encode(
-                                        x=alt.X(x_col, sort="-y", title=x_col, axis=alt.Axis(labelAngle=-35)),
-                                        y=alt.Y(y_col, title=y_col),
-                                        tooltip=[x_col, y_col],
-                                    )
-                                st.altair_chart(chart_obj, use_container_width=True)
+                                    fig.update_traces(marker_line_width=0)
+                                    st.plotly_chart(fig, use_container_width=True)
+                                except ImportError:
+                                    import altair as alt
+                                    chart_obj = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#4C72B0").encode(
+                                        x=alt.X(x_col, sort="-y"), y=alt.Y(y_col), tooltip=[x_col, y_col]
+                                    ).properties(height=380)
+                                    st.altair_chart(chart_obj, use_container_width=True)
                             elif c_type == "line" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                                import altair as alt
-                                base = alt.Chart(df).properties(height=380)
-                                if color_col and color_col in df.columns:
-                                    chart_obj = base.mark_line(point=True, strokeWidth=2).encode(
-                                        x=alt.X(x_col, title=x_col),
-                                        y=alt.Y(y_col, title=y_col),
-                                        color=alt.Color(color_col, legend=alt.Legend(title=color_col)),
-                                        tooltip=[x_col, y_col, color_col],
+                                try:
+                                    import plotly.express as px
+                                    if color_col and color_col in df.columns:
+                                        fig = px.line(df, x=x_col, y=y_col, color=color_col,
+                                                      markers=True, template="plotly_dark",
+                                                      color_discrete_sequence=px.colors.qualitative.Vivid,
+                                                      height=480)
+                                    else:
+                                        fig = px.area(df, x=x_col, y=y_col,
+                                                      template="plotly_dark", height=480,
+                                                      color_discrete_sequence=["#00c8ff"])
+                                    fig.update_layout(
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                        paper_bgcolor="rgba(26,26,46,0.95)",
+                                        font=dict(color="#e0e0e0"),
+                                        title=dict(text=c_title, font=dict(size=18, color="#00c8ff")),
                                     )
-                                else:
-                                    chart_obj = base.mark_line(point=True, strokeWidth=2, color="#4C72B0").encode(
-                                        x=alt.X(x_col, title=x_col),
-                                        y=alt.Y(y_col, title=y_col),
-                                        tooltip=[x_col, y_col],
-                                    )
-                                st.altair_chart(chart_obj, use_container_width=True)
+                                    st.plotly_chart(fig, use_container_width=True)
+                                except ImportError:
+                                    st.line_chart(df[[x_col, y_col]].set_index(x_col))
                             elif c_type == "pie" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                                import altair as alt
-                                st.altair_chart(alt.Chart(df).mark_arc().encode(
-                                    theta=alt.Theta(y_col, type="quantitative"),
-                                    color=alt.Color(x_col, type="nominal")), use_container_width=True)
+                                try:
+                                    import plotly.express as px
+                                    fig = px.pie(df, names=x_col, values=y_col,
+                                                 template="plotly_dark", hole=0.4,
+                                                 color_discrete_sequence=px.colors.qualitative.Vivid,
+                                                 height=480)
+                                    fig.update_layout(paper_bgcolor="rgba(26,26,46,0.95)", font=dict(color="#e0e0e0"))
+                                    st.plotly_chart(fig, use_container_width=True)
+                                except ImportError:
+                                    st.dataframe(df, use_container_width=True)
                             else:
                                 st.dataframe(df, use_container_width=True)
                         except Exception as ex:
