@@ -168,6 +168,19 @@ def _init_state():
         if k not in st.session_state:
             st.session_state[k] = v
 
+    # Auto-load latest finished run so the user immediately sees the 3D dashboard on reload
+    if st.session_state.get("run_id") is None:
+        try:
+            if DEFAULT_DB.exists():
+                import sqlite3
+                with sqlite3.connect(DEFAULT_DB) as conn:
+                    row = conn.execute("SELECT run_id FROM tasks WHERE status='SUCCESS' ORDER BY created_at DESC LIMIT 1").fetchone()
+                    if row:
+                        st.session_state["run_id"] = row[0]
+                        st.session_state["done"] = True
+        except Exception:
+            pass
+
 
 _init_state()
 
@@ -570,7 +583,7 @@ if st.session_state.get("done") and run_id:
                     border: 1px solid rgba(99,102,241,0.25); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px;'>
                         <span style='background: rgba(99,102,241,0.2); color: #818cf8; font-size: 11px; font-weight: 700;
                         letter-spacing: 1.5px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;'>
-                            ✨ Tableau de Bord Décisionnel BIFlow
+                            ✨ Tableau de Bord Décisionnel BIFlow · Visualisations 3D Actives
                         </span>
                         <h2 style='color: #f8fafc; margin: 8px 0 4px 0; font-size: 24px; font-weight: 800;'>
                             {spec.get("title", "Analyse Décisionnelle")}
@@ -664,10 +677,9 @@ if st.session_state.get("done") and run_id:
                         except Exception as ex_k:
                             st.warning(f"Erreur KPI : {ex_k}")
 
-                # ── 2. VISUALISATION PRINCIPALE MULTI-VUES ─────────────────────
+                # ── 2. VISUALISATION PRINCIPALE MULTI-VUES (3D & 2D) ───────────
                 for chart in dim_charts:
                     c_title = chart.get("title", "Distribution")
-                    c_type = chart.get("chart_type", "bar")
                     data_file = chart.get("data_file", "")
                     data_path = Path(data_file)
                     if not data_path.is_absolute():
@@ -687,19 +699,116 @@ if st.session_state.get("done") and run_id:
                                     lambda r: f"{r[y_col]/1e3:,.1f}k BRL ({r['pct']:.1f}%)", axis=1
                                 )
 
-                                # Onglets multi-vues pour le graphique
-                                tab_v1, tab_v2, tab_v3, tab_v4 = st.tabs([
-                                    "📊 Classement par État (Barres Stylisées)",
-                                    "🍩 Répartition du Marché (Donut 3D)",
-                                    "🌲 Surfaces & Poids Relatif (Treemap)",
-                                    "📋 Matrice Détaillée (Données)"
+                                # Onglets multi-vues avec 3D en premier plan !
+                                tab_3d_map, tab_3d_bars, tab_2d_bars, tab_donut, tab_matrix = st.tabs([
+                                    "🌐 Cartographie 3D Spatiale (Pydeck)",
+                                    "🧊 Barres 3D Volumétriques (Plotly WebGL)",
+                                    "📊 Classement 2D Haute Précision",
+                                    "🍩 Répartition Donut 3D",
+                                    "📋 Matrice Détaillée"
                                 ])
 
                                 import plotly.graph_objects as go
                                 import plotly.express as px
 
-                                with tab_v1:
-                                    # Horizontal Bar Chart Moderne
+                                # ── VUE 1 : CARTE 3D PYDECK COLONNES EXTRUDÉES ─
+                                with tab_3d_map:
+                                    st.caption("Piliers 3D proportionnels au chiffre d'affaires. Faites glisser avec le clic droit pour incliner/pivoter la caméra en 3D.")
+                                    coords = {
+                                        'SP': (-23.55, -46.63), 'MG': (-19.92, -43.93), 'RJ': (-22.90, -43.17),
+                                        'RS': (-30.03, -51.23), 'PR': (-25.42, -49.27), 'SC': (-27.59, -48.54),
+                                        'BA': (-12.97, -38.51), 'DF': (-15.78, -47.92), 'GO': (-16.68, -49.26),
+                                        'ES': (-20.31, -40.33), 'PE': (-8.05, -34.88),  'CE': (-3.73, -38.54),
+                                        'PA': (-1.45, -48.50),  'PB': (-7.11, -34.86),  'MS': (-20.44, -54.64),
+                                        'Others': (-14.23, -51.92)
+                                    }
+                                    df_geo = df_calc.copy()
+                                    df_geo['lat'] = df_geo[x_col].map(lambda s: coords.get(s, (-14.23, -51.92))[0])
+                                    df_geo['lon'] = df_geo[x_col].map(lambda s: coords.get(s, (-14.23, -51.92))[1])
+                                    df_geo['elevation'] = df_geo[y_col]
+                                    df_geo['tooltip_text'] = df_geo.apply(lambda r: f"{r[x_col]} : {r[y_col]:,.2f} BRL ({r['pct']:.1f}%)", axis=1)
+
+                                    try:
+                                        import pydeck as pdk
+                                        layer = pdk.Layer(
+                                            "ColumnLayer",
+                                            data=df_geo,
+                                            get_position=["lon", "lat"],
+                                            get_elevation="elevation",
+                                            elevation_scale=1.0,
+                                            radius=50000,
+                                            get_fill_color=["elevation / 1800", "160", "255", 220],
+                                            pickable=True,
+                                            auto_highlight=True,
+                                            extruded=True,
+                                        )
+                                        view_state = pdk.ViewState(
+                                            latitude=-16.0,
+                                            longitude=-48.5,
+                                            zoom=3.8,
+                                            pitch=52,
+                                            bearing=18,
+                                        )
+                                        st.pydeck_chart(
+                                            pdk.Deck(
+                                                layers=[layer],
+                                                initial_view_state=view_state,
+                                                tooltip={"text": "{tooltip_text}"},
+                                                map_style="mapbox://styles/mapbox/dark-v10",
+                                            )
+                                        )
+                                    except Exception as ex_pdk:
+                                        st.warning(f"Pydeck 3D : {ex_pdk}")
+
+                                # ── VUE 2 : BARRES 3D VOLUMÉTRIQUES PLOTLY MESH
+                                with tab_3d_bars:
+                                    st.caption("Prismes volumétriques 3D réels avec ombrage spéculaire. Faites pivoter à 360° à la souris.")
+                                    def _make_3d_bar(x_c, y_c, z_b, dx, dy, dz):
+                                        x = [x_c - dx/2, x_c + dx/2]
+                                        y = [y_c - dy/2, y_c + dy/2]
+                                        z = [z_b, z_b + dz]
+                                        vx = [x[0], x[0], x[1], x[1], x[0], x[0], x[1], x[1]]
+                                        vy = [y[0], y[1], y[1], y[0], y[0], y[1], y[1], y[0]]
+                                        vz = [z[0], z[0], z[0], z[0], z[1], z[1], z[1], z[1]]
+                                        i = [7, 0, 0, 0, 4, 4, 6, 6, 4, 0, 3, 2]
+                                        j = [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3]
+                                        k = [0, 7, 2, 3, 6, 7, 1, 1, 5, 5, 7, 6]
+                                        return vx, vy, vz, i, j, k
+
+                                    fig_3d = go.Figure()
+                                    bar_palette = ["#00f2fe", "#38bdf8", "#818cf8", "#a855f7", "#c084fc", "#e879f9", "#ec4899", "#f43f5e"]
+                                    for idx_b, (_, row_b) in enumerate(df_calc.iterrows()):
+                                        vx, vy, vz, i_f, j_f, k_f = _make_3d_bar(idx_b, 0, 0, 0.65, 0.65, row_b[y_col] / 1e3)
+                                        col_bar = bar_palette[min(idx_b, len(bar_palette) - 1)]
+                                        fig_3d.add_trace(go.Mesh3d(
+                                            x=vx, y=vy, z=vz, i=i_f, j=j_f, k=k_f,
+                                            color=col_bar,
+                                            opacity=0.92,
+                                            flatshading=True,
+                                            lighting=dict(ambient=0.6, diffuse=0.85, specular=0.6, roughness=0.15),
+                                            name=str(row_b[x_col]),
+                                            hoverinfo="name+text",
+                                            text=f"{row_b[x_col]} : {row_b[y_col]:,.2f} BRL ({row_b['pct']:.1f}%)"
+                                        ))
+
+                                    fig_3d.update_layout(
+                                        scene=dict(
+                                            xaxis=dict(tickvals=list(range(len(df_calc))), ticktext=df_calc[x_col].tolist(), title="État"),
+                                            yaxis=dict(showticklabels=False, title=""),
+                                            zaxis=dict(title="Revenu (k BRL)"),
+                                            camera=dict(eye=dict(x=-1.5, y=-1.8, z=1.2)),
+                                            bgcolor="rgba(15,23,42,0.95)"
+                                        ),
+                                        paper_bgcolor="rgba(15,23,42,0.95)",
+                                        font=dict(color="#e2e8f0", size=11),
+                                        height=550,
+                                        margin=dict(l=20, r=20, t=30, b=20),
+                                        showlegend=False
+                                    )
+                                    st.plotly_chart(fig_3d, width='stretch')
+
+                                # ── VUE 3 : BARRES HORIZONTALES 2D HAUTE PRÉCISION
+                                with tab_2d_bars:
                                     df_h = df_calc.sort_values(y_col, ascending=True)
                                     custom_colorscale = [
                                         [0.0, "#3b82f6"],
@@ -738,8 +847,8 @@ if st.session_state.get("done") and run_id:
                                     )
                                     st.plotly_chart(fig_bar, width='stretch')
 
-                                with tab_v2:
-                                    # Donut Chart 3D Moderne
+                                # ── VUE 4 : DONUT 3D
+                                with tab_donut:
                                     fig_donut = go.Figure(data=[go.Pie(
                                         labels=df_calc[x_col],
                                         values=df_calc[y_col],
@@ -763,24 +872,8 @@ if st.session_state.get("done") and run_id:
                                     )
                                     st.plotly_chart(fig_donut, width='stretch')
 
-                                with tab_v3:
-                                    # Treemap Dynamique
-                                    fig_tree = px.treemap(
-                                        df_calc, path=[x_col], values=y_col,
-                                        color=y_col, color_continuous_scale="Viridis",
-                                        title="🌲 Cartographie en Treemap (Surface Proportionnelle au Volume)"
-                                    )
-                                    fig_tree.update_layout(
-                                        plot_bgcolor="rgba(0,0,0,0)",
-                                        paper_bgcolor="rgba(15,23,42,0.95)",
-                                        font=dict(color="#e2e8f0", size=12),
-                                        height=520,
-                                        margin=dict(l=20, r=20, t=50, b=20),
-                                    )
-                                    st.plotly_chart(fig_tree, width='stretch')
-
-                                with tab_v4:
-                                    # Tableau structuré avec progression
+                                # ── VUE 5 : MATRICE
+                                with tab_matrix:
                                     st.markdown("##### 📋 Tableau Détaillé par Région")
                                     tab_df = df_calc[[x_col, y_col, "pct"]].copy()
                                     tab_df.columns = ["État / Catégorie", "Chiffre d'Affaires (BRL)", "Part de Marché (%)"]
@@ -836,6 +929,7 @@ if st.session_state.get("done") and run_id:
                 st.error(f"Erreur lors de la lecture du Dashboard : {exc}")
         else:
             st.info("DashboardSpec non disponible (le pipeline s'est arrêté avant l'étape Dashboard).")
+
 
 
     with tab_audit:
