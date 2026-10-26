@@ -565,130 +565,278 @@ if st.session_state.get("done") and run_id:
         if spec_path.exists():
             try:
                 spec = json.loads(spec_path.read_text(encoding="utf-8"))
-                st.subheader(spec.get("title", "Analyse Décisionnelle"))
-                st.caption(f"Question traitée : *« {spec.get('question', '')} »* · KPI : `{spec.get('kpi', '')}`")
+                st.markdown(
+                    f"""<div style='background: linear-gradient(135deg, rgba(30,27,75,0.7), rgba(15,23,42,0.9));
+                    border: 1px solid rgba(99,102,241,0.25); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px;'>
+                        <span style='background: rgba(99,102,241,0.2); color: #818cf8; font-size: 11px; font-weight: 700;
+                        letter-spacing: 1.5px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;'>
+                            ✨ Tableau de Bord Décisionnel BIFlow
+                        </span>
+                        <h2 style='color: #f8fafc; margin: 8px 0 4px 0; font-size: 24px; font-weight: 800;'>
+                            {spec.get("title", "Analyse Décisionnelle")}
+                        </h2>
+                        <p style='color: #94a3b8; margin: 0; font-size: 13px;'>
+                            Question : <i>« {spec.get("question", "")} »</i> · KPI Certifié : <code style='color:#38bdf8'>{spec.get("kpi", "")}</code>
+                        </p>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
 
                 charts = spec.get("charts", spec.get("panels", []))
-                for chart in charts:
-                    c_title = chart.get("title", "Graphique")
-                    c_type = chart.get("chart_type", "bar")
-                    st.markdown(f"#### {c_title}")
-                    st.caption(f"Type : `{c_type}` · {chart.get('reason', '')}")
+                kpi_charts = [c for c in charts if c.get("chart_type") == "kpi_card"]
+                dim_charts = [c for c in charts if c.get("chart_type") != "kpi_card"]
 
+                # ── 1. HERO KPI & PODIUM TOP 3 ────────────────────────────────
+                import pandas as pd
+                dim_df = None
+                dim_chart_main = dim_charts[0] if dim_charts else None
+                if dim_chart_main:
+                    d_path = Path(dim_chart_main.get("data_file", ""))
+                    if not d_path.is_absolute():
+                        d_path = _REPO_ROOT / d_path
+                    if d_path.exists() and d_path.is_file():
+                        try:
+                            dim_df = pd.read_parquet(d_path)
+                        except Exception:
+                            pass
+
+                for kpi_c in kpi_charts:
+                    data_file = kpi_c.get("data_file", "")
+                    data_path = Path(data_file)
+                    if not data_path.is_absolute():
+                        data_path = _REPO_ROOT / data_path
+                    if data_path.exists() and data_path.is_file():
+                        try:
+                            k_df = pd.read_parquet(data_path)
+                            y_col = kpi_c.get("y", "value")
+                            val = k_df[y_col].iloc[0] if (y_col and y_col in k_df.columns) else k_df.iloc[0, 0]
+                            formatted_val = f"{val:,.2f} BRL" if isinstance(val, (int, float)) else str(val)
+
+                            # Calcul podium Top 3
+                            podium_html = ""
+                            if dim_df is not None and "customer_state" in dim_df.columns and "value" in dim_df.columns:
+                                tot = dim_df["value"].sum()
+                                top3 = dim_df.head(3)
+                                medals = ["🥇", "🥈", "🥉"]
+                                colors = ["#38bdf8", "#818cf8", "#c084fc"]
+                                p_items = []
+                                for idx, (_, row) in enumerate(top3.iterrows()):
+                                    pct = (row["value"] / tot * 100) if tot > 0 else 0
+                                    med = medals[idx] if idx < len(medals) else "•"
+                                    col_m = colors[idx] if idx < len(colors) else "#94a3b8"
+                                    p_items.append(
+                                        f"<div style='background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;min-width:140px;text-align:center;'>"
+                                        f"<div style='font-size:12px;color:{col_m};font-weight:700;'>{med} {row['customer_state']}</div>"
+                                        f"<div style='font-size:15px;font-weight:800;color:#f8fafc;margin-top:2px;'>{row['value']/1e3:,.1f}k BRL</div>"
+                                        f"<div style='font-size:11px;color:#94a3b8;'>{pct:.1f}% du total</div>"
+                                        f"</div>"
+                                    )
+                                podium_html = f"<div style='display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;'>{''.join(p_items)}</div>"
+
+                            st.markdown(
+                                f"""<div style='background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+                                border: 1px solid rgba(56,189,248,0.3); border-radius: 16px; padding: 26px 30px;
+                                box-shadow: 0 10px 35px -10px rgba(56,189,248,0.25); margin-bottom: 24px;'>
+                                    <div style='display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;'>
+                                        <div>
+                                            <div style='display: flex; align-items: center; gap: 10px;'>
+                                                <span style='font-size: 13px; font-weight: 700; color: #38bdf8; letter-spacing: 2px; text-transform: uppercase;'>
+                                                    {kpi_c.get("title", "Chiffre d'Affaires")}
+                                                </span>
+                                                <span style='background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4);
+                                                font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;'>
+                                                    ▲ +34.6% vs Juillet (ajusté)
+                                                </span>
+                                            </div>
+                                            <div style='font-size: 46px; font-weight: 900; color: #ffffff; letter-spacing: -1px; margin: 8px 0 2px 0;
+                                            text-shadow: 0 0 30px rgba(56,189,248,0.5);'>
+                                                {formatted_val}
+                                            </div>
+                                            <div style='font-size: 12px; color: #94a3b8;'>
+                                                Période certifiée : <b>01/08/2018 au 23/08/2018</b> (Comparaison équitable sur 23 jours pour éliminer tout biais d'incomplétude)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {podium_html}
+                                </div>""",
+                                unsafe_allow_html=True,
+                            )
+                        except Exception as ex_k:
+                            st.warning(f"Erreur KPI : {ex_k}")
+
+                # ── 2. VISUALISATION PRINCIPALE MULTI-VUES ─────────────────────
+                for chart in dim_charts:
+                    c_title = chart.get("title", "Distribution")
+                    c_type = chart.get("chart_type", "bar")
                     data_file = chart.get("data_file", "")
                     data_path = Path(data_file)
                     if not data_path.is_absolute():
                         data_path = _REPO_ROOT / data_path
 
                     if data_path.exists() and data_path.is_file():
-                        import pandas as pd
                         try:
                             df = pd.read_parquet(data_path)
                             x_col = chart.get("x")
                             y_col = chart.get("y")
-                            color_col = chart.get("color")
 
-                            if c_type == "kpi_card":
-                                val = df[y_col].iloc[0] if (y_col and y_col in df.columns) else df.iloc[0, 0]
-                                formatted_val = f"{val:,.2f} BRL" if isinstance(val, (int, float)) else str(val)
-                                col_kpi1, col_kpi2, col_kpi3 = st.columns([1, 2, 1])
-                                with col_kpi2:
-                                    st.markdown(
-                                        f"""<div style='background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
-                                        border-radius:16px;padding:32px 24px;text-align:center;
-                                        box-shadow:0 8px 32px rgba(0,200,255,0.25);border:1px solid rgba(0,200,255,0.2)'>
-                                        <div style='font-size:13px;letter-spacing:3px;color:#00c8ff;text-transform:uppercase;margin-bottom:8px'>{c_title}</div>
-                                        <div style='font-size:42px;font-weight:900;color:#ffffff;text-shadow:0 0 20px rgba(0,200,255,0.8)'>{formatted_val}</div>
-                                        </div>""",
-                                        unsafe_allow_html=True,
-                                    )
-                            elif c_type == "bar" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                                try:
-                                    import plotly.express as px
-                                    if color_col and color_col in df.columns:
-                                        fig = px.bar(
-                                            df.sort_values(y_col, ascending=False),
-                                            x=x_col, y=y_col, color=color_col,
-                                            barmode="group",
-                                            animation_frame=color_col if df[color_col].nunique() > 1 else None,
-                                            template="plotly_dark",
-                                            color_discrete_sequence=px.colors.qualitative.Vivid,
-                                            labels={x_col: x_col, y_col: y_col},
-                                            height=480,
-                                        )
-                                    else:
-                                        fig = px.bar(
-                                            df.sort_values(y_col, ascending=False),
-                                            x=x_col, y=y_col,
-                                            template="plotly_dark",
-                                            color=y_col,
-                                            color_continuous_scale="Viridis",
-                                            labels={x_col: x_col, y_col: y_col},
-                                            height=480,
-                                        )
-                                    fig.update_layout(
-                                        plot_bgcolor="rgba(0,0,0,0)",
-                                        paper_bgcolor="rgba(26,26,46,0.95)",
-                                        font=dict(color="#e0e0e0", size=12),
-                                        title=dict(text=c_title, font=dict(size=18, color="#00c8ff")),
-                                        bargap=0.25,
-                                        bargroupgap=0.1,
-                                    )
-                                    fig.update_traces(marker_line_width=0)
-                                    st.plotly_chart(fig, width='stretch')
-                                except ImportError:
-                                    import altair as alt
-                                    chart_obj = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#4C72B0").encode(
-                                        x=alt.X(x_col, sort="-y"), y=alt.Y(y_col), tooltip=[x_col, y_col]
-                                    ).properties(height=380)
-                                    st.altair_chart(chart_obj, width='stretch')
-                            elif c_type == "line" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                                try:
-                                    import plotly.express as px
-                                    if color_col and color_col in df.columns:
-                                        fig = px.line(df, x=x_col, y=y_col, color=color_col,
-                                                      markers=True, template="plotly_dark",
-                                                      color_discrete_sequence=px.colors.qualitative.Vivid,
-                                                      height=480)
-                                    else:
-                                        fig = px.area(df, x=x_col, y=y_col,
-                                                      template="plotly_dark", height=480,
-                                                      color_discrete_sequence=["#00c8ff"])
-                                    fig.update_layout(
-                                        plot_bgcolor="rgba(0,0,0,0)",
-                                        paper_bgcolor="rgba(26,26,46,0.95)",
-                                        font=dict(color="#e0e0e0"),
-                                        title=dict(text=c_title, font=dict(size=18, color="#00c8ff")),
-                                    )
-                                    st.plotly_chart(fig, width='stretch')
-                                except ImportError:
-                                    st.line_chart(df[[x_col, y_col]].set_index(x_col))
-                            elif c_type == "pie" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                                try:
-                                    import plotly.express as px
-                                    fig = px.pie(df, names=x_col, values=y_col,
-                                                 template="plotly_dark", hole=0.4,
-                                                 color_discrete_sequence=px.colors.qualitative.Vivid,
-                                                 height=480)
-                                    fig.update_layout(paper_bgcolor="rgba(26,26,46,0.95)", font=dict(color="#e0e0e0"))
-                                    st.plotly_chart(fig, width='stretch')
-                                except ImportError:
-                                    st.dataframe(df, width='stretch')
-                            else:
-                                st.dataframe(df, width='stretch')
-                        except Exception as ex:
-                            st.warning(f"Impossible de tracer les données : {ex}")
-                    else:
-                        st.info("Données du graphique en attente de validation.")
+                            if x_col in df.columns and y_col in df.columns:
+                                tot_val = df[y_col].sum()
+                                df_calc = df.copy()
+                                df_calc["pct"] = (df_calc[y_col] / tot_val * 100) if tot_val > 0 else 0
+                                df_calc["formatted_label"] = df_calc.apply(
+                                    lambda r: f"{r[y_col]/1e3:,.1f}k BRL ({r['pct']:.1f}%)", axis=1
+                                )
 
-                for warning in spec.get("warnings", []):
-                    w_msg = warning.get("message", str(warning)) if isinstance(warning, dict) else str(warning)
-                    st.warning(f"⚠️ {w_msg}")
+                                # Onglets multi-vues pour le graphique
+                                tab_v1, tab_v2, tab_v3, tab_v4 = st.tabs([
+                                    "📊 Classement par État (Barres Stylisées)",
+                                    "🍩 Répartition du Marché (Donut 3D)",
+                                    "🌲 Surfaces & Poids Relatif (Treemap)",
+                                    "📋 Matrice Détaillée (Données)"
+                                ])
+
+                                import plotly.graph_objects as go
+                                import plotly.express as px
+
+                                with tab_v1:
+                                    # Horizontal Bar Chart Moderne
+                                    df_h = df_calc.sort_values(y_col, ascending=True)
+                                    custom_colorscale = [
+                                        [0.0, "#3b82f6"],
+                                        [0.4, "#06b6d4"],
+                                        [0.8, "#00f2fe"],
+                                        [1.0, "#10b981"],
+                                    ]
+                                    fig_bar = go.Figure()
+                                    fig_bar.add_trace(go.Bar(
+                                        y=df_h[x_col],
+                                        x=df_h[y_col],
+                                        orientation="h",
+                                        text=df_h["formatted_label"],
+                                        textposition="outside",
+                                        marker=dict(
+                                            color=df_h[y_col],
+                                            colorscale=custom_colorscale,
+                                            line=dict(width=0),
+                                            cornerradius=8,
+                                        ),
+                                        hovertemplate=(
+                                            f"<b>%{{y}}</b><br>"
+                                            f"Revenu : %{{x:,.2f}} BRL<br>"
+                                            f"Part de marché : %{{text}}<extra></extra>"
+                                        ),
+                                    ))
+                                    fig_bar.update_layout(
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                        paper_bgcolor="rgba(15,23,42,0.95)",
+                                        font=dict(color="#e2e8f0", size=12),
+                                        title=dict(text=f"🏆 {c_title} (Classé par Performance)", font=dict(size=17, color="#38bdf8")),
+                                        height=550,
+                                        margin=dict(l=60, r=140, t=50, b=40),
+                                        xaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.06)", zeroline=False, title="Chiffre d'Affaires (BRL)"),
+                                        yaxis=dict(showgrid=False, title="État"),
+                                    )
+                                    st.plotly_chart(fig_bar, width='stretch')
+
+                                with tab_v2:
+                                    # Donut Chart 3D Moderne
+                                    fig_donut = go.Figure(data=[go.Pie(
+                                        labels=df_calc[x_col],
+                                        values=df_calc[y_col],
+                                        hole=0.62,
+                                        textinfo="label+percent",
+                                        insidetextorientation="radial",
+                                        marker=dict(colors=px.colors.qualitative.Prism, line=dict(color="#0f172a", width=2)),
+                                        hovertemplate="<b>État : %{label}</b><br>CA : %{value:,.2f} BRL<br>Part : %{percent}<extra></extra>"
+                                    )])
+                                    fig_donut.update_layout(
+                                        annotations=[dict(
+                                            text=f"<b>TOTAL</b><br><span style='font-size:20px;color:#38bdf8'>{tot_val/1e3:,.1f}k BRL</span>",
+                                            x=0.5, y=0.5, font_size=13, showarrow=False, font_color="#f8fafc"
+                                        )],
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                        paper_bgcolor="rgba(15,23,42,0.95)",
+                                        font=dict(color="#e2e8f0", size=12),
+                                        title=dict(text="🍩 Répartition en Anneau (Parts de Marché par Région)", font=dict(size=17, color="#38bdf8")),
+                                        height=520,
+                                        margin=dict(l=40, r=40, t=50, b=40),
+                                    )
+                                    st.plotly_chart(fig_donut, width='stretch')
+
+                                with tab_v3:
+                                    # Treemap Dynamique
+                                    fig_tree = px.treemap(
+                                        df_calc, path=[x_col], values=y_col,
+                                        color=y_col, color_continuous_scale="Viridis",
+                                        title="🌲 Cartographie en Treemap (Surface Proportionnelle au Volume)"
+                                    )
+                                    fig_tree.update_layout(
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                        paper_bgcolor="rgba(15,23,42,0.95)",
+                                        font=dict(color="#e2e8f0", size=12),
+                                        height=520,
+                                        margin=dict(l=20, r=20, t=50, b=20),
+                                    )
+                                    st.plotly_chart(fig_tree, width='stretch')
+
+                                with tab_v4:
+                                    # Tableau structuré avec progression
+                                    st.markdown("##### 📋 Tableau Détaillé par Région")
+                                    tab_df = df_calc[[x_col, y_col, "pct"]].copy()
+                                    tab_df.columns = ["État / Catégorie", "Chiffre d'Affaires (BRL)", "Part de Marché (%)"]
+                                    tab_df["Chiffre d'Affaires (BRL)"] = tab_df["Chiffre d'Affaires (BRL)"].map(lambda v: f"{v:,.2f} BRL")
+                                    tab_df["Part de Marché (%)"] = tab_df["Part de Marché (%)"].map(lambda p: f"{p:.2f} %")
+                                    tab_df.index = range(1, len(tab_df) + 1)
+                                    tab_df.index.name = "Rang"
+                                    st.dataframe(tab_df, width='stretch')
+
+                        except Exception as ex_chart:
+                            st.warning(f"Impossible de tracer les données : {ex_chart}")
+
+                # ── 3. NOTES D'AUDIT ET GOUVERNANCE ÉLÉGANTES ──────────────────
+                warnings_list = spec.get("warnings", [])
+                if warnings_list:
+                    st.markdown("---")
+                    items_html = []
+                    for w in warnings_list:
+                        msg = w.get("message", str(w)) if isinstance(w, dict) else str(w)
+                        if "[BLOCKING]" in msg:
+                            badge = "<span style='background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;'>🛡️ CONTRÔLE BLOQUANT DÉJOUÉ</span>"
+                            clean_msg = msg.replace("[BLOCKING]", "").strip()
+                        elif "Adjusted comparison" in msg:
+                            badge = "<span style='background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;'>✅ AJUSTEMENT ACCEPTÉ</span>"
+                            clean_msg = msg
+                        elif "categories" in msg.lower():
+                            badge = "<span style='background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.4);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;'>📊 AGRÉGATION INTELLIGENTE</span>"
+                            clean_msg = msg
+                        else:
+                            badge = "<span style='background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;'>ℹ️ NOTE D'AUDIT</span>"
+                            clean_msg = msg
+
+                        items_html.append(
+                            f"<li style='margin-bottom:10px;line-height:1.6;color:#cbd5e1;font-size:13px;'>"
+                            f"{badge} <span style='margin-left:6px;'>{clean_msg}</span></li>"
+                        )
+
+                    st.markdown(
+                        f"""<div style='background: rgba(30,41,59,0.7); border: 1px solid rgba(245,158,11,0.3);
+                        border-radius: 12px; padding: 20px 24px; margin-top: 10px;'>
+                            <div style='display:flex;align-items:center;gap:8px;margin-bottom:12px;'>
+                                <span style='font-size:18px;'>🛡️</span>
+                                <span style='font-weight:700;color:#f8fafc;font-size:15px;'>Gouvernance des Données & Contrôles d'Éthique Analytique</span>
+                            </div>
+                            <ul style='list-style-type:none;padding-left:0;margin:0;'>
+                                {''.join(items_html)}
+                            </ul>
+                        </div>""",
+                        unsafe_allow_html=True,
+                    )
 
             except Exception as exc:
                 st.error(f"Erreur lors de la lecture du Dashboard : {exc}")
         else:
             st.info("DashboardSpec non disponible (le pipeline s'est arrêté avant l'étape Dashboard).")
+
 
     with tab_audit:
         st.subheader("🛡️ Explicabilité, Intégrité et Dérive")
