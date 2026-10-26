@@ -106,7 +106,7 @@ def stub_analysis(ctx: RunContext) -> AgentResult:
     save(result, res_path)
     import pandas as pd
     data_path = ctx.output("data")
-    pd.DataFrame([{"customer_state": "SP", "Revenue": 12345.67}]).to_parquet(data_path)
+    pd.DataFrame({"customer_state": ["SP", "RJ"], "period": ["current"] * 2, "value": [9000.0, 3345.67]}).to_parquet(data_path)  # real result.parquet: <dims>, period, value
     return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS,
                        outputs={"result": res_path, "data": data_path}, message="Analysis stub: generated AnalysisResult")
 

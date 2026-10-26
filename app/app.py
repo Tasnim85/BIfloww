@@ -593,7 +593,15 @@ if st.session_state.get("done") and run_id:
                                 else:
                                     st.bar_chart(df[[x_col, y_col]].set_index(x_col))
                             elif c_type == "line" and x_col and y_col and x_col in df.columns and y_col in df.columns:
-                                st.line_chart(df[[x_col, y_col]].set_index(x_col))
+                                if color_col and color_col in df.columns:
+                                    st.line_chart(df, x=x_col, y=y_col, color=color_col)
+                                else:
+                                    st.line_chart(df[[x_col, y_col]].set_index(x_col))
+                            elif c_type == "pie" and x_col and y_col and x_col in df.columns and y_col in df.columns:
+                                import altair as alt
+                                st.altair_chart(alt.Chart(df).mark_arc().encode(
+                                    theta=alt.Theta(y_col, type="quantitative"),
+                                    color=alt.Color(x_col, type="nominal")), use_container_width=True)
                             else:
                                 st.dataframe(df, use_container_width=True)
                         except Exception as ex:
