@@ -157,12 +157,17 @@ def _run(ctx: RunContext) -> AgentResult:
         outputs["lineage"] = path
         backend = ctx.params.get("backend", "neo4j")
         if backend == "neo4j":
-            from .neo4j_store import import_graph
-            report = import_graph(graph, scope)
-            imported = ctx.output_dir / "neo4j_import.json"
-            imported.write_text(json.dumps(report, indent=2), encoding="utf-8")
-            outputs["neo4j_import"] = imported
-        elif backend != "json":
+            import os
+            if not os.environ.get("NEO4J_PASSWORD"):
+                # Neo4j not configured: fall back to json-only backend gracefully
+                backend = "json"
+            else:
+                from .neo4j_store import import_graph
+                report = import_graph(graph, scope)
+                imported = ctx.output_dir / "neo4j_import.json"
+                imported.write_text(json.dumps(report, indent=2), encoding="utf-8")
+                outputs["neo4j_import"] = imported
+        if backend not in ("neo4j", "json"):
             raise ValueError("Lineage backend must be neo4j or json")
         log_event(AuditEvent(run_id=ctx.run_id, agent=ctx.agent, step="build_lineage", decision="success", rule_version="lineage@2.0", evidence={"nodes": len(nodes), "edges": len(edges)}), ctx.journal)
         return AgentResult(run_id=ctx.run_id, agent=ctx.agent, status=AgentStatus.SUCCESS, outputs=outputs, message=f"Lineage stored in {backend}")
