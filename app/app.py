@@ -489,6 +489,10 @@ if run_id:
                     try:
                         if rev_step == "pii":
                             params["uncertain_policy"] = "redact"
+                            overrides = dict(params.get("pii_overrides") or {})
+                            overrides.setdefault("products.product_description_lenght", "MEASURE")
+                            overrides.setdefault("products.product_name_lenght", "MEASURE")
+                            params["pii_overrides"] = overrides
                         elif rev_step == "etl":
                             # If proposal file exists, hash it; otherwise use parquet-only fallback
                             if proposal_path.exists():
