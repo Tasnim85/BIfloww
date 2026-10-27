@@ -190,6 +190,14 @@ def _resume_pipeline(run_id: str, params: dict) -> None:
     st.session_state["pipeline_params"] = params
     st.session_state["running"] = True
     st.session_state["done"] = False
+    try:
+        import sqlite3
+        con = sqlite3.connect(DEFAULT_DB)
+        con.execute("UPDATE tasks SET status='PENDING', message='En attente...' WHERE run_id=? AND status IN ('SKIPPED', 'FAILED')", (run_id,))
+        con.commit()
+        con.close()
+    except Exception:
+        pass
     worker = Thread(
         target=run_pipeline,
         kwargs={
@@ -429,14 +437,24 @@ if run_id:
     worker_thread = _ACTIVE_THREADS.get(run_id)
     thread_alive = worker_thread.is_alive() if worker_thread is not None else False
 
-    TERMINAL_STATES = {"SUCCESS", "FAILED", "SKIPPED", "NEEDS_REVIEW"}
-    n_done = sum(1 for s in STEP_ORDER if status_by_step.get(s, {}).get("status") in TERMINAL_STATES)
     total_steps = len(STEP_ORDER)
-    progress_val = min(1.0, max(0.0, n_done / total_steps if total_steps else 0.0))
+    n_success = sum(1 for s in STEP_ORDER if status_by_step.get(s, {}).get("status") == "SUCCESS")
+    if thread_alive:
+        progress_val = min(1.0, max(0.0, n_success / total_steps if total_steps else 0.0))
+        prog_text = f"Progression : {n_success}/{total_steps} étapes validées ({int(progress_val*100)}%)"
+    elif all(r.get("status") == "SUCCESS" for r in task_records if r.get("step") in STEP_ORDER):
+        progress_val = 1.0
+        prog_text = f"Progression globale : 13/13 étapes terminées (100%)"
+    elif any(r.get("status") == "NEEDS_REVIEW" for r in task_records):
+        progress_val = min(1.0, max(0.0, n_success / total_steps if total_steps else 0.0))
+        prog_text = f"En attente d'arbitrage : {n_success}/{total_steps} étapes validées"
+    else:
+        progress_val = min(1.0, max(0.0, n_success / total_steps if total_steps else 0.0))
+        prog_text = f"Progression : {n_success}/{total_steps} étapes validées"
 
     col_prog, col_stat = st.columns([4, 1])
     with col_prog:
-        st.progress(progress_val, text=f"Progression globale : {n_done}/{total_steps} étapes terminées ({int(progress_val*100)}%)")
+        st.progress(progress_val, text=prog_text)
     with col_stat:
         if thread_alive:
             st.markdown('<span class="status-pill status-running">🔄 En cours</span>', unsafe_allow_html=True)
@@ -487,12 +505,21 @@ if run_id:
                 if st.button(f"✅ Approuver ({rev_step})", type="primary", key=f"ok_{run_id}_{rev_step}"):
                     params = dict(st.session_state.get("pipeline_params", {}))
                     try:
+                        params.setdefault("approved_reviews", {})[rev_step] = {"decision": "APPROVED", "reviewer": reviewer}
                         if rev_step == "pii":
                             params["uncertain_policy"] = "redact"
                             overrides = dict(params.get("pii_overrides") or {})
                             overrides.setdefault("products.product_description_lenght", "MEASURE")
                             overrides.setdefault("products.product_name_lenght", "MEASURE")
                             params["pii_overrides"] = overrides
+                            try:
+                                import sqlite3
+                                con = sqlite3.connect(DEFAULT_DB)
+                                con.execute("UPDATE tasks SET message='Arbitrage validé : masquage et génération Parquet...' WHERE run_id=? AND step='pii'", (run_id,))
+                                con.commit()
+                                con.close()
+                            except Exception:
+                                pass
                         elif rev_step == "etl":
                             # If proposal file exists, hash it; otherwise use parquet-only fallback
                             if proposal_path.exists():
