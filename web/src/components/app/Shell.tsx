@@ -19,7 +19,7 @@ const NAV = [
 ];
 
 type User = { name?: string | null; email?: string | null; image?: string | null };
-type Health = { ok: boolean; llm?: { provider: string; model: string; ready: boolean } };
+type Health = { ok: boolean; llm?: { provider: string; model: string; ready: boolean }; local_llm?: boolean; test_double?: boolean };
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations("app.nav");
@@ -52,6 +52,12 @@ function Status({ health }: { health: Health }) {
         <div className="mt-1.5 flex items-center gap-2 text-muted">
           <span className={cn("h-2 w-2 rounded-full", health.llm.ready ? "bg-ok" : "bg-warn")} />
           <span className="truncate">{health.llm.ready ? t("llm_ok", { model: health.llm.model }) : t("llm_off")}</span>
+        </div>
+      )}
+      {health.ok && (
+        <div className="mt-1.5 flex items-center gap-2 text-muted">
+          <span className={cn("h-2 w-2 rounded-full", !health.local_llm ? "bg-bad" : health.test_double ? "bg-warn" : "bg-ok")} />
+          <span className="truncate">{!health.local_llm ? t("local_off") : health.test_double ? t("local_double") : t("local_ok")}</span>
         </div>
       )}
     </div>

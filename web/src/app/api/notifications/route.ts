@@ -2,11 +2,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { currentUserId } from "@/lib/auth";
+import { syncUploads } from "@/lib/uploads";
 import { listNotifications, markNotificationsRead } from "@/lib/db";
 
 export async function GET() {
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  await syncUploads(uid);                       // an uploaded dataset that finished -> a notification
   return NextResponse.json(listNotifications(uid), { headers: { "Cache-Control": "no-store" } });
 }
 

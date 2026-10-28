@@ -21,6 +21,10 @@ export type PipelineView = S["PipelineView"];
 export type StageInfo = S["StageInfo"];
 export type ParsedQuestion = S["ParsedQuestion"];
 export type AnalysisResult = S["AnalysisResult"];
+export type DashboardView = S["DashboardView"];
+export type ChartView = S["ChartView"];
+export type Progress = S["Progress"];
+export type Review = S["Review"];
 
 export type Analysis = {
   id: string; question: string; dataset: string; file_name: string | null; file_rows: number | null;

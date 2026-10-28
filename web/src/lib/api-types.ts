@@ -24,6 +24,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/runs/{run_id}/charts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Charts
+         * @description Samar's dashboard (dashboard_spec.json + chart_advice.json + the prepared data). The data is read
+         *     from the run's own dashboard/ folder by FILE NAME only: the absolute paths of the spec are never used.
+         */
+        get: operations["charts_api_runs__run_id__charts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/parse": {
         parameters: {
             query?: never;
@@ -41,6 +62,63 @@ export interface paths {
          *     request the user submits (POST /comparisons), which is journaled.
          */
         post: operations["parse_api_parse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload
+         * @description Samar's intake: the user's CSV files and question run through the whole DAG, in the background.
+         */
+        post: operations["upload_api_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs/{run_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Progress */
+        get: operations["progress_api_runs__run_id__progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs/{run_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review
+         * @description The user's answer to the PII or ETL review, written in the journal; the run resumes.
+         */
+        post: operations["review_api_runs__run_id__review_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -472,6 +550,61 @@ export interface components {
             /** Contamination */
             contamination?: number | null;
         };
+        /** Body_upload_api_uploads_post */
+        Body_upload_api_uploads_post: {
+            /**
+             * Files
+             * @description CSV files
+             */
+            files: string[];
+            /** Question */
+            question: string;
+            /**
+             * Uploaded By
+             * @default app user
+             */
+            uploaded_by: string;
+            /**
+             * Lang
+             * @default en
+             * @enum {string}
+             */
+            lang: "fr" | "en";
+        };
+        /** ChartOption */
+        ChartOption: {
+            /** Chart Type */
+            chart_type: string;
+            /** Score */
+            score: number;
+            /** Eligible */
+            eligible: boolean;
+            /** Reason */
+            reason: string;
+        };
+        /** ChartView */
+        ChartView: {
+            /** Chart Id */
+            chart_id: string;
+            /** Chart Type */
+            chart_type: string;
+            /** Title */
+            title: string;
+            /** X */
+            x?: string | null;
+            /** Y */
+            y: string;
+            /** Color */
+            color?: string | null;
+            /** Reason */
+            reason: string;
+            /** Rows */
+            rows: {
+                [key: string]: unknown;
+            }[];
+            /** Alternatives */
+            alternatives?: components["schemas"]["ChartOption"][];
+        };
         /**
          * CheckKind
          * @enum {string}
@@ -610,6 +743,26 @@ export interface components {
             compare_to: components["schemas"]["Period"] | null;
         };
         /**
+         * DashboardView
+         * @description Samar's dashboard agent (dashboard_ai): the charts it chose, their data and its warnings.
+         */
+        DashboardView: {
+            /** Title */
+            title: string;
+            /** Question */
+            question: string;
+            /** Kpi */
+            kpi: string;
+            /** Charts */
+            charts: components["schemas"]["ChartView"][];
+            /** Warnings */
+            warnings: string[];
+            /** Comparison Shown */
+            comparison_shown?: boolean | null;
+            /** Rules Version */
+            rules_version?: string | null;
+        };
+        /**
          * Dataset
          * @description A run whose data (coverage profile + warehouse + catalog) can answer new questions.
          */
@@ -679,6 +832,30 @@ export interface components {
             /** Narrative Parts */
             narrative_parts: components["schemas"]["Msg"][];
         };
+        /** EtlLink */
+        EtlLink: {
+            /** Child */
+            child: string;
+            /** Parent */
+            parent: string;
+            /** Columns */
+            columns: string[];
+            /** Kept */
+            kept: boolean;
+        };
+        /** EtlTable */
+        EtlTable: {
+            /** Source */
+            source: string;
+            /** Role */
+            role: string;
+            /** Grain */
+            grain: string;
+            /** Measures */
+            measures?: string[];
+            /** Dates */
+            dates?: string[];
+        };
         /** EtlView */
         EtlView: {
             manifest: components["schemas"]["WarehouseManifest"];
@@ -732,6 +909,21 @@ export interface components {
             runs: number;
             /** Journals */
             journals: string[];
+            /**
+             * Local Llm
+             * @default false
+             */
+            local_llm: boolean;
+            /**
+             * Test Double
+             * @default false
+             */
+            test_double: boolean;
+            /**
+             * Pii Secret
+             * @default false
+             */
+            pii_secret: boolean;
         };
         /** InputDriftCheck */
         InputDriftCheck: {
@@ -1029,6 +1221,17 @@ export interface components {
          * @enum {string}
          */
         PiiKind: "EMAIL" | "PHONE" | "PERSON_NAME" | "ADDRESS" | "ZIP_CODE" | "PERSON_ID" | "OTHER";
+        /** PiiQuestion */
+        PiiQuestion: {
+            /** Table */
+            table: string;
+            /** Column */
+            column: string;
+            /** Proposed */
+            proposed: string;
+            /** Confidence */
+            confidence?: number | null;
+        };
         /** PiiSummary */
         PiiSummary: {
             /** Policy Version */
@@ -1072,6 +1275,26 @@ export interface components {
             coverage: components["schemas"]["CoverageSummary"][];
             anomalies?: components["schemas"]["AnomalySummary"] | null;
         };
+        /** Progress */
+        Progress: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "running" | "needs_review" | "done" | "failed" | "stopped";
+            /** Steps */
+            steps: components["schemas"]["StepProgress"][];
+            review?: components["schemas"]["Review"] | null;
+            /** Error */
+            error?: string | null;
+            /**
+             * Test Double
+             * @default false
+             */
+            test_double: boolean;
+        };
         /** ProposedFix */
         ProposedFix: {
             method: components["schemas"]["FixMethod"];
@@ -1095,6 +1318,42 @@ export interface components {
             justification_parts: components["schemas"]["Msg"][];
             /** Unit Parts */
             unit_parts: components["schemas"]["Msg"][];
+        };
+        /** Review */
+        Review: {
+            /**
+             * Step
+             * @enum {string}
+             */
+            step: "pii" | "etl" | "comparisons";
+            /** Message */
+            message: string;
+            /** Pii */
+            pii?: components["schemas"]["PiiQuestion"][];
+            /** Schema Type */
+            schema_type?: string | null;
+            /** Tables */
+            tables?: components["schemas"]["EtlTable"][];
+            /** Links */
+            links?: components["schemas"]["EtlLink"][];
+        };
+        /** ReviewAnswer */
+        ReviewAnswer: {
+            /**
+             * Step
+             * @enum {string}
+             */
+            step: "pii" | "etl";
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approve" | "reject";
+            /**
+             * Reviewer
+             * @default app user
+             */
+            reviewer: string;
         };
         /** Row */
         Row: {
@@ -1189,6 +1448,18 @@ export interface components {
             /** Source Run */
             source_run: string;
         };
+        /** StepProgress */
+        StepProgress: {
+            /** Step */
+            step: string;
+            /** Status */
+            status: string;
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+        };
         /**
          * TableKind
          * @enum {string}
@@ -1242,6 +1513,13 @@ export interface components {
             contract_version: string;
             /** Receipts */
             receipts: components["schemas"]["TransformationReceipt"][];
+        };
+        /** UploadStarted */
+        UploadStarted: {
+            /** Run Id */
+            run_id: string;
+            /** Tables */
+            tables: string[];
         };
         /**
          * UserDecision
@@ -1392,6 +1670,37 @@ export interface operations {
             };
         };
     };
+    charts_api_runs__run_id__charts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     parse_api_parse_post: {
         parameters: {
             query?: never;
@@ -1412,6 +1721,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ParsedQuestion"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_api_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_api_uploads_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadStarted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    progress_api_runs__run_id__progress_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Progress"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_api_runs__run_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewAnswer"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Progress"];
                 };
             };
             /** @description Validation Error */

@@ -185,7 +185,7 @@
   },
   "side": {
    "title": "Every number, with its proof.",
-   "text": "Live: the agents of Malek, Ikbel, Ahmed, Rabeb and Tasnim. Demo: intake and dashboard, until they are plugged in."
+   "text": "Live: all 13 agents of the team, from your CSV files to the audited dashboard."
   },
   "status": {
    "running": "Running",
@@ -195,7 +195,10 @@
    "api_ok": "Pipeline API online",
    "api_down": "Pipeline API offline",
    "llm_ok": "LLM ready · {model}",
-   "llm_off": "LLM key missing: template answers"
+   "llm_off": "LLM key missing: template answers",
+   "local_ok": "Local LLM ready (llama3)",
+   "local_double": "Local LLM: test double",
+   "local_off": "Local LLM offline: no uploads"
   },
   "mode": {
    "live": "Live",
@@ -230,7 +233,8 @@
    "olist_live": {
     "name": "Olist · full pipeline",
     "text": "The 8 real Olist CSV files (2016–2018, BRL), prepared by the team’s agents end to end."
-   }
+   },
+   "upload": "Your files"
   },
   "pipeline": {
    "title": "Pipeline",
@@ -332,13 +336,13 @@
   "new": {
    "title": "New analysis",
    "subtitle": "Three steps: your file, the data to answer on, your question.",
-   "s1_title": "Your file",
-   "s1_text": "Optional: drop a CSV to see how Askboard reads it.",
-   "drop": "Drop a CSV file here",
-   "drop_hint": "CSV, TSV or TXT · up to 50 MB · read only in your browser",
+   "s1_title": "Your files",
+   "s1_text": "Optional: drop your own CSV files. The 13 agents will prepare them and answer your question.",
+   "drop": "Drop your CSV files here",
+   "drop_hint": "One or more .csv files · up to 150 MB each",
    "browse": "Choose a file",
-   "file_type": "Please choose a .csv, .tsv or .txt file.",
-   "file_big": "Large file: only the first 50 MB are previewed.",
+   "file_type": "Only .csv files can be sent to the pipeline.",
+   "file_big": "A file is larger than 150 MB.",
    "file_meta": "{rows} rows · {cols} columns · {kb} KB",
    "remove_file": "Remove the file",
    "types": {
@@ -347,7 +351,7 @@
     "text": "text",
     "empty": "empty"
    },
-   "file_note": "Until the ingestion agents (intake, PII, profiling, cleaning, ETL) are plugged in, your file is profiled in your browser and the analysis runs on the prepared dataset you choose below.",
+   "file_note": "No file? Ask your question on a dataset already prepared by the agents (step 2).",
    "s2_title": "Data to answer on",
    "s2_text": "Prepared by the data agents: cleaned, modeled, with a KPI catalog.",
    "err_datasets": "The pipeline API is not reachable.",
@@ -375,7 +379,18 @@
    "parse_unclear": "No KPI recognised in the question. Rephrase it, or fill the fields below.",
    "parsed_title": "Question understood",
    "parsed_by": "question agent · confidence {p} %",
-   "parsed_edited": "edited by you"
+   "parsed_edited": "edited by you",
+   "file_note_upload": "Your files are sent to the pipeline: intake, privacy, profiling, cleaning, warehouse, analysis, checks, dashboard and audit. Personal data is pseudonymized before any analysis.",
+   "s2_upload": "Your own files replace a prepared dataset.",
+   "upload_title": "{n, plural, one {# file} other {# files}} will be prepared by the agents",
+   "upload_text": "It takes from a few seconds to a few minutes. The agents may ask for your review (personal data, warehouse design, a misleading comparison): you will be notified.",
+   "s3_upload": "Write it in your words: the question agent finds the KPI, the dimensions and the periods.",
+   "question_upload_hint": "Example: Revenue by customer state, August 2018 vs July 2018.",
+   "sending_title": "Sending your files…",
+   "sending_text": "The pipeline starts as soon as they are received.",
+   "err_too_many": "Too many uploads in a short time. Try again in a few minutes.",
+   "err_secret": "The pipeline is not configured: BO2_PII_SECRET is missing on the Python side.",
+   "err_llm": "The local LLM (Ollama) is not running on the Python side."
   },
   "run": {
    "not_found": "This analysis does not exist or is not yours.",
@@ -420,7 +435,7 @@
    "change": "Change",
    "previous": "Compared period",
    "current": "Studied period",
-   "chart_note": "{kpi} by {dim} · computed in SQL from the KPI catalog · periods: {source}. Temporary chart: Samar's dashboard agent replaces it.",
+   "chart_note": "{kpi} by {dim} · computed in SQL from the KPI catalog · periods: {source}.",
    "more": "Show the full explanation",
    "less": "Show less"
   },
@@ -581,7 +596,9 @@
    "v_fair": "Fair comparison",
    "agents": "{live}/{total} agents live",
    "why": "Ask why",
-   "no_number": "No computed value for this analysis (created before the analyst was connected)."
+   "no_number": "No computed value for this analysis (created before the analyst was connected).",
+   "computing": "The agents are computing the answer…",
+   "files": "{n} files"
   },
   "inspect": {
    "demo_owner": "Demo: {owner}’s agent is not connected to the app yet. What follows comes from your browser or the prepared dataset.",
@@ -692,6 +709,57 @@
     "insights": "Insights",
     "sql": "SQL generated from the KPI catalog (never written by hand)",
     "no_insight": "No insight: they are only written when every check passes."
+   },
+   "bo412_chart": "Both periods, as fixed by your decision",
+   "pending": "This agent has not run yet: it waits for the steps before it."
+  },
+  "dash": {
+   "label": "Dashboard",
+   "title": "Your dashboard",
+   "none": "No dashboard yet for this analysis.",
+   "less": "Show less",
+   "more": "Show all {n} warnings",
+   "why": "Why this chart:",
+   "options": "{n, plural, one {# other option} other {# other options}} considered",
+   "refused": "refused",
+   "types": {
+    "kpi_card": "KPI card",
+    "bar": "Bars",
+    "line": "Line",
+    "pie": "Pie",
+    "table": "Table",
+    "map": "Map"
+   },
+   "decisions_text": "The dashboard agent scores every chart type on THIS data, refuses the ones that would mislead, and explains its choice (rules {rules})."
+  },
+  "upload": {
+   "state": {
+    "running": "The agents are preparing your data",
+    "needs_review": "Your review is needed",
+    "done": "Done",
+    "failed": "The pipeline stopped on an error",
+    "stopped": "The pipeline was stopped"
+   },
+   "running": "Working on: {steps}",
+   "steps_done": "{ok} of {n} steps done",
+   "review": {
+    "pii": {
+     "title": "Personal data: please confirm",
+     "text": "The privacy agent is not sure about these columns. Confirm the type it proposes, or stop the pipeline.",
+     "none": "No column to confirm."
+    },
+    "etl": {
+     "title": "Warehouse design: please approve",
+     "text": "The ETL agent proposes this design for your data. Nothing is built before your approval.",
+     "schema": "schema: {s}",
+     "measures": "measures: {m}",
+     "dates": "dates: {d}",
+     "links": "Relationships found in your data"
+    },
+    "error": "Your answer could not be sent. Try again.",
+    "approve": "Approve and continue",
+    "reject": "Reject and stop",
+    "journaled": "Your decision is written in the audit journal before the pipeline goes on."
    }
   }
  },

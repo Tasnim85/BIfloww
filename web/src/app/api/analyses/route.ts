@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { currentUserId } from "@/lib/auth";
+import { syncUploads } from "@/lib/uploads";
 import { backend } from "@/lib/backend";
 import { addNotification, createAnalysis, listAnalyses, updateAnalysis } from "@/lib/db";
 
@@ -28,6 +29,7 @@ type ComparisonReport = { checks: { status: string }[]; user_decision: string };
 export async function GET() {
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  await syncUploads(uid);
   return NextResponse.json(listAnalyses(uid));
 }
 
@@ -37,6 +39,8 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid_form", issues: parsed.error.issues }, { status: 400 });
   const b = parsed.data;
+  // a question on PREPARED data only: a user's uploaded dataset (up_) or another analysis (custom_) is private
+  if (/^(up|custom)_/.test(b.dataset)) return NextResponse.json({ error: "invalid_dataset" }, { status: 400 });
   if (b.period.start > b.period.end || b.compareTo.start > b.compareTo.end)
     return NextResponse.json({ error: "invalid_periods" }, { status: 400 });
 

@@ -11,6 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.jobs import local_llm_reachable, uses_test_double
 from api.router import make_router
 from api.schemas import Health, LlmInfo
 from auditor import journals
@@ -43,6 +44,8 @@ def create_app(runs_root: Path = RUNS_ROOT, repo_root: Path = REPO_ROOT, llm=Non
         runs = sum(1 for p in runs_root.iterdir() if p.is_dir()) if runs_root.exists() else 0
         return Health(contracts_version=CONTRACTS_VERSION, runs=runs,
                       journals=list(journals.existing(runs_root)),
+                      local_llm=local_llm_reachable(), test_double=uses_test_double(),
+                      pii_secret=len(os.environ.get("BO2_PII_SECRET", "")) >= 32,
                       llm=LlmInfo(provider=cfg.provider, model=cfg.model,
                                   ready=cfg.provider == "ollama" or bool(cfg.api_key())))
 

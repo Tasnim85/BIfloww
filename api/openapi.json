@@ -50,6 +50,50 @@
     }
    }
   },
+  "/api/runs/{run_id}/charts": {
+   "get": {
+    "tags": [
+     "pipeline"
+    ],
+    "summary": "Charts",
+    "description": "Samar's dashboard (dashboard_spec.json + chart_advice.json + the prepared data). The data is read\nfrom the run's own dashboard/ folder by FILE NAME only: the absolute paths of the spec are never used.",
+    "operationId": "charts_api_runs__run_id__charts_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[A-Za-z0-9_-]{1,64}$",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DashboardView"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/parse": {
    "post": {
     "tags": [
@@ -75,6 +119,143 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/ParsedQuestion"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/uploads": {
+   "post": {
+    "tags": [
+     "pipeline"
+    ],
+    "summary": "Upload",
+    "description": "Samar's intake: the user's CSV files and question run through the whole DAG, in the background.",
+    "operationId": "upload_api_uploads_post",
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_upload_api_uploads_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UploadStarted"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/progress": {
+   "get": {
+    "tags": [
+     "pipeline"
+    ],
+    "summary": "Progress",
+    "operationId": "progress_api_runs__run_id__progress_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Progress"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/runs/{run_id}/review": {
+   "post": {
+    "tags": [
+     "pipeline"
+    ],
+    "summary": "Review",
+    "description": "The user's answer to the PII or ETL review, written in the journal; the run resumes.",
+    "operationId": "review_api_runs__run_id__review_post",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Run Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReviewAnswer"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Progress"
         }
        }
       }
@@ -1461,6 +1642,145 @@
     ],
     "title": "AnomalySummary"
    },
+   "Body_upload_api_uploads_post": {
+    "properties": {
+     "files": {
+      "items": {
+       "type": "string",
+       "contentMediaType": "application/octet-stream"
+      },
+      "type": "array",
+      "title": "Files",
+      "description": "CSV files"
+     },
+     "question": {
+      "type": "string",
+      "maxLength": 500,
+      "minLength": 3,
+      "title": "Question"
+     },
+     "uploaded_by": {
+      "type": "string",
+      "maxLength": 100,
+      "title": "Uploaded By",
+      "default": "app user"
+     },
+     "lang": {
+      "type": "string",
+      "enum": [
+       "fr",
+       "en"
+      ],
+      "title": "Lang",
+      "default": "en"
+     }
+    },
+    "type": "object",
+    "required": [
+     "files",
+     "question"
+    ],
+    "title": "Body_upload_api_uploads_post"
+   },
+   "ChartOption": {
+    "properties": {
+     "chart_type": {
+      "type": "string",
+      "title": "Chart Type"
+     },
+     "score": {
+      "type": "number",
+      "title": "Score"
+     },
+     "eligible": {
+      "type": "boolean",
+      "title": "Eligible"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     }
+    },
+    "type": "object",
+    "required": [
+     "chart_type",
+     "score",
+     "eligible",
+     "reason"
+    ],
+    "title": "ChartOption"
+   },
+   "ChartView": {
+    "properties": {
+     "chart_id": {
+      "type": "string",
+      "title": "Chart Id"
+     },
+     "chart_type": {
+      "type": "string",
+      "title": "Chart Type"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "x": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "X"
+     },
+     "y": {
+      "type": "string",
+      "title": "Y"
+     },
+     "color": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Color"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     },
+     "rows": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Rows"
+     },
+     "alternatives": {
+      "items": {
+       "$ref": "#/components/schemas/ChartOption"
+      },
+      "type": "array",
+      "title": "Alternatives"
+     }
+    },
+    "type": "object",
+    "required": [
+     "chart_id",
+     "chart_type",
+     "title",
+     "y",
+     "reason",
+     "rows"
+    ],
+    "title": "ChartView"
+   },
    "CheckKind": {
     "type": "string",
     "enum": [
@@ -1803,6 +2123,68 @@
     ],
     "title": "DashboardState"
    },
+   "DashboardView": {
+    "properties": {
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "question": {
+      "type": "string",
+      "title": "Question"
+     },
+     "kpi": {
+      "type": "string",
+      "title": "Kpi"
+     },
+     "charts": {
+      "items": {
+       "$ref": "#/components/schemas/ChartView"
+      },
+      "type": "array",
+      "title": "Charts"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Warnings"
+     },
+     "comparison_shown": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comparison Shown"
+     },
+     "rules_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rules Version"
+     }
+    },
+    "type": "object",
+    "required": [
+     "title",
+     "question",
+     "kpi",
+     "charts",
+     "warnings"
+    ],
+    "title": "DashboardView",
+    "description": "Samar's dashboard agent (dashboard_ai): the charts it chose, their data and its warnings."
+   },
    "Dataset": {
     "properties": {
      "run_id": {
@@ -2003,6 +2385,74 @@
     ],
     "title": "DriftReport"
    },
+   "EtlLink": {
+    "properties": {
+     "child": {
+      "type": "string",
+      "title": "Child"
+     },
+     "parent": {
+      "type": "string",
+      "title": "Parent"
+     },
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Columns"
+     },
+     "kept": {
+      "type": "boolean",
+      "title": "Kept"
+     }
+    },
+    "type": "object",
+    "required": [
+     "child",
+     "parent",
+     "columns",
+     "kept"
+    ],
+    "title": "EtlLink"
+   },
+   "EtlTable": {
+    "properties": {
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "role": {
+      "type": "string",
+      "title": "Role"
+     },
+     "grain": {
+      "type": "string",
+      "title": "Grain"
+     },
+     "measures": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Measures"
+     },
+     "dates": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Dates"
+     }
+    },
+    "type": "object",
+    "required": [
+     "source",
+     "role",
+     "grain"
+    ],
+    "title": "EtlTable"
+   },
    "EtlView": {
     "properties": {
      "manifest": {
@@ -2137,6 +2587,21 @@
       },
       "type": "array",
       "title": "Journals"
+     },
+     "local_llm": {
+      "type": "boolean",
+      "title": "Local Llm",
+      "default": false
+     },
+     "test_double": {
+      "type": "boolean",
+      "title": "Test Double",
+      "default": false
+     },
+     "pii_secret": {
+      "type": "boolean",
+      "title": "Pii Secret",
+      "default": false
      }
     },
     "type": "object",
@@ -2889,6 +3354,40 @@
     ],
     "title": "PiiKind"
    },
+   "PiiQuestion": {
+    "properties": {
+     "table": {
+      "type": "string",
+      "title": "Table"
+     },
+     "column": {
+      "type": "string",
+      "title": "Column"
+     },
+     "proposed": {
+      "type": "string",
+      "title": "Proposed"
+     },
+     "confidence": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confidence"
+     }
+    },
+    "type": "object",
+    "required": [
+     "table",
+     "column",
+     "proposed"
+    ],
+    "title": "PiiQuestion"
+   },
    "PiiSummary": {
     "properties": {
      "policy_version": {
@@ -3093,6 +3592,65 @@
     ],
     "title": "ProfilingSummary"
    },
+   "Progress": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "state": {
+      "type": "string",
+      "enum": [
+       "running",
+       "needs_review",
+       "done",
+       "failed",
+       "stopped"
+      ],
+      "title": "State"
+     },
+     "steps": {
+      "items": {
+       "$ref": "#/components/schemas/StepProgress"
+      },
+      "type": "array",
+      "title": "Steps"
+     },
+     "review": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Review"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "test_double": {
+      "type": "boolean",
+      "title": "Test Double",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "state",
+     "steps"
+    ],
+    "title": "Progress"
+   },
    "ProposedFix": {
     "properties": {
      "method": {
@@ -3195,6 +3753,93 @@
      "unit_parts"
     ],
     "title": "ProposedFix"
+   },
+   "Review": {
+    "properties": {
+     "step": {
+      "type": "string",
+      "enum": [
+       "pii",
+       "etl",
+       "comparisons"
+      ],
+      "title": "Step"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message"
+     },
+     "pii": {
+      "items": {
+       "$ref": "#/components/schemas/PiiQuestion"
+      },
+      "type": "array",
+      "title": "Pii"
+     },
+     "schema_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Schema Type"
+     },
+     "tables": {
+      "items": {
+       "$ref": "#/components/schemas/EtlTable"
+      },
+      "type": "array",
+      "title": "Tables"
+     },
+     "links": {
+      "items": {
+       "$ref": "#/components/schemas/EtlLink"
+      },
+      "type": "array",
+      "title": "Links"
+     }
+    },
+    "type": "object",
+    "required": [
+     "step",
+     "message"
+    ],
+    "title": "Review"
+   },
+   "ReviewAnswer": {
+    "properties": {
+     "step": {
+      "type": "string",
+      "enum": [
+       "pii",
+       "etl"
+      ],
+      "title": "Step"
+     },
+     "decision": {
+      "type": "string",
+      "enum": [
+       "approve",
+       "reject"
+      ],
+      "title": "Decision"
+     },
+     "reviewer": {
+      "type": "string",
+      "maxLength": 100,
+      "title": "Reviewer",
+      "default": "app user"
+     }
+    },
+    "type": "object",
+    "required": [
+     "step",
+     "decision"
+    ],
+    "title": "ReviewAnswer"
    },
    "Row": {
     "properties": {
@@ -3504,6 +4149,29 @@
     ],
     "title": "StageInfo"
    },
+   "StepProgress": {
+    "properties": {
+     "step": {
+      "type": "string",
+      "title": "Step"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "message": {
+      "type": "string",
+      "title": "Message",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "required": [
+     "step",
+     "status"
+    ],
+    "title": "StepProgress"
+   },
    "TableKind": {
     "type": "string",
     "enum": [
@@ -3637,6 +4305,27 @@
      "receipts"
     ],
     "title": "TransformationReceipts"
+   },
+   "UploadStarted": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "tables": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Tables"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "tables"
+    ],
+    "title": "UploadStarted"
    },
    "UserDecision": {
     "type": "string",

@@ -18,6 +18,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Path as PathParam, Query
 
+from api.jobs import Jobs, is_upload_run, make_jobs_router
 from api.stages import make_stages_router
 from api.schemas import (Dataset, DatasetKpi, DashboardState, Decision, ExplanationPage, JournalInfo, NewComparison,
                          NewComparisonResult, RunInfo, RunSummary, WhyQuestion)
@@ -25,6 +26,7 @@ from auditor import journals
 from auditor.why import WhyAgent
 from analysis.analyst import run as run_analyst
 from comparisons.checker import record_decision, run as run_checker
+from dashboard_ai.agent import run as run_dashboard_agent
 from comparisons.values import KpiBreakdown, dashboard_periods, kpi_by_dimension
 from contracts.agent import RunContext
 from contracts.audit import IntegrityReport, JournalEntry, read_events, verify_journal
@@ -57,6 +59,9 @@ def make_router(runs_root: Path = RUNS_ROOT, repo_root: Path = REPO_ROOT, llm=No
     runs_root, repo_root = Path(runs_root), Path(repo_root)
     router = APIRouter()
     router.include_router(make_stages_router(runs_root, repo_root))     # what every agent wrote + /parse
+    jobs = Jobs(runs_root, repo_root)                                    # the user's own files through the whole DAG
+    router.include_router(make_jobs_router(jobs))
+    router.jobs = jobs
     visible = journals.visible()
     JournalId = Annotated[str, PathParam(pattern="^(" + "|".join(visible) + ")$")]
 
@@ -103,7 +108,7 @@ def make_router(runs_root: Path = RUNS_ROOT, repo_root: Path = REPO_ROOT, llm=No
         warehouse and catalog present. Custom runs (custom_*) reuse another run's data: left out."""
         out = []
         for r in run_ids():
-            if r.startswith("custom_"):
+            if r.startswith("custom_") or is_upload_run(r):      # a user's own data is never listed to others
                 continue
             ctx = context_for("comparisons", r, runs_root, repo_root)
             paths = ctx.inputs
@@ -152,9 +157,26 @@ def make_router(runs_root: Path = RUNS_ROOT, repo_root: Path = REPO_ROOT, llm=No
         pending. Written in the audit journal. Nothing is applied without it."""
         need(run_id, "comparisons.report")
         try:
-            return localize(record_decision(run_id, body.decision, body.chosen_fix, **ctx_kwargs(run_id)), lang)
+            report = record_decision(run_id, body.decision, body.chosen_fix, **ctx_kwargs(run_id))
         except ValueError as e:
             raise HTTPException(400, str(e))
+        if is_upload_run(run_id):
+            if report.user_decision != "pending":
+                jobs.resume(run_id)                  # the paused DAG goes on: dashboard, then auditor
+        else:
+            refresh_dashboard(run_id, lang)          # the charts follow the decision
+        return localize(report, lang)
+
+    def refresh_dashboard(run_id: str, lang: str) -> None:
+        """Samar's dashboard agent on a question asked in the app (custom_* runs). Not fatal: the
+        BO4-12 chart still works without it. Logged in the run's journal."""
+        if not run_id.startswith("custom_") or not path_of(run_id, "analysis.result").exists():
+            return
+        ctx = context_for("dashboard", run_id, params={"lang": lang}, **ctx_kwargs(run_id))
+        try:
+            run_dashboard_agent(ctx)
+        except Exception as e:                     # noqa: BLE001  logged, never hidden
+            ctx.log("dashboard_crashed", f"{type(e).__name__}: {e}"[:300])
 
     @router.post("/comparisons", response_model=NewComparisonResult, tags=["BO4-12 comparisons"])
     def new_comparison(body: NewComparison, lang: Lang):
@@ -205,6 +227,7 @@ def make_router(runs_root: Path = RUNS_ROOT, repo_root: Path = REPO_ROOT, llm=No
         except ValueError as e:
             raise HTTPException(400, str(e))
         report = load(ComparisonReport, res.outputs["report"])
+        refresh_dashboard(run_id, body.lang or lang)
         return NewComparisonResult(run_id=run_id, report=localize(report, body.lang or lang))
 
     @router.get("/runs/{run_id}/dashboard", response_model=KpiBreakdown, tags=["BO4-12 comparisons"])
