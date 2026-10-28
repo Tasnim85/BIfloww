@@ -103,6 +103,7 @@ ui:
     clinics: "Cliniques (2e jeu de données)"
     ui: "Essais depuis l'interface"
     real: "Journal réel"
+    integration: "Tests d’intégration (faux Ollama)"
   common:
     run: "Run"
     journal: "Journal"

@@ -17,6 +17,10 @@ const Body = z.object({
                    columns: z.array(z.string().max(200)).max(500) }).nullable().optional(),
   llm: z.boolean().optional(),
   lang: z.enum(["en", "fr"]),
+  // from Malek's parser (POST /api/backend/parse), sent only when the form kept its proposal
+  confidence: z.number().min(0).max(1).optional(),
+  matchedTerms: z.record(z.string().max(100), z.string().max(100)).optional()
+    .refine((m) => !m || Object.keys(m).length <= 20, "too many terms"),
 });
 
 type ComparisonReport = { checks: { status: string }[]; user_decision: string };
@@ -43,7 +47,8 @@ export async function POST(req: Request) {
   const res = await backend<{ run_id: string; report: ComparisonReport; detail?: string }>("comparisons", {
     method: "POST", lang: b.lang,
     body: { base_run: b.dataset, metric: b.metric, dimensions: b.dimensions, period: b.period,
-            compare_to: b.compareTo, question: b.question, llm: Boolean(b.llm), lang: b.lang },
+            compare_to: b.compareTo, question: b.question, llm: Boolean(b.llm), lang: b.lang,
+            ...(b.matchedTerms ? { matched_terms: b.matchedTerms, confidence: b.confidence ?? 1 } : {}) },
   });
   if (res.status !== 200) {
     updateAnalysis(a.id, uid, { status: "failed" });
