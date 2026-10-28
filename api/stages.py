@@ -10,12 +10,14 @@ Rules, as for the rest of the API:
   * a custom run (custom_*, created by POST /comparisons) owns its request, analysis and
     comparison; the data steps (similarity ... lineage) come from its base run, said in `source_run`.
 """
+import json
 import tempfile
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
 from typing import Annotated, Literal
 
+import pandas as pd
 from fastapi import APIRouter, HTTPException, Path as PathParam
 from pydantic import BaseModel, Field
 
@@ -135,6 +137,36 @@ class PipelineView(BaseModel):
     analysis: AnalysisResult | None = None
 
 
+class ChartOption(BaseModel):
+    chart_type: str
+    score: float
+    eligible: bool
+    reason: str
+
+
+class ChartView(BaseModel):
+    chart_id: str
+    chart_type: str                     # kpi_card, bar, line, pie, table (map: not rendered yet)
+    title: str
+    x: str | None = None
+    y: str
+    color: str | None = None
+    reason: str                         # why the dashboard agent chose this chart
+    rows: list[dict]                    # the prepared data (at most 200 rows)
+    alternatives: list[ChartOption] = Field(default_factory=list)   # every type considered, best first
+
+
+class DashboardView(BaseModel):
+    """Samar's dashboard agent (dashboard_ai): the charts it chose, their data and its warnings."""
+    title: str
+    question: str
+    kpi: str
+    charts: list[ChartView]
+    warnings: list[str]
+    comparison_shown: bool | None = None
+    rules_version: str | None = None
+
+
 class ParseQuestion(BaseModel):
     question: str = Field(..., min_length=3, max_length=500)
     base_run: str = Field(..., pattern=r"^[A-Za-z0-9_-]{1,64}$", description="Run whose catalog / glossary are used")
@@ -245,6 +277,31 @@ def make_stages_router(runs_root: Path, repo_root: Path) -> APIRouter:
                     ref = next((k.ref for k in catalog.kpis if k.name == view.request.metric), None)
             view.lineage = kpi_path(graph, ref) if ref else None
         return view
+
+    @router.get("/runs/{run_id}/charts", response_model=DashboardView, tags=["pipeline"])
+    def charts(run_id: RunId):
+        """Samar's dashboard (dashboard_spec.json + chart_advice.json + the prepared data). The data is read
+        from the run's own dashboard/ folder by FILE NAME only: the absolute paths of the spec are never used."""
+        folder = runs_root / run_id / "dashboard"
+        spec = read(run_id, "dashboard.spec")
+        if spec is None:
+            raise HTTPException(404, f"Run '{run_id}' has no dashboard yet.")
+        advice_file = folder / "chart_advice.json"
+        advice = json.loads(advice_file.read_text(encoding="utf-8")) if advice_file.exists() else {}
+        ranking = {d["chart_id"]: d.get("candidates", []) for d in advice.get("decisions", [])}
+        out = []
+        for c in spec.charts:
+            data = folder / Path(c.data_file.replace("\\", "/")).name
+            rows = []
+            if data.suffix == ".parquet" and data.exists():
+                df = pd.read_parquet(data).head(200)
+                rows = json.loads(df.to_json(orient="records", date_format="iso"))
+            out.append(ChartView(chart_id=c.chart_id, chart_type=c.chart_type.value, title=c.title, x=c.x, y=c.y,
+                                 color=c.color, reason=c.reason, rows=rows,
+                                 alternatives=[ChartOption(chart_type=a["chart_type"], score=a["score"], eligible=a["eligible"],
+                                                          reason=" ".join(a.get("reasons", []))) for a in ranking.get(c.chart_id, [])]))
+        return DashboardView(title=spec.title, question=spec.question, kpi=spec.kpi, charts=out, warnings=spec.warnings,
+                             comparison_shown=advice.get("comparison_shown"), rules_version=advice.get("rules_version"))
 
     # ---- Malek's request parser, live ----------------------------------------------------------------
     @router.post("/parse", response_model=ParsedQuestion, tags=["pipeline"])

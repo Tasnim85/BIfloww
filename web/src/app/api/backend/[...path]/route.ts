@@ -14,14 +14,15 @@ import { backend } from "@/lib/backend";
 import { analysisByRun, updateAnalysis } from "@/lib/db";
 import { allow } from "@/lib/rate-limit";
 import { isShowcaseRun } from "@/lib/pipeline";
+import { isUploadRun } from "@/lib/uploads";
 
 const RUN = "([A-Za-z0-9_-]{1,64})";
 const READ: RegExp[] = [
   /^datasets$/, /^drift$/, /^journals$/, /^journals\/(demo|drift|clinics|ui|real|integration)\/verify$/,
-  new RegExp(`^runs/${RUN}(/(comparison|dashboard|journal|drift|explanations|pipeline))?$`),
+  new RegExp(`^runs/${RUN}(/(comparison|dashboard|journal|drift|explanations|pipeline|charts|progress))?$`),
   new RegExp(`^runs/${RUN}/explanations/[A-Za-z0-9_.:-]{1,128}$`),
 ];
-const WRITE: RegExp[] = [new RegExp(`^runs/${RUN}/(comparison/decision|why)$`), /^parse$/];
+const WRITE: RegExp[] = [new RegExp(`^runs/${RUN}/(comparison/decision|why|review)$`), /^parse$/];
 const PASS_QUERY = ["limit", "offset", "anomalies_only", "include_llm"];
 
 type Ctx = { params: Promise<{ path: string[] }> };
@@ -50,8 +51,10 @@ async function handle(req: Request, { params }: Ctx, method: "GET" | "POST") {
 
   if (method === "POST" && owned && path.endsWith("comparison/decision") && res.status === 200) {
     const decision = String(res.data.user_decision ?? "");
-    updateAnalysis(owned.id, uid, { decision, status: decision === "pending" ? "needs_review" : "completed" });
+    // an uploaded dataset goes on in the pipeline (dashboard, auditor): synced later in src/lib/uploads.ts
+    updateAnalysis(owned.id, uid, { decision, status: decision === "pending" ? "needs_review" : isUploadRun(runId) ? "running" : "completed" });
   }
+  if (method === "POST" && owned && path.endsWith("/review") && res.status === 200) updateAnalysis(owned.id, uid, { status: "running" });
   return NextResponse.json(res.data, { status: res.status });
 }
 

@@ -11,15 +11,17 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChecksPanel, DriftPanel, ExplanationsPanel, JournalPanel, WhyPanel } from "@/components/run/AuditPanels";
 import { ComparisonBanner, KpiChart } from "@/components/run/ComparisonPanel";
+import { DashboardCharts, DashboardDecisions } from "@/components/run/DashboardCharts";
+import { ReviewCard, UploadProgress } from "@/components/run/UploadProgress";
 import { ICONS, PipelineRail, StateDot } from "@/components/run/PipelineRail";
 import {
   AnalysisPanel, CleaningPanel, ColumnTypesPanel, EtlPanel, Insights, LineagePanel, PiiPanel, ProfilingPanel,
   RequestPanel, SimilarityPanel, UploadPanel,
 } from "@/components/run/StagePanels";
 import { Skeleton, StatusBadge, fmtDate, fmtNum, fmtPct } from "@/components/ui/kit";
-import { type Analysis, type ComparisonReport, type PipelineView, type ProposedFix, type RunSummary, useApi } from "@/lib/client";
+import { type Analysis, type ComparisonReport, type PipelineView, type Progress, type ProposedFix, type RunSummary, useApi } from "@/lib/client";
 import { cn } from "@/lib/cn";
-import { DATASET_INFO, STAGES, type StageState, stageState } from "@/lib/pipeline";
+import { DATASET_INFO, STAGES, type StageState, isUploadRunId, stageState } from "@/lib/pipeline";
 
 const AUDIT_TABS = ["explanations", "journal", "drift", "why"] as const;
 type AuditTab = (typeof AUDIT_TABS)[number];
@@ -31,6 +33,11 @@ export function RunView({ id, isNew }: { id: string; isNew: boolean }) {
   const a = analysis.data;
   const summary = useApi<RunSummary>(a?.run_id ? `runs/${a.run_id}` : null);
   const pipe = useApi<PipelineView>(a?.run_id ? `runs/${a.run_id}/pipeline` : null);
+  // an uploaded dataset: the whole DAG runs in the API; its real progress is polled while it works
+  const isUpload = isUploadRunId(a?.run_id);
+  const prog = useApi<Progress>(isUpload && a?.run_id ? `runs/${a.run_id}/progress` : null);
+  const progState = prog.data?.state;
+  const okCount = prog.data?.steps.filter((s) => s.status === "SUCCESS").length ?? 0;
   const [selected, setSelected] = useState("analysis");
   const [auditTab, setAuditTab] = useState<AuditTab>("explanations");
   const [version, setVersion] = useState(0);
@@ -45,8 +52,18 @@ export function RunView({ id, isNew }: { id: string; isNew: boolean }) {
     return () => clearTimeout(tm);
   }, [progress]);
 
-  const refresh = useCallback(() => { void summary.reload(); void analysis.reload(); setVersion((v) => v + 1); },
-    [summary, analysis]);
+  useEffect(() => {
+    if (progState !== "running") return;
+    const tm = setInterval(() => { if (document.visibilityState === "visible") void prog.reload(); }, 2500);
+    return () => clearInterval(tm);
+  }, [progState]);                                                   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {                                                  // a step finished: show its output
+    if (!isUpload) return;
+    void pipe.reload(); void summary.reload(); void analysis.reload(); setVersion((v) => v + 1);
+  }, [okCount, progState]);                                          // eslint-disable-line react-hooks/exhaustive-deps
+
+  const refresh = useCallback(() => { void summary.reload(); void analysis.reload(); void prog.reload(); setVersion((v) => v + 1); },
+    [summary, analysis, prog]);
   const goTo = useCallback((stage: string, tab?: AuditTab) => {
     setSelected(stage); if (tab) setAuditTab(tab);
     setTimeout(() => inspector.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
@@ -88,10 +105,13 @@ export function RunView({ id, isNew }: { id: string; isNew: boolean }) {
         <StatusBadge status={a.status} label={t(`status.${a.status}`)} />
       </div>
 
-      <Hero a={a} report={report} view={view} done={done} datasetName={datasetName} liveCount={liveCount}
-            onWhy={() => goTo("auditor", "why")} onChecks={() => goTo("comparisons")} />
+      <Hero a={a} report={report} view={view} done={done} datasetName={isUpload ? t("datasets.upload") : datasetName} liveCount={liveCount}
+            working={isUpload && progState !== "done"} onWhy={() => goTo("auditor", "why")} onChecks={() => goTo("comparisons")} />
 
-      {a.status === "failed" && (
+      {isUpload && prog.data && progState !== "done" && <UploadProgress p={prog.data} />}
+      {isUpload && a.run_id && prog.data?.review && <ReviewCard runId={a.run_id} review={prog.data.review} onAnswered={refresh} />}
+
+      {a.status === "failed" && !isUpload && (
         <div role="alert" className="flex items-start gap-2 rounded-xl border border-bad/30 bg-bad-soft p-4 text-sm text-bad">
           <AlertCircle className="mt-0.5 h-4 w-4" />{t("run.failed")}
         </div>
@@ -107,7 +127,10 @@ export function RunView({ id, isNew }: { id: string; isNew: boolean }) {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <ComparisonBanner runId={a.run_id} report={report} canDecide onChanged={refresh} />
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="min-w-0"><KpiChart runId={a.run_id} version={version} /></div>
+              <div className="min-w-0">
+                <DashboardCharts runId={a.run_id} version={version} unit={view?.analysis?.unit ?? ""}
+                                 onEmpty={<KpiChart runId={a.run_id} version={version} />} />
+              </div>
               <aside className="card p-5">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="font-semibold">{t("run.insights")}</h2>
@@ -137,7 +160,9 @@ export function RunView({ id, isNew }: { id: string; isNew: boolean }) {
         </div>
         <div className="px-4 pt-4 sm:px-5">
           <PipelineRail states={states} selected={selected} onSelect={setSelected} progress={progress}
-                        alerts={blocked && report?.user_decision === "pending" ? ["comparisons"] : []} />
+                        real={isUpload ? Object.fromEntries((prog.data?.steps ?? []).map((s) => [s.step, s.status])) : undefined}
+                        alerts={[...(blocked && report?.user_decision === "pending" ? ["comparisons"] : []),
+                                 ...(prog.data?.steps ?? []).filter((s) => s.status === "NEEDS_REVIEW" || s.status === "FAILED").map((s) => s.step)]} />
         </div>
         <div ref={inspector} id="stage-inspector" role="tabpanel" className="scroll-mt-20 border-t border-line bg-bg/40 p-5 sm:p-6">
           {!done ? (
@@ -145,7 +170,8 @@ export function RunView({ id, isNew }: { id: string; isNew: boolean }) {
           ) : (
             <Inspector stage={selected} state={states[selected]} a={a} view={view} viewLoading={pipe.loading} report={report}
                        summary={summary.data} datasetName={datasetName} auditTab={auditTab} setAuditTab={setAuditTab}
-                       highlight={highlight} setHighlight={setHighlight} onSelect={setSelected} />
+                       highlight={highlight} setHighlight={setHighlight} onSelect={setSelected} version={version}
+                       pending={isUpload && progState !== "done"} />
           )}
         </div>
       </section>
@@ -154,9 +180,9 @@ export function RunView({ id, isNew }: { id: string; isNew: boolean }) {
 }
 
 // ---- the answer -------------------------------------------------------------------------------------------------
-function Hero({ a, report, view, done, datasetName, liveCount, onWhy, onChecks }:
+function Hero({ a, report, view, done, datasetName, liveCount, working, onWhy, onChecks }:
   { a: Analysis; report: ComparisonReport | null; view: PipelineView | null; done: boolean; datasetName: string;
-    liveCount: number; onWhy: () => void; onChecks: () => void }) {
+    liveCount: number; working: boolean; onWhy: () => void; onChecks: () => void }) {
   const t = useTranslations("app.hero");
   const locale = useLocale();
   const res = view?.analysis ?? null;
@@ -181,21 +207,22 @@ function Hero({ a, report, view, done, datasetName, liveCount, onWhy, onChecks }
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/60">
             <span className="inline-flex items-center gap-1.5"><Database className="h-3.5 w-3.5" />{datasetName}</span>
-            {a.file_name && <span className="inline-flex items-center gap-1.5"><FileSpreadsheet className="h-3.5 w-3.5" />{a.file_name}</span>}
+            {a.file_name && <span className="inline-flex items-center gap-1.5" title={a.file_name}><FileSpreadsheet className="h-3.5 w-3.5" />
+              {a.file_name.includes(", ") ? t("files", { n: a.file_columns.length || a.file_name.split(", ").length }) : a.file_name}</span>}
             <span>{fmtDate(a.created_at, locale)}</span>
           </div>
           <h1 className="mt-3 font-display text-2xl font-bold leading-tight [overflow-wrap:anywhere] sm:text-[2rem]">“{a.question}”</h1>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-white/10 px-2.5 py-1">{a.metric}{a.dimensions[0] ? ` · ${a.dimensions[0].replace(/_/g, " ")}` : ""}</span>
-            <span className="rounded-full bg-white/10 px-2.5 py-1 tabular-nums">{a.period_start} → {a.period_end}</span>
-            <span className="rounded-full bg-white/10 px-2.5 py-1 tabular-nums">{t("vs")} {a.compare_start} → {a.compare_end}</span>
+            {a.metric && <span className="rounded-full bg-white/10 px-2.5 py-1">{a.metric}{a.dimensions[0] ? ` · ${a.dimensions[0].replace(/_/g, " ")}` : ""}</span>}
+            {a.period_start && <span className="rounded-full bg-white/10 px-2.5 py-1 tabular-nums">{a.period_start} → {a.period_end}</span>}
+            {a.compare_start && <span className="rounded-full bg-white/10 px-2.5 py-1 tabular-nums">{t("vs")} {a.compare_start} → {a.compare_end}</span>}
           </div>
         </div>
         <div className="min-w-[260px]">
           {!done ? (
             <div className="space-y-2" aria-hidden><div className="h-4 w-24 animate-pulse rounded bg-white/15" /><div className="h-12 w-56 animate-pulse rounded-lg bg-white/15" /><div className="h-4 w-40 animate-pulse rounded bg-white/10" /></div>
           ) : !head ? (
-            <p className="max-w-xs text-sm text-white/60">{t("no_number")}</p>
+            <p className="max-w-xs text-sm text-white/60">{working ? t("computing") : t("no_number")}</p>
           ) : (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               <div className="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">{head.label}</div>
@@ -230,22 +257,26 @@ function Hero({ a, report, view, done, datasetName, liveCount, onWhy, onChecks }
 }
 
 // ---- the inspector -------------------------------------------------------------------------------------------------
-function Inspector({ stage, state, a, view, viewLoading, report, summary, datasetName, auditTab, setAuditTab, highlight, setHighlight, onSelect }:
+function Inspector({ stage, state, a, view, viewLoading, report, summary, datasetName, auditTab, setAuditTab, highlight, setHighlight, onSelect, version, pending }:
   { stage: string; state: StageState; a: Analysis; view: PipelineView | null; viewLoading: boolean; report: ComparisonReport | null;
     summary: RunSummary | null; datasetName: string; auditTab: AuditTab; setAuditTab: (x: AuditTab) => void;
-    highlight: number[]; setHighlight: (x: number[]) => void; onSelect: (s: string) => void }) {
+    highlight: number[]; setHighlight: (x: number[]) => void; onSelect: (s: string) => void; version: number;
+    pending?: boolean }) {
   const t = useTranslations("app");
   const i = STAGES.findIndex((s) => s.id === stage);
   const s = STAGES[i];
   const Icon = ICONS[s.icon];
   const info = view?.stages.find((x) => x.step === stage);
   const fromDataset = s.scope === "dataset";
+  const Missing = () => <MissingNote pending={pending} />;
 
   let body: React.ReactNode;
   if (viewLoading && !view) body = <Skeleton className="h-64" />;
-  else if (stage === "upload") body = <><DemoNote text={t("inspect.demo_owner", { owner: s.owner })} /><UploadPanel v={view} a={a} /></>;
-  else if (stage === "dashboard") body = <DemoNote text={t("inspect.dashboard_demo")} />;
-  else if (stage === "comparisons") body = report ? <ChecksPanel report={report} /> : <Missing />;
+  else if (stage === "upload") body = state === "missing" ? <Missing /> : <>{state === "demo" && <DemoNote text={t("inspect.demo_script")} />}<UploadPanel v={view} a={a} /></>;
+  else if (stage === "dashboard") body = a.run_id && state !== "missing" ? <DashboardDecisions runId={a.run_id} version={version} /> : <Missing />;
+  else if (stage === "comparisons") body = report && a.run_id ? (
+    <div className="space-y-6"><ChecksPanel report={report} />
+      <div><h4 className="mb-3 text-sm font-semibold">{t("inspect.bo412_chart")}</h4><KpiChart runId={a.run_id} version={version} /></div></div>) : <Missing />;
   else if (stage === "auditor") body = a.run_id ? (
     <div className="space-y-5">
       <div role="tablist" aria-label={t("stages.auditor.name")} className="inline-flex flex-wrap gap-1 rounded-xl border border-line bg-surface p-1">
@@ -315,7 +346,7 @@ function Inspector({ stage, state, a, view, viewLoading, report, summary, datase
 function DemoNote({ text }: { text: string }) {
   return <p className="mb-4 flex items-start gap-2 rounded-xl border border-dashed border-line bg-surface p-3 text-sm text-muted"><FlaskConical className="mt-0.5 h-4 w-4 shrink-0" />{text}</p>;
 }
-function Missing() {
+function MissingNote({ pending }: { pending?: boolean }) {
   const t = useTranslations("app.inspect");
-  return <div className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-muted">{t("missing")}</div>;
+  return <div className="rounded-xl border border-dashed border-line p-8 text-center text-sm text-muted">{pending ? t("pending") : t("missing")}</div>;
 }

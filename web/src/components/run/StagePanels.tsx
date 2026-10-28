@@ -39,7 +39,7 @@ export function UploadPanel({ v, a }: { v: V | null; a: Analysis }) {
   const locale = useLocale();
   return (
     <div className="space-y-4">
-      {a.file_name && (
+      {a.file_name && a.file_rows != null && (
         <div className="flex items-start gap-3 rounded-xl border border-line p-4">
           <FileSpreadsheet className="mt-0.5 h-5 w-5 text-primary" />
           <div className="min-w-0">

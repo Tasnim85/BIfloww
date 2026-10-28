@@ -21,13 +21,21 @@ export function StateDot({ state, className }: { state: StageState; className?: 
     state === "live" ? "bg-accent" : state === "demo" ? "border border-muted" : "bg-line", className)} />;
 }
 
-export function PipelineRail({ states, selected, onSelect, progress, alerts }:
+export function PipelineRail({ states, selected, onSelect, progress, alerts, real }:
   { states: Record<string, StageState>; selected: string; onSelect: (id: string) => void;
     progress: number;              // number of stages already "done" (13 = all)
-    alerts: string[] }) {          // stages to flag (e.g. a blocked comparison)
+    alerts: string[];              // stages to flag (e.g. a blocked comparison)
+    real?: Record<string, string> }) {   // an uploaded dataset: the REAL status of each step (orchestrator)
   const t = useTranslations("app");
   const box = useRef<HTMLDivElement>(null);
-  const running = progress < STAGES.length;
+  const running = !real && progress < STAGES.length;
+  const statusOf = (s: (typeof STAGES)[number]): "todo" | "doing" | "done" => {
+    if (real) {
+      const st = real[s.id];
+      return st === "RUNNING" ? "doing" : st === "SUCCESS" || st === "NEEDS_REVIEW" || st === "FAILED" ? "done" : "todo";
+    }
+    return running ? (STAGES.indexOf(s) < progress ? "done" : STAGES.indexOf(s) === progress ? "doing" : "todo") : "done";
+  };
 
   // keep the stage being worked on (or the selected one) visible on small screens
   useEffect(() => {
@@ -52,7 +60,7 @@ export function PipelineRail({ states, selected, onSelect, progress, alerts }:
                 {stages.map((s) => (
                   <Node key={s.id} stage={s} state={states[s.id] ?? "missing"} selected={!running && selected === s.id}
                         alert={alerts.includes(s.id)} onSelect={onSelect}
-                        status={running ? (STAGES.indexOf(s) < progress ? "done" : STAGES.indexOf(s) === progress ? "doing" : "todo") : "done"} />
+                        status={statusOf(s)} />
                 ))}
               </div>
             </div>

@@ -26,6 +26,9 @@ class Health(BaseModel):
     llm: LlmInfo
     runs: int
     journals: list[str]
+    local_llm: bool = False            # Ollama (or the test double) reachable: needed to run uploaded files
+    test_double: bool = False          # it is tools/integration/fake_ollama.py, not llama3
+    pii_secret: bool = False           # BO2_PII_SECRET set (32+ characters)
 
 
 class RunInfo(BaseModel):

@@ -64,7 +64,16 @@ def test_a_new_question_runs_the_analyst_and_reuses_the_data_steps(world):
     # its decisions go to the UI journal, never to the real one
     assert not (runs / "audit_journal.db").exists()
     events = c.get(f"/api/runs/{rid}/journal").json()
-    assert {"analysis", "comparisons"} <= {e["agent"] for e in events}
+    assert {"analysis", "comparisons", "dashboard"} <= {e["agent"] for e in events}
+    # Samar's dashboard agent chose the charts; they follow the user's decision
+    charts = c.get(f"/api/runs/{rid}/charts").json()
+    assert charts["charts"][0]["chart_type"] == "kpi_card" and all(ch["reason"] for ch in charts["charts"])
+    assert by["dashboard"]["source_run"] == rid
+    report = c.get(f"/api/runs/{rid}/comparison").json()
+    if report["proposed_fix"]:
+        c.post(f"/api/runs/{rid}/comparison/decision", json={"decision": "rejected"})
+        after = c.get(f"/api/runs/{rid}/charts").json()
+        assert after["comparison_shown"] is True
 
 
 def test_unknown_or_escaping_run_ids(world):

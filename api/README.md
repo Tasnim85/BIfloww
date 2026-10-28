@@ -57,6 +57,10 @@ aussi à Streamlit.
 | `POST /api/runs/{run_id}/comparison/decision` | la décision de l'utilisateur (`accepted` + `chosen_fix`, `rejected`, `pending`), inscrite au journal |
 | `POST /api/comparisons` | une nouvelle question : lance **l'Analyste de Rabeb** puis le vrai agent BO4-12 (crée un run `custom_xxxx`, journal « ui ») |
 | `GET /api/runs/{run_id}/pipeline` | **ce que chaque agent a écrit** (similarité, types, PII, profilage, nettoyage, entrepôt, lignage, demande, analyse), lu dans les fichiers de contrat uniquement (`api/stages.py`). Un run `custom_*` montre les étapes de données de son run de base (`source_run`) |
+| `POST /api/uploads` | **la réception de Samar** : les fichiers CSV de l'utilisateur + sa question passent par **tout le DAG** (orchestrateur de Samar), en arrière-plan. Crée un run `up_xxxxxxxxxxxx` (`api/jobs.py`) |
+| `GET /api/runs/{run_id}/progress` | l'état des 13 étapes d'un run `up_*`, et la validation humaine attendue (PII ou ETL) |
+| `POST /api/runs/{run_id}/review` | la réponse de l'utilisateur (valider / refuser) à la revue PII ou ETL, inscrite au journal ; le run reprend. La revue de comparaison passe par `comparison/decision` |
+| `GET /api/runs/{run_id}/charts` | **le tableau de bord de Samar** (`dashboard_ai`) : graphiques choisis, leurs données, la raison du choix, les options refusées, les alertes |
 | `POST /api/parse` | **l'agent de Malek** lit une question en langage courant et propose KPI, dimensions, périodes. Simple proposition : journal temporaire, rien n'est calculé |
 | `GET /api/runs/{run_id}/dashboard` | le KPI par dimension pour les périodes fixées par la décision ; **409** tant qu'une comparaison bloquée attend la décision |
 | `GET /api/runs/{run_id}/explanations` | explications SHAP (pagination `offset` / `limit`) |
@@ -65,6 +69,14 @@ aussi à Streamlit.
 | `GET /api/runs/{run_id}/journal` | les décisions du run |
 | `GET /api/journals`, `/api/journals/{id}/entries`, `/api/journals/{id}/verify` | les journaux et la vérification de la chaîne de hachage |
 | `GET /api/runs/{run_id}/drift`, `GET /api/drift` | les rapports de drift |
+
+## Envoyer ses propres fichiers (réception + tableau de bord de Samar)
+
+Il faut, côté Python (dans `.env` à la racine, jamais sur GitHub) : `BO2_PII_SECRET=<32 caractères ou plus>`, et Ollama
+avec `llama3` (ou, pour les tests seulement, `python tools\integration\fake_ollama.py`). `pip install python-multipart`.
+`GET /health` dit si le LLM local est joignable (`local_llm`) et si c'est la doublure (`test_double`) : dans ce cas les
+décisions vont dans `runs/integration_journal.db`, jamais dans le journal réel. Limites : 20 fichiers, 150 Mo par fichier,
+300 Mo en tout, 2 pipelines en même temps. Un jeu envoyé par un utilisateur n'est jamais proposé aux autres.
 
 ## Langue des textes (français / anglais)
 

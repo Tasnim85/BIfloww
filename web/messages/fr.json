@@ -185,7 +185,7 @@
   },
   "side": {
    "title": "Chaque chiffre, avec sa preuve.",
-   "text": "Réels : les agents de Malek, Ikbel, Ahmed, Rabeb et Tasnim. Démo : réception et tableau de bord, en attendant leur intégration."
+   "text": "Réels : les 13 agents de l’équipe, de vos fichiers CSV au tableau de bord audité."
   },
   "status": {
    "running": "En cours",
@@ -195,7 +195,10 @@
    "api_ok": "API du pipeline en ligne",
    "api_down": "API du pipeline hors ligne",
    "llm_ok": "LLM prêt · {model}",
-   "llm_off": "Clé LLM absente : réponses gabarit"
+   "llm_off": "Clé LLM absente : réponses gabarit",
+   "local_ok": "LLM local prêt (llama3)",
+   "local_double": "LLM local : doublure de test",
+   "local_off": "LLM local hors ligne : pas d’envoi"
   },
   "mode": {
    "live": "Réel",
@@ -230,7 +233,8 @@
    "olist_live": {
     "name": "Olist · pipeline complet",
     "text": "Les 8 vrais fichiers CSV d’Olist (2016–2018, BRL), préparés de bout en bout par les agents de l’équipe."
-   }
+   },
+   "upload": "Vos fichiers"
   },
   "pipeline": {
    "title": "Pipeline",
@@ -332,13 +336,13 @@
   "new": {
    "title": "Nouvelle analyse",
    "subtitle": "Trois étapes : votre fichier, les données qui répondent, votre question.",
-   "s1_title": "Votre fichier",
-   "s1_text": "Facultatif : déposez un CSV pour voir comment Askboard le lit.",
-   "drop": "Déposez un fichier CSV ici",
-   "drop_hint": "CSV, TSV ou TXT · jusqu'à 50 Mo · lu uniquement dans votre navigateur",
+   "s1_title": "Vos fichiers",
+   "s1_text": "Facultatif : déposez vos propres fichiers CSV. Les 13 agents les préparent et répondent à votre question.",
+   "drop": "Déposez vos fichiers CSV ici",
+   "drop_hint": "Un ou plusieurs fichiers .csv · jusqu’à 150 Mo chacun",
    "browse": "Choisir un fichier",
-   "file_type": "Choisissez un fichier .csv, .tsv ou .txt.",
-   "file_big": "Fichier volumineux : seuls les 50 premiers Mo sont prévisualisés.",
+   "file_type": "Seuls les fichiers .csv peuvent être envoyés au pipeline.",
+   "file_big": "Un fichier dépasse 150 Mo.",
    "file_meta": "{rows} lignes · {cols} colonnes · {kb} Ko",
    "remove_file": "Retirer le fichier",
    "types": {
@@ -347,7 +351,7 @@
     "text": "texte",
     "empty": "vide"
    },
-   "file_note": "Tant que les agents d'ingestion (réception, PII, profilage, nettoyage, ETL) ne sont pas branchés, votre fichier est profilé dans votre navigateur et l'analyse tourne sur le jeu préparé choisi ci-dessous.",
+   "file_note": "Pas de fichier ? Posez votre question sur un jeu de données déjà préparé par les agents (étape 2).",
    "s2_title": "Données qui répondent",
    "s2_text": "Préparées par les agents données : nettoyées, modélisées, avec un catalogue de KPI.",
    "err_datasets": "L'API du pipeline est injoignable.",
@@ -375,7 +379,18 @@
    "parse_unclear": "Aucun KPI reconnu dans la question. Reformulez-la, ou remplissez les champs ci-dessous.",
    "parsed_title": "Question comprise",
    "parsed_by": "agent de compréhension · confiance {p} %",
-   "parsed_edited": "modifiée par vous"
+   "parsed_edited": "modifiée par vous",
+   "file_note_upload": "Vos fichiers partent dans le pipeline : réception, confidentialité, profilage, nettoyage, entrepôt, analyse, contrôles, tableau de bord et audit. Les données personnelles sont pseudonymisées avant toute analyse.",
+   "s2_upload": "Vos propres fichiers remplacent un jeu de données préparé.",
+   "upload_title": "{n, plural, one {# fichier sera préparé} other {# fichiers seront préparés}} par les agents",
+   "upload_text": "Cela prend de quelques secondes à quelques minutes. Les agents peuvent vous demander une validation (données personnelles, conception de l’entrepôt, comparaison trompeuse) : vous serez notifiée.",
+   "s3_upload": "Écrivez-la avec vos mots : l’agent de compréhension trouve le KPI, les dimensions et les périodes.",
+   "question_upload_hint": "Exemple : Revenue by customer state, August 2018 vs July 2018.",
+   "sending_title": "Envoi de vos fichiers…",
+   "sending_text": "Le pipeline démarre dès leur réception.",
+   "err_too_many": "Trop d’envois en peu de temps. Réessayez dans quelques minutes.",
+   "err_secret": "Le pipeline n’est pas configuré : BO2_PII_SECRET manque côté Python.",
+   "err_llm": "Le LLM local (Ollama) n’est pas lancé côté Python."
   },
   "run": {
    "not_found": "Cette analyse n'existe pas ou ne vous appartient pas.",
@@ -420,7 +435,7 @@
    "change": "Évolution",
    "previous": "Période comparée",
    "current": "Période étudiée",
-   "chart_note": "{kpi} par {dim} · calculé en SQL depuis le catalogue de KPI · périodes : {source}. Graphique provisoire : l'agent dashboard de Samar le remplace.",
+   "chart_note": "{kpi} par {dim} · calculé en SQL depuis le catalogue de KPI · périodes : {source}.",
    "more": "Voir l'explication complète",
    "less": "Réduire"
   },
@@ -581,7 +596,9 @@
    "v_fair": "Comparaison juste",
    "agents": "{live}/{total} agents réels",
    "why": "Demander pourquoi",
-   "no_number": "Pas de valeur calculée pour cette analyse (créée avant le branchement de l’analyste)."
+   "no_number": "Pas de valeur calculée pour cette analyse (créée avant le branchement de l’analyste).",
+   "computing": "Les agents calculent la réponse…",
+   "files": "{n} fichiers"
   },
   "inspect": {
    "demo_owner": "Démo : l’agent de {owner} n’est pas encore branché à l’application. Ce qui suit vient de votre navigateur ou du jeu de données préparé.",
@@ -692,6 +709,57 @@
     "insights": "Constats",
     "sql": "SQL généré depuis le catalogue des KPI (jamais écrit à la main)",
     "no_insight": "Aucun constat : ils ne sont écrits que si tous les contrôles passent."
+   },
+   "bo412_chart": "Les deux périodes, telles que fixées par votre décision",
+   "pending": "Cet agent n’a pas encore tourné : il attend les étapes précédentes."
+  },
+  "dash": {
+   "label": "Tableau de bord",
+   "title": "Votre tableau de bord",
+   "none": "Pas encore de tableau de bord pour cette analyse.",
+   "less": "Voir moins",
+   "more": "Voir les {n} alertes",
+   "why": "Pourquoi ce graphique :",
+   "options": "{n, plural, one {# autre option étudiée} other {# autres options étudiées}}",
+   "refused": "refusé",
+   "types": {
+    "kpi_card": "Carte KPI",
+    "bar": "Barres",
+    "line": "Courbe",
+    "pie": "Camembert",
+    "table": "Tableau",
+    "map": "Carte"
+   },
+   "decisions_text": "L’agent tableau de bord note chaque type de graphique sur CES données, refuse ceux qui tromperaient, et explique son choix (règles {rules})."
+  },
+  "upload": {
+   "state": {
+    "running": "Les agents préparent vos données",
+    "needs_review": "Votre validation est nécessaire",
+    "done": "Terminé",
+    "failed": "Le pipeline s’est arrêté sur une erreur",
+    "stopped": "Le pipeline a été arrêté"
+   },
+   "running": "En cours : {steps}",
+   "steps_done": "{ok} étapes sur {n} terminées",
+   "review": {
+    "pii": {
+     "title": "Données personnelles : à confirmer",
+     "text": "L’agent de confidentialité hésite sur ces colonnes. Confirmez le type qu’il propose, ou arrêtez le pipeline.",
+     "none": "Aucune colonne à confirmer."
+    },
+    "etl": {
+     "title": "Conception de l’entrepôt : à valider",
+     "text": "L’agent ETL propose cette conception pour vos données. Rien n’est construit avant votre validation.",
+     "schema": "schéma : {s}",
+     "measures": "mesures : {m}",
+     "dates": "dates : {d}",
+     "links": "Relations trouvées dans vos données"
+    },
+    "error": "Votre réponse n’a pas pu être envoyée. Réessayez.",
+    "approve": "Valider et continuer",
+    "reject": "Refuser et arrêter",
+    "journaled": "Votre décision est inscrite au journal d’audit avant que le pipeline continue."
    }
   }
  },

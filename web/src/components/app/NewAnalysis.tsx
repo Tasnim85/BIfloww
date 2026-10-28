@@ -13,7 +13,8 @@ import { DATASET_INFO } from "@/lib/pipeline";
 type Parsed = { name: string; size: number; rows: number; columns: string[]; types: string[]; preview: string[][] };
 type Period = { start: string; end: string };
 
-const MAX_BYTES = 50 * 1024 * 1024;
+const MAX_BYTES = 50 * 1024 * 1024;               // read in the browser for the preview
+const MAX_UPLOAD = 150 * 1024 * 1024;             // per file, checked again by the server
 
 /** Minimal CSV line splitter (quotes and escaped quotes). Enough for a preview in the browser. */
 function splitLine(line: string, sep: string): string[] {
@@ -68,7 +69,9 @@ export function NewAnalysis() {
   const order = Object.keys(DATASET_INFO);
   const datasets = useMemo(() => raw.data && [...raw.data].sort((x, y) =>
     (order.indexOf(x.run_id) + 1 || 99) - (order.indexOf(y.run_id) + 1 || 99)), [raw.data]);  // eslint-disable-line react-hooks/exhaustive-deps
-  const [file, setFile] = useState<Parsed | null>(null);
+  const [files, setFiles] = useState<{ parsed: Parsed; raw: File }[]>([]);
+  const [shown, setShown] = useState(0);
+  const upload = files.length > 0;                  // the user's own files: the whole pipeline runs on them
   const [fileErr, setFileErr] = useState<string | null>(null);
   const [drag, setDrag] = useState(false);
   const [datasetId, setDatasetId] = useState<string | null>(null);
@@ -127,27 +130,54 @@ export function NewAnalysis() {
   const autoQuestion = kpi ? t("auto_question", { kpi: kpi.name, dim: dimension || t("overall"),
     p1: `${period.start} → ${period.end}`, p2: `${compare.start} → ${compare.end}` }) : "";
 
-  async function onFile(f: File | undefined) {
+  async function onFiles(list: FileList | null) {
     setFileErr(null);
-    if (!f) return;
-    if (!/\.(csv|tsv|txt)$/i.test(f.name)) { setFileErr(t("file_type")); return; }
-    if (f.size > MAX_BYTES) setFileErr(t("file_big"));
-    setFile(await parseCsv(f));
+    const added: { parsed: Parsed; raw: File }[] = [];
+    for (const f of Array.from(list ?? [])) {
+      if (!/\.csv$/i.test(f.name)) { setFileErr(t("file_type")); continue; }
+      if (f.size > MAX_UPLOAD) { setFileErr(t("file_big")); continue; }
+      added.push({ parsed: await parseCsv(f), raw: f });
+    }
+    setFiles((cur) => [...cur.filter((x) => !added.some((y) => y.raw.name.toLowerCase() === x.raw.name.toLowerCase())), ...added].slice(0, 20));
   }
+  function removeFile(i: number) { setFiles((cur) => cur.filter((_, k) => k !== i)); setShown(0); }
 
   const dsLabel = (id: string) => (DATASET_INFO[id] ? tc(`datasets.${DATASET_INFO[id].key}.name`) : id);
-  const valid = Boolean(ds && kpi && period.start && period.end && compare.start && compare.end
+  const valid = upload ? question.trim().length >= 3 : Boolean(ds && kpi && period.start && period.end && compare.start && compare.end
     && period.start <= period.end && compare.start <= compare.end);
 
+  async function submitUpload() {
+    setBusy(true); setSubmitErr(null);
+    const form = new FormData();
+    files.forEach((f) => form.append("files", f.raw, f.raw.name));
+    form.append("question", question.trim());
+    form.append("lang", locale);
+    try {
+      const res = await fetch("/api/uploads", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (res.status !== 201) {
+        const detail = String(data?.detail ?? "");
+        setSubmitErr(res.status === 429 ? t("err_too_many") : res.status === 413 ? t("file_big")
+          : /BO2_PII_SECRET/.test(detail) ? t("err_secret") : /local LLM/i.test(detail) ? t("err_llm") : t("err_pipeline"));
+        setBusy(false);
+        return;
+      }
+      window.dispatchEvent(new Event(NOTIFY_EVENT));
+      router.push(`/app/runs/${data.id}`);
+    } catch {
+      setSubmitErr(t("err_generic")); setBusy(false);
+    }
+  }
+
   async function submit() {
+    if (upload) return submitUpload();
     if (!ds || !kpi) return;
     setBusy(true); setSubmitErr(null);
     try {
       const r = await api<{ id: string }>("/api/analyses", { method: "POST", body: {
         question: question.trim() || autoQuestion, dataset: ds.run_id, metric: kpi.name,
         dimensions: dimension ? [dimension] : [], period, compareTo: compare, llm, lang: locale,
-        ...(parsedKept && parsed.res.request ? { confidence: parsed.res.request.confidence, matchedTerms: parsed.res.request.matched_terms } : {}),
-        file: file ? { name: file.name, rows: file.rows, columns: file.columns } : null } });
+        ...(parsedKept && parsed.res.request ? { confidence: parsed.res.request.confidence, matchedTerms: parsed.res.request.matched_terms } : {}) } });
       window.dispatchEvent(new Event(NOTIFY_EVENT));                 // the bell refreshes at once
       // if the user went elsewhere meanwhile, leave them there: the notification brings them back
       if (window.location.pathname === "/app/new") router.push(`/app/runs/${r.id}?new=1`);
@@ -165,58 +195,60 @@ export function NewAnalysis() {
         <p className="mt-1 text-muted">{t("subtitle")}</p>
       </div>
 
-      {/* 1. The file */}
+      {/* 1. The files (Samar's intake: they go through the WHOLE pipeline) */}
       <section className="card p-5 sm:p-6">
         <StepTitle n={1} title={t("s1_title")} text={t("s1_text")} />
         <div onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
-             onDrop={(e) => { e.preventDefault(); setDrag(false); void onFile(e.dataTransfer.files[0]); }}
+             onDrop={(e) => { e.preventDefault(); setDrag(false); void onFiles(e.dataTransfer.files); }}
              className={cn("mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition",
                drag ? "border-primary bg-primary-soft" : "border-line hover:border-primary/50")}>
-          {!file ? (
-            <div className="flex flex-col items-center">
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-primary-soft text-primary"><UploadCloud className="h-6 w-6" /></div>
-              <p className="mt-3 font-medium">{t("drop")}</p>
-              <p className="mt-1 text-sm text-muted">{t("drop_hint")}</p>
-              <button type="button" className="btn-outline mt-4" onClick={() => inputRef.current?.click()}>{t("browse")}</button>
-              <input ref={inputRef} type="file" accept=".csv,.tsv,.txt,text/csv" className="sr-only" aria-label={t("browse")}
-                     onChange={(e) => void onFile(e.target.files?.[0])} />
-            </div>
-          ) : (
-            <div className="text-left">
-              <div className="flex flex-wrap items-center gap-3">
-                <FileSpreadsheet className="h-8 w-8 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{file.name}</div>
-                  <div className="text-sm text-muted">{t("file_meta", { rows: file.rows.toLocaleString(locale), cols: file.columns.length, kb: Math.round(file.size / 1024).toLocaleString(locale) })}</div>
-                </div>
-                <button type="button" className="btn-ghost h-9 w-9 p-0" onClick={() => setFile(null)} aria-label={t("remove_file")}><X className="h-4 w-4" /></button>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {file.columns.slice(0, 24).map((c, i) => (
-                  <span key={c + i} className="chip border border-line bg-surface-2 font-mono text-[11px] font-medium text-ink">
-                    {c}<span className="text-subtle">· {t(`types.${file.types[i]}`)}</span>
-                  </span>
-                ))}
-                {file.columns.length > 24 && <span className="chip text-muted">+{file.columns.length - 24}</span>}
-              </div>
-              <div className="mt-4 overflow-x-auto rounded-xl border border-line">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-surface-2"><tr>{file.columns.slice(0, 8).map((c, i) => <th key={c + i} className="whitespace-nowrap px-3 py-2 font-semibold">{c}</th>)}</tr></thead>
-                  <tbody>{file.preview.map((r, i) => (
-                    <tr key={i} className="border-t border-line">{file.columns.slice(0, 8).map((_, j) => <td key={j} className="max-w-[180px] truncate whitespace-nowrap px-3 py-1.5 text-muted">{r[j]}</td>)}</tr>
-                  ))}</tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          <div className="flex flex-col items-center">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-primary-soft text-primary"><UploadCloud className="h-6 w-6" /></div>
+            <p className="mt-3 font-medium">{t("drop")}</p>
+            <p className="mt-1 text-sm text-muted">{t("drop_hint")}</p>
+            <button type="button" className="btn-outline mt-4" onClick={() => inputRef.current?.click()}>{t("browse")}</button>
+            <input ref={inputRef} type="file" multiple accept=".csv,text/csv" className="sr-only" aria-label={t("browse")}
+                   onChange={(e) => { void onFiles(e.target.files); e.target.value = ""; }} />
+          </div>
         </div>
+        {files.length > 0 && (
+          <div className="mt-4 space-y-3">
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {files.map((f, i) => (
+                <li key={f.parsed.name}>
+                  <button type="button" onClick={() => setShown(i)} aria-pressed={shown === i}
+                          className={cn("flex w-full items-center gap-3 rounded-xl border p-3 text-left transition",
+                            shown === i ? "border-primary bg-primary-soft" : "border-line hover:border-primary/40")}>
+                    <FileSpreadsheet className="h-6 w-6 shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{f.parsed.name}</span>
+                      <span className="block text-xs text-muted">{t("file_meta", { rows: f.parsed.rows.toLocaleString(locale), cols: f.parsed.columns.length, kb: Math.round(f.parsed.size / 1024).toLocaleString(locale) })}</span>
+                    </span>
+                    <span role="button" tabIndex={0} aria-label={t("remove_file")} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-surface-2"
+                          onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); removeFile(i); } }}>
+                      <X className="h-4 w-4" />
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {files[shown] && <Preview file={files[shown].parsed} />}
+          </div>
+        )}
         {fileErr && <p className="mt-2 flex items-center gap-1.5 text-sm text-warn"><AlertCircle className="h-4 w-4" />{fileErr}</p>}
-        <p className="mt-3 rounded-xl bg-surface-2 p-3 text-xs text-muted">{t("file_note")}</p>
+        <p className="mt-3 rounded-xl bg-surface-2 p-3 text-xs text-muted">{upload ? t("file_note_upload") : t("file_note")}</p>
       </section>
 
       {/* 2. The prepared data */}
       <section className="card p-5 sm:p-6">
-        <StepTitle n={2} title={t("s2_title")} text={t("s2_text")} />
+        <StepTitle n={2} title={t("s2_title")} text={upload ? t("s2_upload") : t("s2_text")} />
+        {upload ? (
+          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-accent/40 bg-accent-soft/40 p-4 text-sm">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+            <div><p className="font-semibold">{t("upload_title", { n: files.length })}</p><p className="mt-1 text-muted">{t("upload_text")}</p></div>
+          </div>
+        ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {loading && [0, 1].map((i) => <Skeleton key={i} className="h-28" />)}
           {error && <p className="text-sm text-bad">{t("err_datasets")}</p>}
@@ -238,26 +270,30 @@ export function NewAnalysis() {
             );
           })}
         </div>
+        )}
       </section>
 
       {/* 3. The question */}
       <section className="card p-5 sm:p-6">
-        <StepTitle n={3} title={t("s3_title")} text={t("s3_text")} />
+        <StepTitle n={3} title={t("s3_title")} text={upload ? t("s3_upload") : t("s3_text")} />
         <div className="mt-4 space-y-4">
           <div>
             <label htmlFor="q" className="label">{t("question")}</label>
             <div className="relative">
               <textarea id="q" rows={2} maxLength={500} value={question} onChange={(e) => setQuestion(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void readQuestion(); } }}
-                        placeholder={t("question_placeholder")} className="input h-auto py-3 pr-4 sm:pr-44" />
-              <button type="button" onClick={readQuestion} disabled={parsing || !ds || question.trim().length < 3}
-                      className="btn-primary mt-2 h-10 w-full sm:absolute sm:bottom-2 sm:right-2 sm:mt-0 sm:w-auto">
-                {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanText className="h-4 w-4" />}{t("parse")}
-              </button>
+                        onKeyDown={(e) => { if (!upload && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void readQuestion(); } }}
+                        placeholder={t("question_placeholder")} className={cn("input h-auto py-3 pr-4", !upload && "sm:pr-44")} />
+              {!upload && (
+                <button type="button" onClick={readQuestion} disabled={parsing || !ds || question.trim().length < 3}
+                        className="btn-primary mt-2 h-10 w-full sm:absolute sm:bottom-2 sm:right-2 sm:mt-0 sm:w-auto">
+                  {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanText className="h-4 w-4" />}{t("parse")}
+                </button>
+              )}
             </div>
-            <p className="mt-1.5 text-xs text-muted">{t("parse_hint")}</p>
-            {parsed && <ParseResult res={parsed.res} kept={parsedKept} />}
+            <p className="mt-1.5 text-xs text-muted">{upload ? t("question_upload_hint") : t("parse_hint")}</p>
+            {!upload && parsed && <ParseResult res={parsed.res} kept={parsedKept} />}
           </div>
+          {!upload && (<>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="kpi" className="label">{t("kpi")}</label>
@@ -287,6 +323,7 @@ export function NewAnalysis() {
               <span className="mt-0.5 block text-xs text-muted">{t("llm_hint")}</span>
             </span>
           </label>
+          </>)}
         </div>
       </section>
 
@@ -306,8 +343,8 @@ export function NewAnalysis() {
                 <span className="absolute inset-0 animate-pulseRing rounded-full bg-primary/40" />
                 <span className="relative grid h-16 w-16 place-items-center rounded-full bg-primary text-primary-fg"><Sparkles className="h-7 w-7" /></span>
               </div>
-              <h2 className="mt-5 text-lg font-semibold">{t("working_title")}</h2>
-              <p className="mt-1 text-sm text-muted">{t("working_text")}</p>
+              <h2 className="mt-5 text-lg font-semibold">{upload ? t("sending_title") : t("working_title")}</h2>
+              <p className="mt-1 text-sm text-muted">{upload ? t("sending_text") : t("working_text")}</p>
             </motion.div>
           </motion.div>
         )}
@@ -338,6 +375,30 @@ function ParseResult({ res, kept }: { res: ParsedQuestion; kept: boolean }) {
         </ul>
       )}
     </motion.div>
+  );
+}
+
+function Preview({ file }: { file: Parsed }) {
+  const t = useTranslations("app.new");
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {file.columns.slice(0, 24).map((c, i) => (
+          <span key={c + i} className="chip border border-line bg-surface-2 font-mono text-[11px] font-medium text-ink">
+            {c}<span className="text-subtle">· {t(`types.${file.types[i]}`)}</span>
+          </span>
+        ))}
+        {file.columns.length > 24 && <span className="chip text-muted">+{file.columns.length - 24}</span>}
+      </div>
+      <div className="mt-3 overflow-x-auto rounded-xl border border-line">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-surface-2"><tr>{file.columns.slice(0, 8).map((c, i) => <th key={c + i} className="whitespace-nowrap px-3 py-2 font-semibold">{c}</th>)}</tr></thead>
+          <tbody>{file.preview.map((r, i) => (
+            <tr key={i} className="border-t border-line">{file.columns.slice(0, 8).map((_, j) => <td key={j} className="max-w-[180px] truncate whitespace-nowrap px-3 py-1.5 text-muted">{r[j]}</td>)}</tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

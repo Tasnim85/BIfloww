@@ -2,7 +2,7 @@
  * THE PIPELINE, as the app shows it. One entry per agent of the DAG (contracts/pipeline.py).
  *
  * mode "live": the stage shows what the real agent wrote (GET /api/runs/{id}/pipeline).
- * mode "demo": a placeholder until its owner plugs the real agent in (Samar: intake, dashboard).
+ * mode "demo": a placeholder until its owner plugs the real agent in (every agent is plugged in today).
  * scope "dataset": computed ONCE when the dataset is prepared (similarity ... lineage), shown from
  *   the dataset's run; scope "question": computed for each question (request, analysis, comparisons, auditor).
  * Texts are in messages/en.json and fr.json under "app.stages.<id>"; panels in src/components/run/StagePanels.tsx.
@@ -22,7 +22,7 @@ export type Stage = {
 };
 
 export const STAGES: Stage[] = [
-  { id: "upload", step: "0", owner: "Samar", bo: ["BO1"], mode: "demo", scope: "dataset", phase: "intake", icon: "upload" },
+  { id: "upload", step: "0", owner: "Samar", bo: ["BO1"], mode: "live", scope: "dataset", phase: "intake", icon: "upload" },
   { id: "similarity", step: "0", owner: "Malek", bo: ["BO1"], mode: "live", scope: "dataset", phase: "intake", icon: "copy" },
   { id: "column_types", step: "1a", owner: "Malek", bo: ["BO1"], mode: "live", scope: "dataset", phase: "intake", icon: "tags" },
   { id: "pii", step: "1b", owner: "Ikbel", bo: ["BO2"], mode: "live", scope: "dataset", phase: "intake", icon: "shield" },
@@ -33,7 +33,7 @@ export const STAGES: Stage[] = [
   { id: "request", step: "4", owner: "Malek", bo: ["BO3", "BO4"], mode: "live", scope: "question", phase: "answer", icon: "message" },
   { id: "analysis", step: "5", owner: "Rabeb", bo: ["BO1"], mode: "live", scope: "question", phase: "answer", icon: "chart" },
   { id: "comparisons", step: "6", owner: "Tasnim", bo: ["BO4"], mode: "live", scope: "question", phase: "answer", icon: "scale" },
-  { id: "dashboard", step: "6b", owner: "Samar", bo: ["BO4"], mode: "demo", scope: "question", phase: "answer", icon: "layout" },
+  { id: "dashboard", step: "6b", owner: "Samar", bo: ["BO4"], mode: "live", scope: "question", phase: "answer", icon: "layout" },
   { id: "auditor", step: "7", owner: "Tasnim", bo: ["BO3"], mode: "live", scope: "question", phase: "audit", icon: "badge" },
 ];
 
@@ -47,7 +47,8 @@ export type StageState = "live" | "demo" | "missing";
 export function stageState(stage: Stage, dataset: string, available: boolean | undefined): StageState {
   if (stage.mode === "demo") return "demo";
   if (!available) return "missing";
-  if (stage.scope === "dataset" && !DATASET_INFO[dataset]?.agents) return "demo";
+  // a dataset the user uploaded went through the real agents too
+  if (stage.scope === "dataset" && !(DATASET_INFO[dataset]?.agents ?? /^up_/.test(dataset))) return "demo";
   return "live";
 }
 
@@ -66,4 +67,7 @@ export const DATASET_INFO: Record<string, { flag: string; key: string; agents: b
 };
 
 /** Runs anyone signed in may READ (showcase data). Every other run must belong to the user. */
-export const isShowcaseRun = (runId: string) => !runId.startsWith("custom_");
+export const isShowcaseRun = (runId: string) => !/^(custom|up)_/.test(runId);
+
+/** A dataset the user uploaded: the whole DAG runs on it in the Python API (Samar's orchestrator). */
+export const isUploadRunId = (runId: string | null | undefined) => Boolean(runId && /^up_[0-9a-f]{12}$/.test(runId));
