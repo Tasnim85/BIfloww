@@ -38,16 +38,15 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
 
     def do_GET(self):
+        # /api/tags: Samar's app checks that llama3 is "installed"; /api/version: run_with_reviews and the
+        # API detect the TEST DOUBLE ("fake-test-double") so its decisions never go to the real journal
         if self.path.endswith("/api/tags"):
-            data = json.dumps({"models": [{"name": "llama3:latest", "model": "llama3:latest"}]}).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(data)
+            body = {"models": [{"name": "llama3:latest", "model": "llama3:latest"}]}
         else:
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b'{"status":"ok"}')
+            body = {"version": "fake-test-double", "status": "ok"}
+        data = json.dumps(body).encode()
+        self.send_response(200); self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))

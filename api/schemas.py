@@ -85,6 +85,9 @@ class NewComparison(BaseModel):
     compare_to: Period
     question: str = "Comparison typed in the app"
     llm: bool = Field(False, description="Summary written by the LLM (fact-checked)")
+    confidence: float = Field(1.0, ge=0, le=1, description="From POST /parse when the form kept its proposal")
+    matched_terms: dict[str, str] = Field(default_factory=dict, max_length=20,
+                                          description="From POST /parse: words of the question -> glossary terms")
     lang: Literal["fr", "en"] | None = Field(None, description="Language of the texts (default: ?lang / Accept-Language / fr)")
 
 

@@ -185,7 +185,7 @@
   },
   "side": {
    "title": "Chaque chiffre, avec sa preuve.",
-   "text": "Réels : contrôle des comparaisons et auditeur. Autres étapes : démo jusqu'à l'intégration de chaque agent."
+   "text": "Réels : les agents de Malek, Ikbel, Ahmed, Rabeb et Tasnim. Démo : réception et tableau de bord, en attendant leur intégration."
   },
   "status": {
    "running": "En cours",
@@ -226,6 +226,10 @@
    "clinics": {
     "name": "Réseau de cliniques · Tunisie",
     "text": "Visites et honoraires synthétiques de 9 cliniques (2023–2024), en TND."
+   },
+   "olist_live": {
+    "name": "Olist · pipeline complet",
+    "text": "Les 8 vrais fichiers CSV d’Olist (2016–2018, BRL), préparés de bout en bout par les agents de l’équipe."
    }
   },
   "pipeline": {
@@ -241,62 +245,88 @@
     "name": "Réception",
     "out": "Fichier reçu.",
     "file": "{name} : {rows} lignes, {cols} colonnes profilées dans votre navigateur.",
-    "dataset": "Jeu préparé : {name}."
+    "dataset": "Jeu préparé : {name}.",
+    "short": "Réception",
+    "what": "Reçoit les fichiers et la question, et lance le traitement."
    },
    "similarity": {
     "name": "Détection de similarité",
-    "out": "Aucun jeu similaire : un nouveau pipeline est construit."
+    "out": "Aucun jeu similaire : un nouveau pipeline est construit.",
+    "short": "Similarité",
+    "what": "Ces données ressemblent-elles à un jeu déjà vu ? Si oui, on réutilise son playbook de nettoyage."
    },
    "column_types": {
     "name": "Types sémantiques des colonnes",
     "out": "Colonnes classées : identifiants, montants, dates, lieux.",
-    "file": "{n} colonnes classées (montant, date, identifiant, lieu…)."
+    "file": "{n} colonnes classées (montant, date, identifiant, lieu…).",
+    "short": "Types",
+    "what": "Donne à chaque colonne un type métier (identifiant, montant, date, lieu…) et signale celles qui peuvent être personnelles."
    },
    "pii": {
     "name": "Masquage des données personnelles",
-    "out": "Identifiants clients pseudonymisés avant toute analyse."
+    "out": "Identifiants clients pseudonymisés avant toute analyse.",
+    "short": "Données perso.",
+    "what": "Décide, colonne par colonne, ce qu’on garde, pseudonymise ou généralise avant toute analyse."
    },
    "profiling": {
     "name": "Profilage & anomalies",
     "out": "Valeurs manquantes, doublons et valeurs aberrantes détectés.",
-    "real": "{n} lignes anormales signalées par le profiler."
+    "real": "{n} lignes anormales signalées par le profiler.",
+    "short": "Profilage",
+    "what": "Mesure chaque table (lignes, doublons, valeurs manquantes, dates couvertes) et repère les lignes inhabituelles avec une Isolation Forest."
    },
    "cleaning": {
     "name": "Nettoyage",
-    "out": "Playbook versionné appliqué : valeurs manquantes complétées, doublons retirés."
+    "out": "Playbook versionné appliqué : valeurs manquantes complétées, doublons retirés.",
+    "short": "Nettoyage",
+    "what": "Applique un playbook versionné : les mêmes règles, dans le même ordre, à chaque fois, chacune journalisée."
    },
    "etl": {
     "name": "ETL & entrepôt",
-    "out": "Entrepôt construit : une table de faits et ses dimensions."
+    "out": "Entrepôt construit : une table de faits et ses dimensions.",
+    "short": "Entrepôt",
+    "what": "Construit les tables de faits et de dimensions, avec un reçu qui prouve qu’aucune jointure n’a dupliqué de lignes."
    },
    "request": {
     "name": "Compréhension de la question",
     "out": "Termes métier reliés au catalogue de KPI.",
-    "real": "Compris comme le KPI « {kpi} » par {dim}."
+    "real": "Compris comme le KPI « {kpi} » par {dim}.",
+    "short": "Question",
+    "what": "Lit la question en langage courant et la relie à un KPI, des dimensions et des périodes du catalogue."
    },
    "analysis": {
     "name": "Analyse",
-    "out": "KPI calculé pour les deux périodes."
+    "out": "KPI calculé pour les deux périodes.",
+    "short": "Analyse",
+    "what": "Calcule le KPI avec un SQL généré depuis le catalogue, le vérifie de quatre façons, puis écrit les constats."
    },
    "comparisons": {
     "name": "Contrôle des comparaisons (BO4-12)",
     "out": "5 contrôles de comparabilité.",
     "blocked": "Trompeuse telle que demandée ({kinds}) : une correction justifiée est proposée.",
     "warning": "Valide, avec avertissements ({kinds}).",
-    "valid": "Comparaison valide : 5 contrôles passés."
+    "valid": "Comparaison valide : 5 contrôles passés.",
+    "short": "Comparaison",
+    "what": "Vérifie que les deux périodes peuvent honnêtement être comparées, et propose une correction justifiée sinon."
    },
    "dashboard": {
     "name": "Dashboard",
-    "out": "Graphiques dessinés pour les périodes que vous validez."
+    "out": "Graphiques dessinés pour les périodes que vous validez.",
+    "short": "Tableau de bord",
+    "what": "Choisit les graphiques et compose le tableau de bord."
    },
    "lineage": {
     "name": "Lignage",
-    "out": "KPI → transformations → colonnes sources tracés."
+    "out": "KPI → transformations → colonnes sources tracés.",
+    "short": "Lignage",
+    "what": "Retrace chaque KPI jusqu’aux colonnes sources dont il est calculé."
    },
    "auditor": {
     "name": "Auditeur & XAI",
     "out": "Décisions expliquées et journalisées.",
-    "real": "{n} anomalies expliquées par SHAP · journal {intact, select, ok {intact} other {CASSÉ}} ({entries} entrées) · drift : {drift}."
+    "real": "{n} anomalies expliquées par SHAP · journal {intact, select, ok {intact} other {CASSÉ}} ({entries} entrées) · drift : {drift}.",
+    "short": "Auditeur",
+    "what": "Explique les anomalies avec SHAP, tient le journal append-only, surveille la dérive et répond à « pourquoi ? »."
    }
   },
   "new": {
@@ -337,7 +367,15 @@
    "err_pipeline": "Le pipeline n'a pas pu répondre. L'API Python est-elle lancée ?",
    "err_generic": "Une erreur est survenue. Réessayez.",
    "working_title": "Les agents travaillent",
-   "working_text": "Vérification que votre comparaison est équitable, puis préparation du dashboard…"
+   "working_text": "Vérification que votre comparaison est équitable, puis préparation du dashboard…",
+   "question_placeholder": "ex. : Chiffre d’affaires par État, août 2018 contre juillet 2018",
+   "parse": "Lire ma question",
+   "parse_hint": "L’agent de compréhension relie vos mots au catalogue des KPI et remplit les champs ci-dessous. Vous pouvez encore les changer.",
+   "parse_error": "La question n’a pas pu être lue. Remplissez les champs ci-dessous.",
+   "parse_unclear": "Aucun KPI reconnu dans la question. Reformulez-la, ou remplissez les champs ci-dessous.",
+   "parsed_title": "Question comprise",
+   "parsed_by": "agent de compréhension · confiance {p} %",
+   "parsed_edited": "modifiée par vous"
   },
   "run": {
    "not_found": "Cette analyse n'existe pas ou ne vous appartient pas.",
@@ -354,7 +392,11 @@
     "drift": "Drift",
     "why": "Demander pourquoi"
    },
-   "no_run": "Aucun résultat pour cette analyse."
+   "no_run": "Aucun résultat pour cette analyse.",
+   "test_double": "Ces données ont été préparées par les vrais agents, mais les décisions PII et ETL viennent de la doublure de test (faux Ollama), pas de llama3. Elles sont dans un journal séparé.",
+   "insights": "Ce que voit l’analyste",
+   "no_analysis": "Pas de résultat de l’analyste pour cette analyse.",
+   "checks_passed": "{ok}/{n} contrôles réussis"
   },
   "cmp": {
    "source_llm": "Rédigé par le LLM, vérifié",
@@ -484,7 +526,8 @@
     "drift": "Drift mensuel",
     "clinics": "Cliniques (2e jeu)",
     "ui": "Analyses de l'app",
-    "real": "Journal de production"
+    "real": "Journal de production",
+    "integration": "Tests d’intégration (faux Ollama)"
    },
    "meta": "{n} entrées · {runs} runs",
    "intact": "Chaîne intacte à la dernière lecture.",
@@ -506,6 +549,149 @@
     "completed": "Votre analyse est prête",
     "needs_review": "Votre analyse attend votre décision",
     "failed": "Votre analyse a échoué"
+   }
+  },
+  "rail": {
+   "label": "Les agents du pipeline",
+   "title": "Derrière la réponse",
+   "subtitle": "{live} des {total} agents montrent leur vrai résultat. Cliquez sur un agent pour voir ce qu’il a fait.",
+   "working": "En cours : {name}…",
+   "phases": {
+    "intake": "Réception",
+    "prepare": "Préparation",
+    "answer": "Réponse",
+    "audit": "Audit"
+   }
+  },
+  "state": {
+   "live": "Réel",
+   "demo": "Démo",
+   "missing": "Non exécuté"
+  },
+  "hero": {
+   "as_asked": "Telle que demandée",
+   "fair": "Comparaison juste",
+   "vs": "vs",
+   "vs_prev": "vs {v}",
+   "asked_was": "Telle que demandée :",
+   "v_fixed": "Comparaison corrigée par votre décision",
+   "v_blocked": "Trompeuse telle que demandée : votre décision est nécessaire",
+   "v_kept": "Gardée telle quelle malgré l’alerte",
+   "v_warning": "Juste, avec des réserves",
+   "v_fair": "Comparaison juste",
+   "agents": "{live}/{total} agents réels",
+   "why": "Demander pourquoi",
+   "no_number": "Pas de valeur calculée pour cette analyse (créée avant le branchement de l’analyste)."
+  },
+  "inspect": {
+   "demo_owner": "Démo : l’agent de {owner} n’est pas encore branché à l’application. Ce qui suit vient de votre navigateur ou du jeu de données préparé.",
+   "dashboard_demo": "Démo : le générateur de tableaux de bord de Samar n’est pas encore branché. Le graphique ci-dessus est tracé par l’agent de comparaison (BO4-12) pour les périodes que vous avez validées.",
+   "demo_script": "Données de démo : ce jeu de données a été préparé par un script, pas par les agents. Choisissez « Olist · pipeline complet » pour voir les vrais résultats.",
+   "request_form": "Cette demande a été remplie dans le formulaire, pas lue par l’analyseur. Utilisez « Lire ma question » dans une nouvelle analyse pour voir l’agent de Malek à l’œuvre.",
+   "missing": "Cet agent n’a pas tourné sur ce jeu de données.",
+   "scope_dataset": "préparé une fois pour {name}",
+   "scope_question": "calculé pour cette question",
+   "prev": "Agent précédent",
+   "next": "Agent suivant",
+   "source": "Fichiers lus dans runs/{run}/ (fichiers de contrat uniquement).",
+   "upload": {
+    "file": "{rows} lignes, {cols} colonnes, lues dans votre navigateur.",
+    "tables": "{n} tables dans le jeu de données"
+   },
+   "similarity": {
+    "close_to": "proche de « {name} »",
+    "none": "aucun jeu connu",
+    "playbook": "playbook {p}",
+    "text": "Avant tout, les nouvelles données sont comparées aux jeux déjà vus : s’il y en a un proche, on reprend son playbook au lieu de repartir de zéro.",
+    "threshold": "seuil",
+    "method": "Méthode {m} · correspondance à partir de {th} %"
+   },
+   "column_types": {
+    "pii_candidates": "{n} peut-être personnelles",
+    "text": "{n} colonnes classées ({model}).",
+    "filter": "Filtrer par table",
+    "all_tables": "Toutes les tables ({n})",
+    "column": "Colonne",
+    "type": "Type",
+    "confidence": "Confiance",
+    "pii_flag": "donnée peut-être personnelle"
+   },
+   "pii": {
+    "actions": {
+     "kept": "gardées",
+     "pseudonymized": "pseudonymisées",
+     "generalized": "généralisées",
+     "dropped": "supprimées"
+    },
+    "rows": "{n} lignes",
+    "note": "Les pseudonymes utilisent une clé secrète (HMAC-SHA256) : un même client a toujours le même code, les jointures marchent encore, mais personne ne peut remonter à l’identité. Politique {policy}."
+   },
+   "profiling": {
+    "anomalies": "lignes inhabituelles dans {table} (sur {n})",
+    "model": "{m} {v}, contamination {c}",
+    "see_shap": "Expliquées avec SHAP",
+    "cols": "{n} col.",
+    "dupes": "{n} doublons",
+    "missing": "{p} % manquants",
+    "coverage": "Dates couvertes (utilisées par les contrôles de comparaison)",
+    "days": "{n} jours"
+   },
+   "cleaning": {
+    "playbook": "Playbook",
+    "versioned": "versionné, mêmes règles à chaque fois",
+    "rules": "Règles appliquées",
+    "with_effect": "Règles qui ont modifié",
+    "cells": "Lignes modifiées",
+    "rows": "{n} lignes",
+    "only_effect": "Seulement les règles qui ont modifié",
+    "show_all": "Voir les {n} règles sans effet",
+    "rows_changed_tables": "Nombre de lignes changé dans : {tables}.",
+    "no_row_lost": "Aucune ligne perdue : les {n} tables gardent toutes leurs lignes."
+   },
+   "etl": {
+    "text": "Un entrepôt de {facts} tables de faits et {dims} dimensions, chacune avec son reçu.",
+    "kind": {
+     "fact": "fait",
+     "dimension": "dimension"
+    },
+    "grain": "grain : {g}",
+    "key": "clé : {k}",
+    "cols": "{n} colonnes",
+    "no_fanout": "aucune ligne dupliquée par les jointures",
+    "changed": "nombre de lignes changé"
+   },
+   "lineage": {
+    "text": "D’où viennent les chiffres de {kpi}, colonne par colonne.",
+    "layers": {
+     "raw": "CSV source",
+     "pii": "Confidentialité",
+     "clean": "Nettoyage",
+     "physical": "Table de l’entrepôt",
+     "warehouse": "Vue de l’entrepôt",
+     "kpi": "KPI"
+    },
+    "size": "{shown} nœuds affichés, sur un graphe de lignage de {n} nœuds et {e} liens."
+   },
+   "request": {
+    "from_form": "Remplie dans le formulaire (pas lue par l’analyseur).",
+    "metric": "KPI",
+    "dimensions": "Par",
+    "overall": "global",
+    "period": "Période",
+    "compare_to": "Comparée à",
+    "confidence": "Confiance de la lecture"
+   },
+   "analysis": {
+    "current": "Période",
+    "previous": "Période comparée",
+    "change": "Évolution",
+    "as_asked": "telle que demandée",
+    "kpi": "Version du KPI",
+    "rows": "{n} lignes de résultat",
+    "checks": "Contrôles avant d’afficher un chiffre : {ok}/{n} réussis",
+    "insights": "Constats",
+    "sql": "SQL généré depuis le catalogue des KPI (jamais écrit à la main)",
+    "no_insight": "Aucun constat : ils ne sont écrits que si tous les contrôles passent."
    }
   }
  },

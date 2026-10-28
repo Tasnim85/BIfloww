@@ -185,7 +185,7 @@
   },
   "side": {
    "title": "Every number, with its proof.",
-   "text": "Live: comparison checks and the auditor. Other stages: demo until each agent is plugged in."
+   "text": "Live: the agents of Malek, Ikbel, Ahmed, Rabeb and Tasnim. Demo: intake and dashboard, until they are plugged in."
   },
   "status": {
    "running": "Running",
@@ -226,6 +226,10 @@
    "clinics": {
     "name": "Clinic network · Tunisia",
     "text": "Synthetic visits and fees of 9 clinics (2023–2024), in TND."
+   },
+   "olist_live": {
+    "name": "Olist · full pipeline",
+    "text": "The 8 real Olist CSV files (2016–2018, BRL), prepared by the team’s agents end to end."
    }
   },
   "pipeline": {
@@ -241,62 +245,88 @@
     "name": "Intake",
     "out": "File received.",
     "file": "{name}: {rows} rows, {cols} columns profiled in your browser.",
-    "dataset": "Prepared dataset: {name}."
+    "dataset": "Prepared dataset: {name}.",
+    "short": "Intake",
+    "what": "Receives the files and the question, and starts the run."
    },
    "similarity": {
     "name": "Similarity detection",
-    "out": "No similar dataset found: a new pipeline is built."
+    "out": "No similar dataset found: a new pipeline is built.",
+    "short": "Similarity",
+    "what": "Is this data like a dataset already seen? If so, its cleaning playbook is reused."
    },
    "column_types": {
     "name": "Column semantic types",
     "out": "Columns classified: IDs, amounts, dates, places.",
-    "file": "{n} columns classified (amount, date, ID, place…)."
+    "file": "{n} columns classified (amount, date, ID, place…).",
+    "short": "Column types",
+    "what": "Gives every column a business type (ID, amount, date, place…) and flags the ones that may be personal."
    },
    "pii": {
     "name": "Personal data masking",
-    "out": "Customer identifiers pseudonymized before any analysis."
+    "out": "Customer identifiers pseudonymized before any analysis.",
+    "short": "Personal data",
+    "what": "Decides, column by column, what to keep, pseudonymize or generalize before anyone analyses the data."
    },
    "profiling": {
     "name": "Profiling & anomalies",
     "out": "Missing values, duplicates and outliers detected.",
-    "real": "{n} anomalous rows flagged by the profiler."
+    "real": "{n} anomalous rows flagged by the profiler.",
+    "short": "Profiling",
+    "what": "Measures each table (rows, duplicates, missing values, dates covered) and flags unusual rows with an Isolation Forest."
    },
    "cleaning": {
     "name": "Cleaning",
-    "out": "Versioned playbook applied: missing values filled, duplicates removed."
+    "out": "Versioned playbook applied: missing values filled, duplicates removed.",
+    "short": "Cleaning",
+    "what": "Applies a versioned playbook: the same rules, in the same order, every time, each one logged."
    },
    "etl": {
     "name": "ETL & warehouse",
-    "out": "Warehouse built: one fact table and its dimensions."
+    "out": "Warehouse built: one fact table and its dimensions.",
+    "short": "Warehouse",
+    "what": "Builds the fact and dimension tables, with a receipt proving no join duplicated rows."
    },
    "request": {
     "name": "Question understanding",
     "out": "Business terms mapped to the KPI catalog.",
-    "real": "Understood as KPI “{kpi}” by {dim}."
+    "real": "Understood as KPI “{kpi}” by {dim}.",
+    "short": "Question",
+    "what": "Reads the question in plain words and maps it to a KPI, dimensions and periods of the catalog."
    },
    "analysis": {
     "name": "Analysis",
-    "out": "KPI computed for both periods."
+    "out": "KPI computed for both periods.",
+    "short": "Analysis",
+    "what": "Computes the KPI with SQL generated from the catalog, checks it four ways, then writes insights."
    },
    "comparisons": {
     "name": "Comparison check (BO4-12)",
     "out": "5 comparability checks.",
     "blocked": "Misleading as asked ({kinds}): a justified fix is proposed.",
     "warning": "Valid, with warnings ({kinds}).",
-    "valid": "Valid comparison: 5 checks passed."
+    "valid": "Valid comparison: 5 checks passed.",
+    "short": "Fair compare",
+    "what": "Checks that the two periods can honestly be compared, and proposes a justified fix if not."
    },
    "dashboard": {
     "name": "Dashboard",
-    "out": "Charts drawn for the periods you validate."
+    "out": "Charts drawn for the periods you validate.",
+    "short": "Dashboard",
+    "what": "Chooses the charts and lays out the dashboard."
    },
    "lineage": {
     "name": "Lineage",
-    "out": "KPI → transformations → source columns traced."
+    "out": "KPI → transformations → source columns traced.",
+    "short": "Lineage",
+    "what": "Traces every KPI back to the source columns it is computed from."
    },
    "auditor": {
     "name": "Auditor & XAI",
     "out": "Decisions explained and journaled.",
-    "real": "{n} anomalies explained with SHAP · journal {intact, select, ok {intact} other {BROKEN}} ({entries} entries) · drift: {drift}."
+    "real": "{n} anomalies explained with SHAP · journal {intact, select, ok {intact} other {BROKEN}} ({entries} entries) · drift: {drift}.",
+    "short": "Auditor",
+    "what": "Explains the anomalies with SHAP, keeps the append-only journal, watches drift and answers “why?”."
    }
   },
   "new": {
@@ -337,7 +367,15 @@
    "err_pipeline": "The pipeline could not answer. Is the Python API running?",
    "err_generic": "Something went wrong. Please try again.",
    "working_title": "The agents are at work",
-   "working_text": "Checking that your comparison is fair, then preparing the dashboard…"
+   "working_text": "Checking that your comparison is fair, then preparing the dashboard…",
+   "question_placeholder": "e.g. Revenue by customer state, August 2018 vs July 2018",
+   "parse": "Read my question",
+   "parse_hint": "The question agent maps your words to the KPI catalog and fills the fields below. You can still change them.",
+   "parse_error": "The question could not be read. Fill the fields below.",
+   "parse_unclear": "No KPI recognised in the question. Rephrase it, or fill the fields below.",
+   "parsed_title": "Question understood",
+   "parsed_by": "question agent · confidence {p} %",
+   "parsed_edited": "edited by you"
   },
   "run": {
    "not_found": "This analysis does not exist or is not yours.",
@@ -354,7 +392,11 @@
     "drift": "Drift",
     "why": "Ask why"
    },
-   "no_run": "No result for this analysis."
+   "no_run": "No result for this analysis.",
+   "test_double": "These data were prepared by the real agents, but the PII and ETL decisions came from the test double (fake Ollama), not from llama3. They are logged in a separate journal.",
+   "insights": "What the analyst sees",
+   "no_analysis": "No analyst result for this analysis.",
+   "checks_passed": "{ok}/{n} checks passed"
   },
   "cmp": {
    "source_llm": "Written by the LLM, fact-checked",
@@ -484,7 +526,8 @@
     "drift": "Monthly drift",
     "clinics": "Clinics (2nd dataset)",
     "ui": "Analyses from the app",
-    "real": "Production journal"
+    "real": "Production journal",
+    "integration": "Integration tests (fake Ollama)"
    },
    "meta": "{n} entries · {runs} runs",
    "intact": "Chain intact at last read.",
@@ -506,6 +549,149 @@
     "completed": "Your analysis is ready",
     "needs_review": "Your analysis needs your decision",
     "failed": "Your analysis failed"
+   }
+  },
+  "rail": {
+   "label": "The agents of the pipeline",
+   "title": "Behind the answer",
+   "subtitle": "{live} of the {total} agents show their real output. Click one to see what it did.",
+   "working": "Working: {name}…",
+   "phases": {
+    "intake": "Intake",
+    "prepare": "Preparation",
+    "answer": "Answer",
+    "audit": "Audit"
+   }
+  },
+  "state": {
+   "live": "Live",
+   "demo": "Demo",
+   "missing": "Not run"
+  },
+  "hero": {
+   "as_asked": "As you asked",
+   "fair": "Fair comparison",
+   "vs": "vs",
+   "vs_prev": "vs {v}",
+   "asked_was": "As asked:",
+   "v_fixed": "Comparison fixed by your decision",
+   "v_blocked": "Misleading as asked: your decision is needed",
+   "v_kept": "Kept as asked despite the warning",
+   "v_warning": "Fair, with warnings",
+   "v_fair": "Fair comparison",
+   "agents": "{live}/{total} agents live",
+   "why": "Ask why",
+   "no_number": "No computed value for this analysis (created before the analyst was connected)."
+  },
+  "inspect": {
+   "demo_owner": "Demo: {owner}’s agent is not connected to the app yet. What follows comes from your browser or the prepared dataset.",
+   "dashboard_demo": "Demo: Samar’s dashboard generator is not connected yet. The chart above is drawn by the comparison agent (BO4-12) for the periods you validated.",
+   "demo_script": "Demo data: this dataset was prepared by a script, not by the agents. Choose “Olist · full pipeline” to see the real outputs.",
+   "request_form": "This request was set in the form, not read by the parser. Use “Read my question” on a new analysis to see Malek’s agent at work.",
+   "missing": "This agent did not run on this dataset.",
+   "scope_dataset": "prepared once for {name}",
+   "scope_question": "computed for this question",
+   "prev": "Previous agent",
+   "next": "Next agent",
+   "source": "Files read from runs/{run}/ (contract files only).",
+   "upload": {
+    "file": "{rows} rows, {cols} columns, read in your browser.",
+    "tables": "{n} tables in the dataset"
+   },
+   "similarity": {
+    "close_to": "close to “{name}”",
+    "none": "no known dataset",
+    "playbook": "playbook {p}",
+    "text": "Before anything else, the new data is compared with the datasets already seen: a close match reuses their playbook instead of starting from zero.",
+    "threshold": "threshold",
+    "method": "Method {m} · match from {th} %"
+   },
+   "column_types": {
+    "pii_candidates": "{n} possibly personal",
+    "text": "{n} columns classified ({model}).",
+    "filter": "Filter by table",
+    "all_tables": "All tables ({n})",
+    "column": "Column",
+    "type": "Type",
+    "confidence": "Confidence",
+    "pii_flag": "possibly personal data"
+   },
+   "pii": {
+    "actions": {
+     "kept": "kept",
+     "pseudonymized": "pseudonymized",
+     "generalized": "generalized",
+     "dropped": "removed"
+    },
+    "rows": "{n} rows",
+    "note": "Pseudonyms use a secret key (HMAC-SHA256): the same customer always gets the same code, so joins still work, but nobody can go back to the identity. Policy {policy}."
+   },
+   "profiling": {
+    "anomalies": "unusual rows in {table} (out of {n})",
+    "model": "{m} {v}, contamination {c}",
+    "see_shap": "Explained with SHAP",
+    "cols": "{n} cols",
+    "dupes": "{n} duplicates",
+    "missing": "{p} % missing",
+    "coverage": "Dates covered (used by the comparison checks)",
+    "days": "{n} days"
+   },
+   "cleaning": {
+    "playbook": "Playbook",
+    "versioned": "versioned, same rules every time",
+    "rules": "Rules applied",
+    "with_effect": "Rules that changed data",
+    "cells": "Row changes",
+    "rows": "{n} rows",
+    "only_effect": "Only the rules that changed data",
+    "show_all": "Show the {n} rules without effect",
+    "rows_changed_tables": "Row counts changed in: {tables}.",
+    "no_row_lost": "No row lost: the {n} tables keep all their rows."
+   },
+   "etl": {
+    "text": "A warehouse of {facts} fact tables and {dims} dimensions, each with its receipt.",
+    "kind": {
+     "fact": "fact",
+     "dimension": "dimension"
+    },
+    "grain": "grain: {g}",
+    "key": "key: {k}",
+    "cols": "{n} columns",
+    "no_fanout": "no row duplicated by the joins",
+    "changed": "row count changed"
+   },
+   "lineage": {
+    "text": "Where the numbers of {kpi} come from, column by column.",
+    "layers": {
+     "raw": "Source CSV",
+     "pii": "Privacy",
+     "clean": "Cleaning",
+     "physical": "Warehouse table",
+     "warehouse": "Warehouse view",
+     "kpi": "KPI"
+    },
+    "size": "{shown} nodes shown, out of a lineage graph of {n} nodes and {e} edges."
+   },
+   "request": {
+    "from_form": "Set in the form (not read by the parser).",
+    "metric": "KPI",
+    "dimensions": "By",
+    "overall": "overall",
+    "period": "Period",
+    "compare_to": "Compared with",
+    "confidence": "Confidence of the reading"
+   },
+   "analysis": {
+    "current": "Period",
+    "previous": "Compared period",
+    "change": "Change",
+    "as_asked": "as asked",
+    "kpi": "KPI version",
+    "rows": "{n} rows of result",
+    "checks": "Checks before showing any number: {ok}/{n} passed",
+    "insights": "Insights",
+    "sql": "SQL generated from the KPI catalog (never written by hand)",
+    "no_insight": "No insight: they are only written when every check passes."
    }
   }
  },

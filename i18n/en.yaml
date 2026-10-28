@@ -104,6 +104,7 @@ ui:                                   # Streamlit app of Tasnim (auditor/ui/)
     clinics: "Clinics (2nd dataset)"
     ui: "Tries from the interface"
     real: "Real journal"
+    integration: "Integration tests (fake Ollama)"
   common:
     run: "Run"
     journal: "Journal"

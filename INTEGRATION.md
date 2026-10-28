@@ -96,6 +96,20 @@ ETL en revue → décision de Sarra → tout ✅, en reprenant le même `run_id`
   python -m tools.integration.run_from integ_001 etl etl_approval=<sha256> backend=json
   ```
 
+## Le jeu de données de l'application : `olist_live`
+
+L'application web montre les sorties **réelles** des agents de Malek, Ikbel, Ahmed, Rabeb (et Tasnim) sur le run
+`olist_live`. Pour le créer (ou le recréer) :
+
+```
+set BO2_PII_SECRET=<32 caractères ou plus>
+python -m tools.integration.run_with_reviews olist_live
+```
+
+- avec le **vrai llama3** : les décisions vont dans le journal réel (`runs/audit_journal.db`) ;
+- avec la **doublure** `fake_ollama.py` : elles vont dans `runs/integration_journal.db` (jamais mélangées aux
+  vraies), et l'application l'affiche (« Tests d'intégration (faux Ollama) »).
+
 ## Tester sans Ollama
 
 `tools/integration/fake_ollama.py` est une **doublure de test** : un faux Ollama local qui répond aux questions du PII
