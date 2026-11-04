@@ -4,7 +4,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Database, FileSpreadsheet, FlaskConical,
-  MessageCircleQuestion, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp,
+  MessageCircleQuestion, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp, UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -334,12 +334,37 @@ function Inspector({ stage, state, a, view, viewLoading, report, summary, datase
         </div>
       </div>
       <motion.div key={stage} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="mt-5">
+        <Approvals items={(view?.approvals ?? []).filter((x) => x.step === stage)} />
         {body}
       </motion.div>
       {info && fromDataset && info.available && state === "live" && (
         <p className="mt-5 text-[11px] text-subtle">{t("inspect.source", { run: info.source_run })}</p>
       )}
     </div>
+  );
+}
+
+/** Who approved or decided this step, and when (audit journal, or the approved playbook). */
+function Approvals({ items }: { items: PipelineView["approvals"] }) {
+  const t = useTranslations("app.inspect");
+  const locale = useLocale();
+  if (!items?.length) return null;
+  return (
+    <ul className="mb-4 space-y-1.5">
+      {items.map((x, i) => {
+        const ok = !/REJECTED/.test(x.decision) && !/^rejected/.test(x.decision);
+        return (
+          <li key={i} className={cn("flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-sm",
+            ok ? "border-ok/30 bg-ok-soft/60" : "border-bad/30 bg-bad-soft/60")}>
+            <UserCheck className={cn("h-4 w-4 shrink-0", ok ? "text-ok" : "text-bad")} />
+            <span className="font-semibold">{x.source === "playbook" ? t("approval.playbook") : ok ? t("approval.approved") : t("approval.rejected")}</span>
+            <span>{t("approval.by", { who: x.reviewer ?? t("approval.unknown") })}</span>
+            {x.at && <span className="text-muted">· {fmtDate(String(x.at), locale)}</span>}
+            {x.source !== "playbook" && <span className="ml-auto font-mono text-[11px] text-subtle">{x.decision.replace(/ by .*/, "")}</span>}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

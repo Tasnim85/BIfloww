@@ -550,6 +550,26 @@ export interface components {
             /** Contamination */
             contamination?: number | null;
         };
+        /**
+         * ApprovalView
+         * @description A human decision on a step: who, when, what (from the audit journal or the approved playbook).
+         */
+        ApprovalView: {
+            /** Step */
+            step: string;
+            /** Decision */
+            decision: string;
+            /** Reviewer */
+            reviewer?: string | null;
+            /** At */
+            at?: string | null;
+            /**
+             * Source
+             * @default journal
+             * @enum {string}
+             */
+            source: "journal" | "playbook";
+        };
         /** Body_upload_api_uploads_post */
         Body_upload_api_uploads_post: {
             /**
@@ -615,6 +635,17 @@ export interface components {
          * @enum {string}
          */
         CheckStatus: "ok" | "warning" | "blocking";
+        /** CleaningRule */
+        CleaningRule: {
+            /** Table */
+            table: string;
+            /** Column */
+            column: string;
+            /** Action */
+            action: string;
+            /** Value */
+            value?: string | number | null;
+        };
         /** CleaningSummary */
         CleaningSummary: {
             /** Playbook */
@@ -807,6 +838,11 @@ export interface components {
             decision: components["schemas"]["UserDecision"];
             /** @description Only with 'accepted'. Default: the recommended fix. */
             chosen_fix?: components["schemas"]["FixMethod"] | null;
+            /**
+             * Reviewer
+             * @description Who decides (set by the web server from the signed-in user)
+             */
+            reviewer?: string | null;
         };
         /** DriftReport */
         DriftReport: {
@@ -1266,6 +1302,8 @@ export interface components {
             lineage?: components["schemas"]["LineagePath"] | null;
             request?: components["schemas"]["AnalysisRequest"] | null;
             analysis?: components["schemas"]["AnalysisResult"] | null;
+            /** Approvals */
+            approvals?: components["schemas"]["ApprovalView"][];
         };
         /** ProfilingSummary */
         ProfilingSummary: {
@@ -1325,11 +1363,20 @@ export interface components {
              * Step
              * @enum {string}
              */
-            step: "pii" | "etl" | "comparisons";
+            step: "pii" | "cleaning" | "etl" | "comparisons" | "other";
             /** Message */
             message: string;
+            /**
+             * Approvable
+             * @default true
+             */
+            approvable: boolean;
             /** Pii */
             pii?: components["schemas"]["PiiQuestion"][];
+            /** Pii Types */
+            pii_types?: string[];
+            /** Rules */
+            rules?: components["schemas"]["CleaningRule"][];
             /** Schema Type */
             schema_type?: string | null;
             /** Tables */
@@ -1343,7 +1390,7 @@ export interface components {
              * Step
              * @enum {string}
              */
-            step: "pii" | "etl";
+            step: "pii" | "cleaning" | "etl";
             /**
              * Decision
              * @enum {string}
@@ -1351,9 +1398,16 @@ export interface components {
             decision: "approve" | "reject";
             /**
              * Reviewer
-             * @default app user
+             * @description Who decides: set by the web server from the signed-in user, never typed
              */
             reviewer: string;
+            /**
+             * Pii Types
+             * @description PII review: 'table.column' -> the type the person chose (default: the proposal)
+             */
+            pii_types?: {
+                [key: string]: string;
+            };
         };
         /** Row */
         Row: {

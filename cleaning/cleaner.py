@@ -9,6 +9,13 @@ from contracts.semantic import load_yaml
 
 def dispatch(ctx):
     """Accept shared JSON/YAML playbooks without changing the local LLM workflow."""
+    if ctx.params.get('cleaning_approval'):
+        # Human approval given in the web app (same flow as bo2/cleaning_ui.py): only the displayed
+        # generated rules are applied, with approval.json (proposal sha256 + reviewer + approved_at).
+        ctx=ctx.model_copy(update={'inputs':{**ctx.inputs,'proposal':Path(ctx.params['cleaning_proposal']),
+                                             'approval':Path(ctx.params['cleaning_approval'])},
+                                   'params':{**ctx.params,'playbook_mode':'generate'}})
+        return engine(ctx)
     if ctx.params.get('playbook_mode')=='generate':
         return engine(ctx)
     explicit=ctx.params.get('playbook')

@@ -78,6 +78,11 @@ avec `llama3` (ou, pour les tests seulement, `python tools\integration\fake_olla
 décisions vont dans `runs/integration_journal.db`, jamais dans le journal réel. Limites : 20 fichiers, 150 Mo par fichier,
 300 Mo en tout, 2 pipelines en même temps. Un jeu envoyé par un utilisateur n'est jamais proposé aux autres.
 
+Validations humaines dans l'app (PII, règles de nettoyage, schéma ETL, comparaison) : le **nom de l'utilisateur connecté**
+(mis par le serveur Next.js, jamais tapé dans le navigateur) et l'**heure** vont dans le journal (`human_review` /
+`user_decision`) et dans `runs/<run>/<étape>/approval.json`. Pour montrer la validation des règles de nettoyage
+proposées par le LLM (quand aucun playbook validé ne convient) : lancer l'API avec `set BIFLOW_CLEANING_MODE=generate`.
+
 ## Langue des textes (français / anglais)
 
 Toutes les routes qui renvoient du texte acceptent **`?lang=fr`** ou **`?lang=en`**. Sans ce paramètre, la langue vient de l'en-tête `Accept-Language` du navigateur, sinon c'est le français. Les nombres ne changent pas : seule leur écriture change (941 291,36 contre 941,291.36). Pour `POST /api/runs/{run_id}/why`, la réponse est dans la langue de la question (détectée), sauf si `lang` est donné dans le corps. Détails : `i18n/README.md`.

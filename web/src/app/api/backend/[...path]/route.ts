@@ -5,11 +5,12 @@
  *   3. checks ownership: a user reads showcase datasets and HIS analyses, and writes (decision,
  *      why?) only on his analyses,
  *   4. keeps the history in sync with the user's decision,
- *   5. limits the question parser (POST parse: no run, read-only) to 20 calls a minute per user.
+ *   5. writes the signed-in user's name as the reviewer of every approval / decision (audit journal),
+ *   6. limits the question parser (POST parse: no run, read-only) to 20 calls a minute per user.
  */
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { currentUserId } from "@/lib/auth";
+import { currentUser } from "@/lib/auth";
 import { backend } from "@/lib/backend";
 import { analysisByRun, updateAnalysis } from "@/lib/db";
 import { allow } from "@/lib/rate-limit";
@@ -28,8 +29,9 @@ const PASS_QUERY = ["limit", "offset", "anomalies_only", "include_llm"];
 type Ctx = { params: Promise<{ path: string[] }> };
 
 async function handle(req: Request, { params }: Ctx, method: "GET" | "POST") {
-  const uid = await currentUserId();
-  if (!uid) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await currentUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const uid = user.id;
   const path = (await params).path.join("/");
   const rules = method === "GET" ? READ : WRITE;
   if (!rules.some((r) => r.test(path))) return NextResponse.json({ error: "not_allowed" }, { status: 403 });
@@ -45,7 +47,9 @@ async function handle(req: Request, { params }: Ctx, method: "GET" | "POST") {
   const query: Record<string, string> = {};
   for (const k of PASS_QUERY) { const v = url.searchParams.get(k); if (v !== null) query[k] = v; }
   const lang = url.searchParams.get("lang") ?? (await cookies()).get("NEXT_LOCALE")?.value ?? "en";
-  const body = method === "POST" ? await req.json().catch(() => ({})) : undefined;
+  let body = method === "POST" ? await req.json().catch(() => ({})) : undefined;
+  // WHO approves or decides is taken from the session, never from the browser: it goes to the audit journal
+  if (method === "POST" && /\/(review|comparison\/decision)$/.test(path)) body = { ...(body ?? {}), reviewer: user.name };
 
   const res = await backend<Record<string, unknown>>(path, { method, body, lang, query });
 

@@ -77,6 +77,7 @@ class RunSummary(BaseModel):
 class Decision(BaseModel):
     decision: UserDecision
     chosen_fix: FixMethod | None = Field(None, description="Only with 'accepted'. Default: the recommended fix.")
+    reviewer: str | None = Field(None, max_length=100, description="Who decides (set by the web server from the signed-in user)")
 
 
 class NewComparison(BaseModel):

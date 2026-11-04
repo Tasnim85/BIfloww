@@ -408,7 +408,7 @@
     "why": "Demander pourquoi"
    },
    "no_run": "Aucun résultat pour cette analyse.",
-   "test_double": "Ces données ont été préparées par les vrais agents, mais les décisions PII et ETL viennent de la doublure de test (faux Ollama), pas de llama3. Elles sont dans un journal séparé.",
+   "test_double": "Ces données ont été préparées par les vrais agents, mais les décisions du LLM (confidentialité, règles de nettoyage, conception de l’entrepôt) viennent de la doublure de test (faux Ollama), pas de llama3. Elles sont dans un journal séparé.",
    "insights": "Ce que voit l’analyste",
    "no_analysis": "Pas de résultat de l’analyste pour cette analyse.",
    "checks_passed": "{ok}/{n} contrôles réussis"
@@ -711,7 +711,14 @@
     "no_insight": "Aucun constat : ils ne sont écrits que si tous les contrôles passent."
    },
    "bo412_chart": "Les deux périodes, telles que fixées par votre décision",
-   "pending": "Cet agent n’a pas encore tourné : il attend les étapes précédentes."
+   "pending": "Cet agent n’a pas encore tourné : il attend les étapes précédentes.",
+   "approval": {
+    "approved": "Validé",
+    "rejected": "Refusé",
+    "playbook": "Playbook validé",
+    "by": "par {who}",
+    "unknown": "(nom non enregistré)"
+   }
   },
   "dash": {
    "label": "Tableau de bord",
@@ -745,8 +752,28 @@
    "review": {
     "pii": {
      "title": "Données personnelles : à confirmer",
-     "text": "L’agent de confidentialité hésite sur ces colonnes. Confirmez le type qu’il propose, ou arrêtez le pipeline.",
-     "none": "Aucune colonne à confirmer."
+     "text": "L’agent de confidentialité hésite sur ces colonnes. Choisissez le bon type pour chacune : les types personnels sont pseudonymisés ou masqués, les autres sont gardés.",
+     "none": "Aucune colonne à confirmer.",
+     "proposed": "modèle : {type} · {p} %",
+     "choose": "Type de {col}",
+     "pick": "Choisir un type…",
+     "types": {
+      "EMAIL": "E-mail",
+      "PHONE": "Téléphone",
+      "PERSON_NAME": "Nom de personne",
+      "PERSONAL_ID": "Identifiant personnel",
+      "ADDRESS": "Adresse / lieu",
+      "POSTAL_CODE": "Code postal",
+      "COORDINATE": "Coordonnée GPS",
+      "BIRTH_DATE": "Date de naissance",
+      "AGE": "Âge",
+      "SENSITIVE_ATTRIBUTE": "Attribut sensible",
+      "FREE_TEXT": "Texte libre",
+      "INTERNAL_KEY": "Clé technique",
+      "TIMESTAMP": "Date / heure",
+      "MEASURE": "Mesure (nombre)",
+      "CATEGORY": "Catégorie (non personnelle)"
+     }
     },
     "etl": {
      "title": "Conception de l’entrepôt : à valider",
@@ -759,7 +786,24 @@
     "error": "Votre réponse n’a pas pu être envoyée. Réessayez.",
     "approve": "Valider et continuer",
     "reject": "Refuser et arrêter",
-    "journaled": "Votre décision est inscrite au journal d’audit avant que le pipeline continue."
+    "journaled": "Votre décision est inscrite au journal d’audit avant que le pipeline continue.",
+    "cleaning": {
+     "title": "Règles de nettoyage : à valider",
+     "text": "Aucun playbook validé ne convient à vos données : le LLM local propose ces règles. Rien n’est appliqué avant qu’une personne les valide.",
+     "no_rules": "Le LLM ne propose aucune règle : valider revient à garder les données telles quelles.",
+     "fix_data": "Des valeurs critiques doivent être corrigées dans les données sources : ici, on ne peut qu’arrêter le pipeline.",
+     "actions": {
+      "trim": "enlever les espaces",
+      "numeric": "en nombre",
+      "datetime": "en date",
+      "fill_constant": "remplir par une valeur"
+     }
+    },
+    "other": {
+     "title": "Cette étape demande votre attention",
+     "text": "Un agent s’est arrêté et demande une personne. Lisez son message ci-dessous."
+    },
+    "journaled_named": "Votre nom et l’heure sont inscrits au journal d’audit avant que le pipeline continue."
    }
   }
  },
