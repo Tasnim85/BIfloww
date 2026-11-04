@@ -106,7 +106,7 @@ def _previous_decision(path, new: ComparisonReport) -> ComparisonReport | None:
 
 
 def record_decision(run_id: str, decision: UserDecision | str,
-                    chosen_fix: FixMethod | str | None = None, **ctx_kwargs) -> ComparisonReport:
+                    chosen_fix: FixMethod | str | None = None, reviewer: str | None = None, **ctx_kwargs) -> ComparisonReport:
     """The app calls this when Sarra accepts or refuses. Logged in the journal."""
     ctx = context_for("comparisons", run_id, **ctx_kwargs)
     path = ctx.output("report")
@@ -123,7 +123,8 @@ def record_decision(run_id: str, decision: UserDecision | str,
     report = report.model_copy(update={"user_decision": decision, "chosen_fix": chosen})
     save(report, path)
     ctx.log("user_decision", f"{decision.value}" + (f": {chosen.value}" if chosen else ""),
-            outputs=[str(path)], evidence={"chosen_fix": chosen.value if chosen else None})
+            outputs=[str(path)], evidence={"chosen_fix": chosen.value if chosen else None,
+                                           **({"reviewer": reviewer} if reviewer else {})})
     return report
 
 

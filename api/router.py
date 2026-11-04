@@ -157,7 +157,7 @@ def make_router(runs_root: Path = RUNS_ROOT, repo_root: Path = REPO_ROOT, llm=No
         pending. Written in the audit journal. Nothing is applied without it."""
         need(run_id, "comparisons.report")
         try:
-            report = record_decision(run_id, body.decision, body.chosen_fix, **ctx_kwargs(run_id))
+            report = record_decision(run_id, body.decision, body.chosen_fix, reviewer=body.reviewer, **ctx_kwargs(run_id))
         except ValueError as e:
             raise HTTPException(400, str(e))
         if is_upload_run(run_id):

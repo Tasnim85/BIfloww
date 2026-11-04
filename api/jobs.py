@@ -22,6 +22,7 @@ import re
 import shutil
 import threading
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 from urllib.request import ProxyHandler, build_opener
@@ -34,7 +35,10 @@ from contracts.pipeline import STEPS
 
 UPLOAD_RUN = re.compile(r"^up_[0-9a-f]{12}$")
 MAX_FILES, MAX_FILE_MB, MAX_TOTAL_MB = 20, 150, 300
-REVIEWABLE = ("pii", "etl")
+REVIEWABLE = ("pii", "cleaning", "etl")
+# the types a person may give to a column the privacy agent is unsure about (privacy/detection.py, without UNKNOWN)
+PII_TYPES = ["EMAIL", "PHONE", "PERSON_NAME", "PERSONAL_ID", "ADDRESS", "POSTAL_CODE", "COORDINATE", "BIRTH_DATE", "AGE",
+             "SENSITIVE_ATTRIBUTE", "FREE_TEXT", "INTERNAL_KEY", "TIMESTAMP", "MEASURE", "CATEGORY"]
 
 
 def is_upload_run(run_id: str) -> bool:
@@ -69,6 +73,12 @@ def safe_name(name: str) -> str | None:
     return f"{stem}.csv" if stem else None
 
 
+def write_approval(path: Path, data: dict) -> None:
+    """Who approved what, and when, next to the agent's outputs (same idea as Ikbel's approval.json)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
 # ---- response models ---------------------------------------------------------------------------------------
 class StepProgress(BaseModel):
     step: str
@@ -98,10 +108,20 @@ class EtlLink(BaseModel):
     kept: bool
 
 
+class CleaningRule(BaseModel):
+    table: str
+    column: str
+    action: str                        # trim, numeric, datetime, fill_constant
+    value: str | float | int | None = None
+
+
 class Review(BaseModel):
-    step: Literal["pii", "etl", "comparisons"]
+    step: Literal["pii", "cleaning", "etl", "comparisons", "other"]
     message: str
+    approvable: bool = True            # False: the app can only stop the run (e.g. critical values to fix in the data)
     pii: list[PiiQuestion] = Field(default_factory=list)
+    pii_types: list[str] = Field(default_factory=lambda: list(PII_TYPES))   # the choices offered to the person
+    rules: list[CleaningRule] = Field(default_factory=list)   # cleaning rules proposed by llama3 (no playbook fits)
     schema_type: str | None = None
     tables: list[EtlTable] = Field(default_factory=list)
     links: list[EtlLink] = Field(default_factory=list)
@@ -122,9 +142,12 @@ class UploadStarted(BaseModel):
 
 
 class ReviewAnswer(BaseModel):
-    step: Literal["pii", "etl"]
+    step: Literal["pii", "cleaning", "etl"]
     decision: Literal["approve", "reject"]
-    reviewer: str = Field("app user", max_length=100)
+    reviewer: str = Field(..., min_length=1, max_length=100,
+                          description="Who decides: set by the web server from the signed-in user, never typed")
+    pii_types: dict[str, str] = Field(default_factory=dict, max_length=200,
+                                      description="PII review: 'table.column' -> the type the person chose (default: the proposal)")
 
 
 # ---- the jobs ------------------------------------------------------------------------------------------------
@@ -186,11 +209,20 @@ class Jobs:
     def _params(self, job: dict) -> dict:
         p = {"source_dir": str(self.runs_root / job["run_id"] / "incoming"), "question": job["question"],
              "uploaded_by": job["uploaded_by"], "lang": job["lang"], "language": job["lang"], "backend": "json",
-             "playbook": str(self.repo_root / "cleaning/playbooks/playbook_v2.0.json")}
+             "playbook": str(self.repo_root / "cleaning/playbooks/playbook_v2.0.json"),
+             # a playbook approved in the app stays with its run: the team decides what enters cleaning/playbooks/
+             "playbook_dir": str(self.runs_root / job["run_id"] / "cleaning_playbooks")}
+        if os.environ.get("BIFLOW_CLEANING_MODE") == "generate":
+            # demo / test switch: no playbook, llama3 proposes the cleaning rules and a person approves them in the app
+            p.pop("playbook")
+            p["playbook_mode"] = "generate"
         if job["params"].get("pii_overrides"):
             p["pii_overrides"] = job["params"]["pii_overrides"]
         if job["params"].get("etl_approval"):
             p["etl_approval"] = job["params"]["etl_approval"]
+        if job["params"].get("cleaning_approval"):
+            p["cleaning_proposal"] = job["params"]["cleaning_proposal"]
+            p["cleaning_approval"] = job["params"]["cleaning_approval"]
         return p
 
     def _launch(self, run_id: str) -> None:
@@ -259,7 +291,15 @@ class Jobs:
                                   for t in design.get("tables", [])],
                           links=[EtlLink(child=src.get(c["child"], c["child"]), parent=src.get(c["parent"], c["parent"]),
                                          columns=c.get("columns", []), kept=c["id"] in kept) for c in env.get("candidates", [])])
-        return Review(step="comparisons", message=msg)
+        if step == "cleaning":
+            proposal = run / "cleaning" / "proposed_rules.json"
+            if proposal.exists():                      # llama3 proposed rules: a human must approve them
+                data = json.loads(proposal.read_text(encoding="utf-8"))
+                return Review(step="cleaning", message=msg, rules=[CleaningRule(**r) for r in data.get("rules", [])])
+            return Review(step="cleaning", message=msg, approvable=False)   # data to fix at the source
+        if step == "comparisons":
+            return Review(step="comparisons", message=msg)
+        return Review(step="other", message=msg, approvable=False)
 
     # -- write
     def answer(self, run_id: str, a: ReviewAnswer) -> Progress:
@@ -267,18 +307,33 @@ class Jobs:
         prog = self.progress(run_id)
         if prog.state != "needs_review" or prog.review is None or prog.review.step != a.step:
             raise HTTPException(409, f"Run '{run_id}' is not waiting for a review of '{a.step}'.")
-        evidence: dict = {"reviewer": a.reviewer}
+        run = self.runs_root / run_id
+        approved_at = datetime.now(timezone.utc).isoformat()
+        evidence: dict = {"reviewer": a.reviewer, "approved_at": approved_at}
         if a.decision == "reject":
             job["rejected"] = a.step
+        elif not prog.review.approvable:
+            raise HTTPException(409, "This review cannot be approved in the app: the data must be fixed at the source.")
         elif a.step == "pii":
-            answers = {f"{q.table}.{q.column}": q.proposed for q in prog.review.pii}
+            answers = {f"{q.table}.{q.column}": a.pii_types.get(f"{q.table}.{q.column}", q.proposed) for q in prog.review.pii}
+            unsure = [k for k, v in answers.items() if v not in PII_TYPES]
+            if unsure:      # 'UNKNOWN' (or anything else) is not an answer: the person must choose a type
+                raise HTTPException(400, f"Choose a type for: {', '.join(unsure)}. Allowed: {', '.join(PII_TYPES)}")
             job["params"]["pii_overrides"] = {**job["params"].get("pii_overrides", {}), **answers}
             evidence["pii_overrides"] = answers
-        else:
-            proposal = self.runs_root / run_id / "etl" / "warehouse_proposal.json"
-            job["params"]["etl_approval"] = evidence["approved_sha256"] = hashlib.sha256(proposal.read_bytes()).hexdigest()
+            write_approval(run / "pii" / "approval.json", {"answers": answers, **evidence})
+        elif a.step == "cleaning":                # Ikbel's format: proposal sha256 + reviewer + approved_at
+            from cleaning.llm_rules import approve
+            proposal = run / "cleaning" / "proposed_rules.json"
+            approval = approve(proposal, a.reviewer, run / "cleaning" / "approval.json")
+            job["params"]["cleaning_proposal"], job["params"]["cleaning_approval"] = str(proposal), str(approval)
+            evidence.update(json.loads(approval.read_text(encoding="utf-8")))
+        else:                                     # Ahmed's ETL only needs the sha256; the person and time are kept too
+            proposal = run / "etl" / "warehouse_proposal.json"
+            job["params"]["etl_approval"] = evidence["proposal_sha256"] = hashlib.sha256(proposal.read_bytes()).hexdigest()
+            write_approval(run / "etl" / "approval.json", evidence)
         log_event(AuditEvent(run_id=run_id, agent=a.step, step="human_review",
-                             decision=("APPROVED" if a.decision == "approve" else "REJECTED") + " in the app",
+                             decision=("APPROVED" if a.decision == "approve" else "REJECTED") + f" by {a.reviewer}",
                              rule_version="app-review@1.0", evidence=evidence), self.journal(job))
         self.save_job(run_id, job)
         if a.decision == "approve":

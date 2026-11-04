@@ -56,6 +56,18 @@ class H(BaseHTTPRequestHandler):
         elif "keys" in meta:                                    # key entity refinement
             out = {k: {"semantic_type": "PERSONAL_ID" if v["column"].lower() in PERSON_KEYS else "INTERNAL_KEY", "confidence": 0.95}
                    for k, v in meta["keys"].items()}
+        elif body["format"].get("title") == "Proposal":         # cleaning: rules for an unknown dataset
+            # like a careful model: cast the measures to numbers and the dates to datetimes (at most 8 rules)
+            rules = []
+            for t, info in meta.get("tables", {}).items():
+                for c, col in info.get("columns", {}).items():
+                    kind = col.get("semantic_type")
+                    if kind == "MEASURE" and col.get("dtype") in ("object", "string"):
+                        rules.append({"table": t, "column": c, "action": "numeric"})
+                    elif kind == "TIMESTAMP" and col.get("dtype") in ("object", "string"):
+                        rules.append({"table": t, "column": c, "action": "datetime"})
+            key = lambda r: (0 if any(w in r["column"] for w in ("payment_value", "price", "freight", "purchase")) else 1)
+            out = {"name": "upload", "version": "1.0", "rules": sorted(rules, key=key)[:8]}
         elif body["format"].get("title") == "Labels":           # ETL: role of each table
             def role(name, info):
                 src = str(info.get("source", name)).lower()

@@ -13,7 +13,7 @@ Rules, as for the rest of the API:
 import json
 import tempfile
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from auditor import journals
 from contracts.agent import AgentStatus, RunContext
+from contracts.audit import read_events
 from contracts.analysis import AnalysisResult
 from contracts.common import load, save
 from contracts.intake import ColumnTypesReport, SimilarityReport, Upload
@@ -120,6 +121,15 @@ class LineagePath(BaseModel):
     total_edges: int
 
 
+class ApprovalView(BaseModel):
+    """A human decision on a step: who, when, what (from the audit journal or the approved playbook)."""
+    step: str                           # pii, cleaning, etl, comparisons
+    decision: str
+    reviewer: str | None = None         # None: decided before the app recorded names
+    at: datetime | None = None
+    source: Literal["journal", "playbook"] = "journal"
+
+
 class PipelineView(BaseModel):
     run_id: str
     base_run: str
@@ -135,6 +145,7 @@ class PipelineView(BaseModel):
     lineage: LineagePath | None = None
     request: AnalysisRequest | None = None
     analysis: AnalysisResult | None = None
+    approvals: list[ApprovalView] = Field(default_factory=list)
 
 
 class ChartOption(BaseModel):
@@ -196,6 +207,35 @@ def kpi_path(graph, kpi_ref: str) -> LineagePath | None:
                 todo.append(e.source)
     return LineagePath(kpi=kpi_ref, nodes=[n for n in graph.nodes if n.id in keep], edges=edges,
                        total_nodes=len(graph.nodes), total_edges=len(graph.edges))
+
+
+def playbook_approval(repo_root: Path, ref: str) -> ApprovalView | None:
+    """The playbook used by the cleaning (e.g. 'cleaning@2.0') was approved by a person: who and when."""
+    for f in sorted((repo_root / "cleaning" / "playbooks").glob("*.json")):
+        if f.name.endswith(".bo2.json"):
+            continue
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict) and f"{data.get('name')}@{data.get('version')}" == ref and data.get("approved_by"):
+            return ApprovalView(step="cleaning", decision=f"playbook {ref} approved", reviewer=data["approved_by"],
+                                at=data.get("approved_at"), source="playbook")
+    return None
+
+
+def journal_approvals(runs_root: Path, run_ids: list[str]) -> list[ApprovalView]:
+    out = []
+    for rid in dict.fromkeys(run_ids):
+        path = journals.journal_for(rid, runs_root)
+        if not path.exists():
+            continue
+        for e in read_events(path, run_id=rid):
+            if e.step == "human_review" or (e.agent == "comparisons" and e.step == "user_decision"):
+                out.append(ApprovalView(step=e.agent, decision=e.decision, reviewer=e.evidence.get("reviewer"), at=e.timestamp))
+    # the journal is append-only (a run rebuilt, a decision changed): the LAST decision of each step is the one in force
+    latest = {a.step: a for a in sorted(out, key=lambda a: a.at)}
+    return list(latest.values())
 
 
 def make_stages_router(runs_root: Path, repo_root: Path) -> APIRouter:
@@ -276,6 +316,10 @@ def make_stages_router(runs_root: Path, repo_root: Path) -> APIRouter:
                     catalog = load_yaml(KpiCatalog, ctx.inputs["catalog"])
                     ref = next((k.ref for k in catalog.kpis if k.name == view.request.metric), None)
             view.lineage = kpi_path(graph, ref) if ref else None
+
+        view.approvals = journal_approvals(runs_root, [base, run_id])
+        if view.cleaning and (pb := playbook_approval(repo_root, view.cleaning.playbook)):
+            view.approvals.insert(0, pb)
         return view
 
     @router.get("/runs/{run_id}/charts", response_model=DashboardView, tags=["pipeline"])

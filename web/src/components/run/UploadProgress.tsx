@@ -46,13 +46,18 @@ export function ReviewCard({ runId, review, onAnswered }: { runId: string; revie
   const locale = useLocale();
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState(false);
+  // PII: the proposal is pre-selected when it is a real type; 'UNKNOWN' must be chosen by the person
+  const [types, setTypes] = useState<Record<string, string>>(() => Object.fromEntries((review.pii ?? [])
+    .filter((q) => (review.pii_types ?? []).includes(q.proposed)).map((q) => [`${q.table}.${q.column}`, q.proposed])));
+  const missing = review.step === "pii" && (review.pii ?? []).some((q) => !types[`${q.table}.${q.column}`]);
   if (review.step === "comparisons") return null;           // the BO4-12 banner asks this one
-  const step = review.step;
+  const step = review.step === "other" ? "other" : review.step;
 
   async function answer(decision: "approve" | "reject") {
     setBusy(decision); setErr(false);
     try {
-      await api(`runs/${runId}/review`, { method: "POST", lang: locale, body: { step, decision } });
+      await api(`runs/${runId}/review`, { method: "POST", lang: locale,
+        body: { step, decision, ...(step === "pii" ? { pii_types: types } : {}) } });   // the server adds WHO
       onAnswered();
     } catch { setErr(true); } finally { setBusy(null); }
   }
@@ -68,16 +73,36 @@ export function ReviewCard({ runId, review, onAnswered }: { runId: string; revie
         </div>
       </div>
       <div className="space-y-4 bg-surface p-5">
+        {step === "cleaning" && (
+          review.rules?.length ? (
+            <ul className="divide-y divide-line rounded-xl border border-line">
+              {review.rules.map((r, i) => (
+                <li key={i} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
+                  <span className="min-w-0 flex-1 font-mono text-[12px]">{r.table}.{r.column}</span>
+                  <span className="chip bg-primary-soft text-primary">{t(`review.cleaning.actions.${r.action}`)}</span>
+                  {r.value != null && <span className="text-xs text-muted">= {String(r.value)}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : <p className="text-sm text-muted">{review.approvable ? t("review.cleaning.no_rules") : t("review.cleaning.fix_data")}</p>
+        )}
         {step === "pii" && (
           review.pii?.length ? (
             <ul className="divide-y divide-line rounded-xl border border-line">
-              {review.pii.map((q) => (
-                <li key={`${q.table}.${q.column}`} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
-                  <span className="min-w-0 flex-1 font-mono text-[12px]">{q.table}.{q.column}</span>
-                  <span className="chip bg-primary-soft text-primary">{q.proposed}</span>
-                  {q.confidence != null && <span className="w-16 text-right text-xs tabular-nums text-muted">{Math.round(q.confidence * 100)} %</span>}
-                </li>
-              ))}
+              {review.pii.map((q) => {
+                const key = `${q.table}.${q.column}`;
+                return (
+                  <li key={key} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
+                    <span className="min-w-0 flex-1 font-mono text-[12px]">{key}</span>
+                    {q.confidence != null && <span className="text-xs tabular-nums text-muted">{t("review.pii.proposed", { type: q.proposed, p: Math.round(q.confidence * 100) })}</span>}
+                    <select aria-label={t("review.pii.choose", { col: key })} className="input h-9 w-auto py-0 text-sm"
+                            value={types[key] ?? ""} onChange={(e) => setTypes((x) => ({ ...x, [key]: e.target.value }))}>
+                      <option value="" disabled>{t("review.pii.pick")}</option>
+                      {(review.pii_types ?? []).map((k) => <option key={k} value={k}>{t(`review.pii.types.${k}`)}</option>)}
+                    </select>
+                  </li>
+                );
+              })}
             </ul>
           ) : <p className="text-sm text-muted">{t("review.pii.none")}</p>
         )}
@@ -118,15 +143,17 @@ export function ReviewCard({ runId, review, onAnswered }: { runId: string; revie
           </>
         )}
         {err && <p role="alert" className="text-sm text-bad">{t("review.error")}</p>}
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-primary h-10" disabled={!!busy} onClick={() => answer("approve")}>
-            {busy === "approve" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{t("review.approve")}
-          </button>
+        {step !== "other" && <div className="flex flex-wrap gap-2">
+          {review.approvable && (
+            <button type="button" className="btn-primary h-10" disabled={!!busy || missing} onClick={() => answer("approve")}>
+              {busy === "approve" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{t("review.approve")}
+            </button>
+          )}
           <button type="button" className="btn-outline h-10" disabled={!!busy} onClick={() => answer("reject")}>
             {busy === "reject" ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}{t("review.reject")}
           </button>
-        </div>
-        <p className="text-xs text-muted">{t("review.journaled")}</p>
+        </div>}
+        {step !== "other" && <p className="text-xs text-muted">{t("review.journaled_named")}</p>}
       </div>
     </section>
   );

@@ -2,6 +2,7 @@
 reviews answered over HTTP. Uses the TEST DOUBLE of Ollama (in-process), never a real model.
 python -m pytest tests/test_api_uploads.py -v
 """
+import json
 import socket
 import threading
 import time
@@ -78,13 +79,14 @@ def test_upload_runs_the_whole_dag_with_the_reviews_answered_in_the_app(api):
         if rv["step"] == "etl":
             assert rv["tables"] and any(t["role"] == "fact" for t in rv["tables"]) and rv["links"]
             assert str(runs) not in str(rv)                         # no local path
-            assert c.post(f"/api/runs/{rid}/review", json={"step": "etl", "decision": "approve"}).status_code == 200
+            assert c.post(f"/api/runs/{rid}/review", json={"step": "etl", "decision": "approve"}).status_code == 422  # who?
+            assert c.post(f"/api/runs/{rid}/review", json={"step": "etl", "decision": "approve", "reviewer": "Sarra Ben Ali"}).status_code == 200
         elif rv["step"] == "pii":
-            assert c.post(f"/api/runs/{rid}/review", json={"step": "pii", "decision": "approve"}).status_code == 200
+            assert c.post(f"/api/runs/{rid}/review", json={"step": "pii", "decision": "approve", "reviewer": "Sarra Ben Ali"}).status_code == 200
         else:
             fix = c.get(f"/api/runs/{rid}/comparison").json()["proposed_fix"]["method"]
             assert c.post(f"/api/runs/{rid}/comparison/decision",
-                          json={"decision": "accepted", "chosen_fix": fix}).status_code == 200
+                          json={"decision": "accepted", "chosen_fix": fix, "reviewer": "Sarra Ben Ali"}).status_code == 200
     assert p["state"] == "done", p
     assert "etl" in seen
     view = c.get(f"/api/runs/{rid}/pipeline").json()
@@ -97,7 +99,14 @@ def test_upload_runs_the_whole_dag_with_the_reviews_answered_in_the_app(api):
     journal = runs / "integration_journal.db"
     assert verify_journal(journal).ok
     reviews = [e for e in read_events(journal, run_id=rid) if e.step == "human_review"]
-    assert reviews and reviews[0].decision.startswith("APPROVED")
+    assert reviews and reviews[0].decision == "APPROVED by Sarra Ben Ali"
+    assert reviews[0].evidence["reviewer"] == "Sarra Ben Ali" and reviews[0].evidence["approved_at"]
+    # who approved the ETL design, and when: in the journal, next to the warehouse, and in the app
+    etl_approval = json.loads((runs / rid / "etl" / "approval.json").read_text(encoding="utf-8"))
+    assert etl_approval["reviewer"] == "Sarra Ben Ali" and etl_approval["proposal_sha256"] and etl_approval["approved_at"]
+    who = {(a["step"], a["reviewer"]) for a in view["approvals"]}
+    assert ("etl", "Sarra Ben Ali") in who and ("comparisons", "Sarra Ben Ali") in who
+    assert any(a["source"] == "playbook" and a["reviewer"] for a in view["approvals"])   # the approved playbook
     # a user's data is never offered to the others
     assert rid not in [d["run_id"] for d in c.get("/api/datasets").json()]
 
@@ -132,4 +141,44 @@ def test_progress_and_review_only_for_uploaded_runs(api):
     c, _ = api
     assert c.get("/api/runs/run_001/progress").status_code == 404
     assert c.get("/api/runs/up_000000000000/progress").status_code == 404
-    assert c.post("/api/runs/run_001/review", json={"step": "etl", "decision": "approve"}).status_code == 404
+    assert c.post("/api/runs/run_001/review", json={"step": "etl", "decision": "approve", "reviewer": "x"}).status_code == 404
+
+
+@pytest.mark.skipif(not SAMPLE.exists(), reason="data/sample is missing")
+def test_cleaning_rules_proposed_by_the_llm_need_a_named_human_approval(api, monkeypatch):
+    """No playbook fits: llama3 (here the test double) proposes rules, the app shows them, a named person approves."""
+    monkeypatch.setenv("BIFLOW_CLEANING_MODE", "generate")
+    c, runs = api
+    rid = c.post("/api/uploads", files=csv_files(), data={"question": QUESTION}).json()["run_id"]
+    p = wait(c, rid)
+    assert p["state"] == "needs_review" and p["review"]["step"] == "cleaning", p
+    assert p["review"]["approvable"] and p["review"]["rules"] and {"table", "column", "action"} <= set(p["review"]["rules"][0])
+    assert c.post(f"/api/runs/{rid}/review", json={"step": "etl", "decision": "approve", "reviewer": "X"}).status_code == 409
+    r = c.post(f"/api/runs/{rid}/review", json={"step": "cleaning", "decision": "approve", "reviewer": "Ikbel"})
+    assert r.status_code == 200
+    p = wait(c, rid)
+    status = {s["step"]: s["status"] for s in p["steps"]}
+    assert status["cleaning"] == "SUCCESS", p
+    approval = json.loads((runs / rid / "cleaning" / "approval.json").read_text(encoding="utf-8"))
+    assert approval["reviewer"] == "Ikbel" and approval["approved_at"] and approval["proposal_sha256"]
+    events = [e for e in read_events(runs / "integration_journal.db", run_id=rid) if e.step == "human_review"]
+    assert events[0].agent == "cleaning" and events[0].evidence["reviewer"] == "Ikbel"
+
+
+@pytest.mark.skipif(not SAMPLE.exists(), reason="data/sample is missing")
+def test_a_rejected_review_stops_the_run_and_says_who(api):
+    c, runs = api
+    rid = c.post("/api/uploads", files=csv_files(), data={"question": QUESTION}).json()["run_id"]
+    p = wait(c, rid)
+    step = p["review"]["step"]
+    assert step in ("pii", "etl")
+    c.post(f"/api/runs/{rid}/review", json={"step": step, "decision": "reject", "reviewer": "Ahmed"})
+    p = c.get(f"/api/runs/{rid}/progress").json()
+    assert p["state"] == "stopped"
+    e = [e for e in read_events(runs / "integration_journal.db", run_id=rid) if e.step == "human_review"][0]
+    assert e.decision == "REJECTED by Ahmed"
+
+
+def test_an_approved_playbook_never_lands_in_the_repo(api, monkeypatch):
+    """The cleaning test above approves rules: the new playbook stays in runs/<run>/, not in cleaning/playbooks/."""
+    assert not list((REPO_ROOT / "cleaning" / "playbooks").glob("upload@*"))

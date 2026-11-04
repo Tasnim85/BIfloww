@@ -1642,6 +1642,57 @@
     ],
     "title": "AnomalySummary"
    },
+   "ApprovalView": {
+    "properties": {
+     "step": {
+      "type": "string",
+      "title": "Step"
+     },
+     "decision": {
+      "type": "string",
+      "title": "Decision"
+     },
+     "reviewer": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reviewer"
+     },
+     "at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "At"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "journal",
+       "playbook"
+      ],
+      "title": "Source",
+      "default": "journal"
+     }
+    },
+    "type": "object",
+    "required": [
+     "step",
+     "decision"
+    ],
+    "title": "ApprovalView",
+    "description": "A human decision on a step: who, when, what (from the audit journal or the approved playbook)."
+   },
    "Body_upload_api_uploads_post": {
     "properties": {
      "files": {
@@ -1800,6 +1851,46 @@
      "blocking"
     ],
     "title": "CheckStatus"
+   },
+   "CleaningRule": {
+    "properties": {
+     "table": {
+      "type": "string",
+      "title": "Table"
+     },
+     "column": {
+      "type": "string",
+      "title": "Column"
+     },
+     "action": {
+      "type": "string",
+      "title": "Action"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "number"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "type": "object",
+    "required": [
+     "table",
+     "column",
+     "action"
+    ],
+    "title": "CleaningRule"
    },
    "CleaningSummary": {
     "properties": {
@@ -2307,6 +2398,19 @@
        }
       ],
       "description": "Only with 'accepted'. Default: the recommended fix."
+     },
+     "reviewer": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 100
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reviewer",
+      "description": "Who decides (set by the web server from the signed-in user)"
      }
     },
     "type": "object",
@@ -3548,6 +3652,13 @@
         "type": "null"
        }
       ]
+     },
+     "approvals": {
+      "items": {
+       "$ref": "#/components/schemas/ApprovalView"
+      },
+      "type": "array",
+      "title": "Approvals"
      }
     },
     "type": "object",
@@ -3760,8 +3871,10 @@
       "type": "string",
       "enum": [
        "pii",
+       "cleaning",
        "etl",
-       "comparisons"
+       "comparisons",
+       "other"
       ],
       "title": "Step"
      },
@@ -3769,12 +3882,31 @@
       "type": "string",
       "title": "Message"
      },
+     "approvable": {
+      "type": "boolean",
+      "title": "Approvable",
+      "default": true
+     },
      "pii": {
       "items": {
        "$ref": "#/components/schemas/PiiQuestion"
       },
       "type": "array",
       "title": "Pii"
+     },
+     "pii_types": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Pii Types"
+     },
+     "rules": {
+      "items": {
+       "$ref": "#/components/schemas/CleaningRule"
+      },
+      "type": "array",
+      "title": "Rules"
      },
      "schema_type": {
       "anyOf": [
@@ -3815,6 +3947,7 @@
       "type": "string",
       "enum": [
        "pii",
+       "cleaning",
        "etl"
       ],
       "title": "Step"
@@ -3830,14 +3963,25 @@
      "reviewer": {
       "type": "string",
       "maxLength": 100,
+      "minLength": 1,
       "title": "Reviewer",
-      "default": "app user"
+      "description": "Who decides: set by the web server from the signed-in user, never typed"
+     },
+     "pii_types": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "type": "object",
+      "maxProperties": 200,
+      "title": "Pii Types",
+      "description": "PII review: 'table.column' -> the type the person chose (default: the proposal)"
      }
     },
     "type": "object",
     "required": [
      "step",
-     "decision"
+     "decision",
+     "reviewer"
     ],
     "title": "ReviewAnswer"
    },
