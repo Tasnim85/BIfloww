@@ -18,6 +18,7 @@ JOURNALS = {  # id -> (French label, file name in runs/)
     "clinics": ("Cliniques (2e jeu de données)", "clinics_journal.db"),
     "ui": ("Essais depuis l'interface", "ui_journal.db"),
     "real": ("Journal réel", "audit_journal.db"),
+    "integration": ("Intégration (faux Ollama, tests)", "integration_journal.db"),
 }
 CUSTOM_JOURNAL = "ui"        # comparisons typed in the UI / API go there, never in the real journal
 

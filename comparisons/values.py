@@ -72,15 +72,20 @@ def kpi_by_dimension(warehouse: Path, manifest: WarehouseManifest, catalog: KpiC
         group, join = f"d.{dim.column}", f"JOIN {dim.table} d USING ({', '.join(keys)})"
     sql = (f"SELECT CAST({group} AS VARCHAR) AS label, {kpi.expression} AS value FROM {kpi.table} f "
            f"{join} WHERE {where} AND f.{kpi.date_column} BETWEEN ? AND ? GROUP BY 1")
+    # The total is computed AGAIN without the breakdown: adding the groups is only right for a SUM.
+    # An order with items in 2 categories counts once in COUNT(DISTINCT order_id), not twice.
+    total_sql = (f"SELECT {kpi.expression} FROM {kpi.table} f "
+                 f"WHERE {where} AND f.{kpi.date_column} BETWEEN ? AND ?")
     with duckdb.connect(str(warehouse), read_only=True) as con:
         cur = {r[0]: float(r[1] or 0) for r in con.execute(sql, [period.start, period.end]).fetchall()}
         prev = ({r[0]: float(r[1] or 0) for r in con.execute(sql, [compare_to.start, compare_to.end]).fetchall()}
                 if compare_to else None)
+        t_cur = round(float(con.execute(total_sql, [period.start, period.end]).fetchone()[0] or 0), 2)
+        t_prev = (round(float(con.execute(total_sql, [compare_to.start, compare_to.end]).fetchone()[0] or 0), 2)
+                  if compare_to else None)
     labels = sorted(set(cur) | set(prev or {}), key=lambda k: -cur.get(k, 0.0))
     rows = [Row(label=str(k), current=round(cur.get(k, 0.0), 2),
                 previous=round(prev.get(k, 0.0), 2) if prev is not None else None) for k in labels]
-    t_cur = round(sum(cur.values()), 2)
-    t_prev = round(sum(prev.values()), 2) if prev is not None else None
     return KpiBreakdown(kpi=kpi.ref, unit=kpi.unit, dimension=dim.name if dim else None, period=period,
                         compare_to=compare_to, periods_source=periods_source, total_current=t_cur,
                         total_previous=t_prev, change_pct=(t_cur / t_prev - 1) if t_prev else None,
