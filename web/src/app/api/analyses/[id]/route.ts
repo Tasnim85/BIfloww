@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentUserId } from "@/lib/auth";
+import { syncUploads } from "@/lib/uploads";
 import { getAnalysis, hideAnalysis } from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -7,6 +8,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function GET(_: Request, { params }: Ctx) {
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  await syncUploads(uid);
   const a = getAnalysis((await params).id, uid);
   return a ? NextResponse.json(a) : NextResponse.json({ error: "not_found" }, { status: 404 });
 }

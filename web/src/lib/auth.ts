@@ -70,6 +70,13 @@ export const authOptions: NextAuthOptions = {
 };
 
 /** The signed-in user's id, or null. Use it in every server route and page. */
+/** The signed-in person, as recorded in the audit journal when they approve or decide something. */
+export async function currentUser(): Promise<{ id: string; name: string } | null> {
+  const s = await getServerSession(authOptions);
+  if (!s?.user?.id) return null;
+  return { id: s.user.id, name: (s.user.name || s.user.email || s.user.id).slice(0, 100) };
+}
+
 export async function currentUserId(): Promise<string | null> {
   const s = await getServerSession(authOptions);
   return s?.user?.id ?? null;

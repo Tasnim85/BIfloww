@@ -1,0 +1,10 @@
+scenario,question,chosen,requested,issues
+kpi_total,What is the total revenue in August 2018?,kpi_card,,0
+bar_27,Revenue by state,bar,,1
+pie_share,Revenue share by payment type,pie,,0
+pie_27,Revenue by state as a pie chart,bar,pie,2
+pie_distinct,Customers by payment type as a pie chart,bar,pie,1
+line_trend,Evolution of revenue per month,line,,0
+line_gap,Evolution of revenue per month,line,,1
+cmp_blocked,"Revenue by customer state, August 2018 vs July 2018",bar,,3
+base_effect,Revenue August vs July,kpi_card,,1

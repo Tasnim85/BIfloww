@@ -26,6 +26,9 @@ class Health(BaseModel):
     llm: LlmInfo
     runs: int
     journals: list[str]
+    local_llm: bool = False            # Ollama (or the test double) reachable: needed to run uploaded files
+    test_double: bool = False          # it is tools/integration/fake_ollama.py, not llama3
+    pii_secret: bool = False           # BO2_PII_SECRET set (32+ characters)
 
 
 class RunInfo(BaseModel):
@@ -74,6 +77,7 @@ class RunSummary(BaseModel):
 class Decision(BaseModel):
     decision: UserDecision
     chosen_fix: FixMethod | None = Field(None, description="Only with 'accepted'. Default: the recommended fix.")
+    reviewer: str | None = Field(None, max_length=100, description="Who decides (set by the web server from the signed-in user)")
 
 
 class NewComparison(BaseModel):
@@ -85,6 +89,9 @@ class NewComparison(BaseModel):
     compare_to: Period
     question: str = "Comparison typed in the app"
     llm: bool = Field(False, description="Summary written by the LLM (fact-checked)")
+    confidence: float = Field(1.0, ge=0, le=1, description="From POST /parse when the form kept its proposal")
+    matched_terms: dict[str, str] = Field(default_factory=dict, max_length=20,
+                                          description="From POST /parse: words of the question -> glossary terms")
     lang: Literal["fr", "en"] | None = Field(None, description="Language of the texts (default: ?lang / Accept-Language / fr)")
 
 

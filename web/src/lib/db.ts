@@ -151,12 +151,19 @@ export function createAnalysis(a: {
 }
 
 export function updateAnalysis(id: string, userId: string,
-                               fields: Partial<Pick<AnalysisRow, "run_id" | "status" | "decision">>) {
+                               fields: Partial<Pick<AnalysisRow, "run_id" | "status" | "decision" | "metric" | "dimensions"
+                                 | "period_start" | "period_end" | "compare_start" | "compare_end">>) {
   const keys = Object.keys(fields) as (keyof typeof fields)[];
   if (!keys.length) return;
   const set = keys.map((k) => `${k} = ?`).join(", ");
   db().prepare(`UPDATE analyses SET ${set}, updated_at = ? WHERE id = ? AND user_id = ?`)
     .run(...keys.map((k) => fields[k] ?? null), now(), id, userId);
+}
+
+/** Analyses whose run is an uploaded dataset still in the pipeline (they are synced from the Python API). */
+export function pendingUploads(userId: string): Analysis[] {
+  return (db().prepare(`SELECT * FROM analyses WHERE user_id = ? AND substr(run_id, 1, 3) = 'up_'
+                        AND status IN ('running', 'needs_review')`).all(userId) as AnalysisRow[]).map(parse);
 }
 
 export function hideAnalysis(id: string, userId: string) {
