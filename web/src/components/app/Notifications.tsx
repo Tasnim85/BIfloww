@@ -96,7 +96,7 @@ export function NotificationBell() {
     <div ref={box} className="relative">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-haspopup="dialog"
               aria-label={feed.unread ? t("bell_unread", { count: feed.unread }) : t("bell")}
-              className="relative grid h-10 w-10 place-items-center rounded-full border border-line bg-surface transition hover:bg-surface-2">
+              className="relative grid h-10 w-10 place-items-center rounded-full border border-line/70 bg-surface/60 transition hover:bg-surface-2">
         <Bell className={cn("h-[18px] w-[18px]", feed.unread > 0 && "origin-top animate-[bellRing_1.2s_ease-in-out_2]")} />
         {feed.unread > 0 && <span aria-hidden className="absolute -right-1 -top-1 h-5 w-5 animate-pulseRing rounded-full bg-accent" />}
         {feed.unread > 0 && (

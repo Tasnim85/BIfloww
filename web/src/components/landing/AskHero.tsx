@@ -59,12 +59,12 @@ export function AskHero() {
         <AnimatePresence mode="wait">
           {phase === "preparing" && (
             <motion.div key="prep" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                        className="rounded-2xl border border-white/10 bg-white/[0.05] p-5 backdrop-blur-xl">
               <p className="text-sm text-muted">{t("preparing")}</p>
               <ol className="mt-4 grid grid-cols-5 gap-2">
                 {STAGES.map((s, i) => (
                   <li key={s} className="flex flex-col gap-2">
-                    <span className={cn("h-1.5 rounded-full transition-colors duration-300", i < stage ? "bg-primary" : "bg-white/10")} />
+                    <span className={cn("h-1.5 rounded-full transition-colors duration-300", i < stage ? "bg-gradient-to-r from-primary to-violet" : "bg-white/10")} />
                     <span className={cn("flex items-center gap-1 text-xs", i < stage ? "text-ink" : "text-subtle")}>
                       {i < stage && <Check className="h-3 w-3 text-primary" />}{t(`stages.${s}`)}
                     </span>
@@ -75,7 +75,7 @@ export function AskHero() {
           )}
           {phase === "caught" && (
             <motion.div key="caught" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className="rounded-2xl border border-accent/40 bg-accent/10 p-5">
+                        className="rounded-2xl border border-accent/40 bg-accent/10 p-5 shadow-[0_0_60px_-20px_rgb(245_158_11/0.6)] backdrop-blur-xl">
               <div className="flex items-center gap-2 font-semibold text-accent"><AlertTriangle className="h-4 w-4" />{t("caught_title")}</div>
               <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
                 <span className="font-display text-4xl font-bold text-ink line-through decoration-accent decoration-2">−4.1%</span>
@@ -86,9 +86,9 @@ export function AskHero() {
           )}
           {phase === "answer" && (
             <motion.div key="answer" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className="rounded-2xl border border-white/10 bg-white/[0.06] p-5">
+                        className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 shadow-[0_0_60px_-24px_rgb(74_222_128/0.6)] backdrop-blur-xl">
               <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                <span className="font-display text-5xl font-bold text-ok">+34.6%</span>
+                <span className="bg-gradient-to-r from-ok to-[#22D3EE] bg-clip-text font-display text-5xl font-bold text-transparent">+34.6%</span>
                 <span className="font-semibold text-ink">{t("answer_title")}</span>
                 <span className="text-sm text-subtle line-through">−4.1% {t("as_asked")}</span>
               </div>

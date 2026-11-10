@@ -78,7 +78,7 @@ export function PipelineRail({ states, selected, onSelect, progress, alerts, rea
       </div>
 
       <div ref={box} className="-mx-1 overflow-x-auto px-1 pb-3 [scrollbar-width:thin]">
-        <div role="tablist" aria-label={t("rail.label")} className="flex min-w-[1180px] items-stretch">
+        <div role="tablist" aria-label={t("rail.label")} className="flex min-w-[1040px] items-stretch">
           {PHASES.map((phase, i) => {
             const stages = STAGES.filter((s) => s.phase === phase);
             const statuses = stages.map(statusOf);
@@ -154,7 +154,7 @@ function AgentCard({ phase, index, status, hasAlert, live, total, children }:
           <div className="font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-subtle">
             {index === 0 ? t("rail.coordinator") : t("rail.agent_n", { n: index })}
           </div>
-          <div className="text-[12px] font-semibold leading-tight text-ink [overflow-wrap:anywhere]">{t(`rail.phases.${phase}`)}</div>
+          <div className="text-[12px] font-semibold leading-tight text-ink [overflow-wrap:break-word] hyphens-auto">{t(`rail.phases.${phase}`)}</div>
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-1 px-2 pb-2">{children}</div>
@@ -178,7 +178,7 @@ function TaskChip({ stage, state, selected, alert, status, onSelect, delay }:
                    initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.25 }}
                    whileTap={status === "done" ? { scale: 0.97 } : undefined}
                    title={`${t(`stages.${stage.id}.name`)} · ${t(`state.${state}`)}`}
-                   className={cn("relative flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors",
+                   className={cn("relative flex w-full items-center gap-1.5 rounded-lg px-1.5 py-1.5 text-left transition-colors",
                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                      selected ? "text-primary-fg shadow-sm"
                        : flagged ? "bg-warn-soft text-ink ring-1 ring-warn/40 hover:ring-warn"
@@ -192,7 +192,7 @@ function TaskChip({ stage, state, selected, alert, status, onSelect, delay }:
         {status === "doing" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Icon className="h-3.5 w-3.5" />}
       </span>
       <span className="relative z-10 min-w-0 flex-1">
-        <span className={cn("block text-[12px] leading-tight [overflow-wrap:anywhere]", selected ? "font-semibold" : "font-medium")}>
+        <span className={cn("block text-[12px] leading-tight [overflow-wrap:break-word] hyphens-auto", selected ? "font-semibold" : "font-medium")}>
           {t(`stages.${stage.id}.short`)}
         </span>
         {flagged && (

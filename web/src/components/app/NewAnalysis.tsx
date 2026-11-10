@@ -191,19 +191,19 @@ export function NewAnalysis() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
+        <h1 className="text-gradient rise text-3xl font-extrabold leading-tight sm:text-4xl">{t("title")}</h1>
         <p className="mt-1 text-muted">{t("subtitle")}</p>
       </div>
 
       {/* 1. The files (Samar's intake: they go through the WHOLE pipeline) */}
-      <section className="card p-5 sm:p-6">
+      <section className="card glow-ring rise p-5 sm:p-6">
         <StepTitle n={1} title={t("s1_title")} text={t("s1_text")} />
         <div onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
              onDrop={(e) => { e.preventDefault(); setDrag(false); void onFiles(e.dataTransfer.files); }}
              className={cn("mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition",
-               drag ? "border-primary bg-primary-soft" : "border-line hover:border-primary/50")}>
+               drag ? "scale-[1.01] border-violet bg-primary-soft/70 shadow-glow" : "border-line hover:border-primary/50 hover:bg-primary-soft/30")}>
           <div className="flex flex-col items-center">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-primary-soft text-primary"><UploadCloud className="h-6 w-6" /></div>
+            <div className={cn("icon-tile h-14 w-14 rounded-2xl transition", drag ? "-translate-y-1 rotate-3" : "")}><UploadCloud className="h-7 w-7" /></div>
             <p className="mt-3 font-medium">{t("drop")}</p>
             <p className="mt-1 text-sm text-muted">{t("drop_hint")}</p>
             <button type="button" className="btn-outline mt-4" onClick={() => inputRef.current?.click()}>{t("browse")}</button>
@@ -241,7 +241,7 @@ export function NewAnalysis() {
       </section>
 
       {/* 2. The prepared data */}
-      <section className="card p-5 sm:p-6">
+      <section className="card glow-ring rise p-5 sm:p-6">
         <StepTitle n={2} title={t("s2_title")} text={upload ? t("s2_upload") : t("s2_text")} />
         {upload ? (
           <div className="mt-4 flex items-start gap-3 rounded-2xl border border-accent/40 bg-accent-soft/40 p-4 text-sm">
@@ -258,8 +258,8 @@ export function NewAnalysis() {
             return (
               <button key={d.run_id} type="button" onClick={() => setDatasetId(d.run_id)} aria-pressed={active}
                       className={cn("relative rounded-2xl border p-4 text-left transition",
-                        active ? "border-primary bg-primary-soft ring-4 ring-primary/10" : "border-line hover:border-primary/40")}>
-                {active && <span className="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-primary text-primary-fg"><Check className="h-3.5 w-3.5" /></span>}
+                        active ? "glow-ring is-on border-transparent bg-primary-soft/60 shadow-glow" : "border-line hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card")}>
+                {active && <span className="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-primary to-violet text-white"><Check className="h-3.5 w-3.5" /></span>}
                 <div className="flex items-center gap-2 font-semibold"><Database className="h-4 w-4 text-primary" />{dsLabel(d.run_id)}</div>
                 <p className="mt-1 text-sm text-muted">{info ? tc(`datasets.${info.key}.text`) : d.run_id}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
@@ -274,7 +274,7 @@ export function NewAnalysis() {
       </section>
 
       {/* 3. The question */}
-      <section className="card p-5 sm:p-6">
+      <section className="card glow-ring rise p-5 sm:p-6">
         <StepTitle n={3} title={t("s3_title")} text={upload ? t("s3_upload") : t("s3_text")} />
         <div className="mt-4 space-y-4">
           <div>
@@ -341,7 +341,7 @@ export function NewAnalysis() {
             <motion.div className="card w-full max-w-sm p-8 text-center" initial={{ scale: 0.95 }} animate={{ scale: 1 }}>
               <div className="relative mx-auto h-16 w-16">
                 <span className="absolute inset-0 animate-pulseRing rounded-full bg-primary/40" />
-                <span className="relative grid h-16 w-16 place-items-center rounded-full bg-primary text-primary-fg"><Sparkles className="h-7 w-7" /></span>
+                <span className="relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-primary to-violet text-white shadow-glow"><Sparkles className="h-7 w-7" /></span>
               </div>
               <h2 className="mt-5 text-lg font-semibold">{upload ? t("sending_title") : t("working_title")}</h2>
               <p className="mt-1 text-sm text-muted">{upload ? t("sending_text") : t("working_text")}</p>
@@ -405,7 +405,7 @@ function Preview({ file }: { file: Parsed }) {
 function StepTitle({ n, title, text }: { n: number; title: string; text: string }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-navy font-display text-sm font-bold text-white dark:bg-primary dark:text-primary-fg">{n}</span>
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-violet font-display text-sm font-bold text-white shadow-[0_8px_20px_-8px_rgb(var(--violet)/0.7)]">{n}</span>
       <div><h2 className="font-semibold">{title}</h2><p className="text-sm text-muted">{text}</p></div>
     </div>
   );

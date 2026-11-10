@@ -13,7 +13,7 @@ export default {
         ink: v("ink"), muted: v("muted"), subtle: v("subtle"),
         primary: { DEFAULT: v("primary"), fg: v("primary-fg"), soft: v("primary-soft") },
         accent: { DEFAULT: v("accent"), fg: v("accent-fg"), soft: v("accent-soft") },
-        navy: v("navy"),
+        navy: v("navy"), violet: v("violet"),
         ok: { DEFAULT: v("ok"), soft: v("ok-soft") },
         warn: { DEFAULT: v("warn"), soft: v("warn-soft") },
         bad: { DEFAULT: v("bad"), soft: v("bad-soft") },
@@ -23,10 +23,11 @@ export default {
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
-      borderRadius: { xl: "14px", "2xl": "20px" },
+      borderRadius: { xl: "14px", "2xl": "22px", "3xl": "28px" },
       boxShadow: {
         card: "0 1px 2px rgb(15 42 61 / 0.04), 0 8px 24px -12px rgb(15 42 61 / 0.12)",
         lift: "0 2px 4px rgb(15 42 61 / 0.06), 0 24px 48px -20px rgb(15 42 61 / 0.25)",
+        glow: "0 1px 2px rgb(15 42 61 / 0.04), 0 18px 40px -16px rgb(var(--primary) / 0.35), 0 8px 30px -18px rgb(var(--violet) / 0.35)",
       },
       keyframes: {
         flow: { "0%": { strokeDashoffset: "24" }, "100%": { strokeDashoffset: "0" } },

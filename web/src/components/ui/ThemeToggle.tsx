@@ -18,7 +18,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   useEffect(() => setReady(true), []);
   return (
     <div role="radiogroup" aria-label={t("common.theme")}
-         className={cn("inline-flex items-center rounded-full border border-line bg-surface p-0.5", className)}>
+         className={cn("inline-flex items-center rounded-full border border-line/70 bg-surface/60 p-0.5 backdrop-blur", className)}>
       {MODES.map(({ id, icon: Icon }) => {
         const active = ready && theme === id;
         return (
