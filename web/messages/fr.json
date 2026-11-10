@@ -569,13 +569,16 @@
   "rail": {
    "label": "Les agents du pipeline",
    "title": "Derrière la réponse",
-   "subtitle": "{live} des {total} agents montrent leur vrai résultat. Cliquez sur un agent pour voir ce qu’il a fait.",
+   "subtitle": "{live} des {total} tâches montrent leur vrai résultat. Cliquez sur une tâche pour voir ce que son agent a fait.",
    "working": "En cours : {name}…",
    "phases": {
-    "intake": "Réception",
-    "prepare": "Préparation",
-    "answer": "Réponse",
-    "audit": "Audit"
+    "orchestrator": "Orchestrateur",
+    "profiler": "Data Profiler · Qualité & Nettoyage",
+    "etl": "ETL · Data Engineering",
+    "semantic": "BI Sémantique & KPI",
+    "analyst": "BI Analyst",
+    "dashboard": "Dashboard Generator",
+    "auditor": "BI Auditor · XAI"
    }
   },
   "state": {
@@ -594,7 +597,7 @@
    "v_kept": "Gardée telle quelle malgré l’alerte",
    "v_warning": "Juste, avec des réserves",
    "v_fair": "Comparaison juste",
-   "agents": "{live}/{total} agents réels",
+   "agents": "{live}/{total} tâches réelles",
    "why": "Demander pourquoi",
    "no_number": "Pas de valeur calculée pour cette analyse (créée avant le branchement de l’analyste).",
    "computing": "Les agents calculent la réponse…",
