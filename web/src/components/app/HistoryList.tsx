@@ -41,7 +41,7 @@ export function HistoryList() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">{t("history.title")}</h1>
+          <h1 className="text-gradient rise text-3xl font-extrabold leading-tight sm:text-4xl">{t("history.title")}</h1>
           <p className="mt-1 text-muted">{t("history.subtitle")}</p>
         </div>
         <Link href="/app/new" className="btn-primary">{t("overview.cta")}</Link>
@@ -53,10 +53,10 @@ export function HistoryList() {
           <label htmlFor="hq" className="sr-only">{t("history.search")}</label>
           <input id="hq" className="input pl-10" placeholder={t("history.search")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <div className="flex gap-1 rounded-xl border border-line bg-surface p-1" role="group" aria-label={t("history.filter")}>
+        <div className="card flex gap-1 rounded-xl p-1" role="group" aria-label={t("history.filter")}>
           {FILTERS.map((f) => (
             <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}
-                    className={cn("rounded-lg px-3 py-1.5 text-sm font-medium transition", filter === f ? "bg-primary text-primary-fg" : "text-muted hover:text-ink")}>
+                    className={cn("rounded-lg px-3 py-1.5 text-sm font-medium transition", filter === f ? "bg-gradient-to-r from-primary to-violet text-white shadow-sm" : "text-muted hover:bg-surface-2/70 hover:text-ink")}>
               {f === "all" ? t("history.all") : t(`status.${f}`)}
             </button>
           ))}
@@ -70,8 +70,10 @@ export function HistoryList() {
                  action={!data?.length ? <Link href="/app/new" className="btn-primary">{t("overview.cta")}</Link> : undefined} />
         ) : (
           <ul className="space-y-3">
-            {items.map((a) => (
-              <li key={a.id} className="card group flex flex-wrap items-center gap-4 p-4 transition hover:shadow-lift">
+            {items.map((a, i) => (
+              <li key={a.id} className="card card-hover glow-ring rise group relative flex flex-wrap items-center gap-4 overflow-hidden p-4" style={{ ["--d" as string]: `${Math.min(i, 8) * 50}ms` }}>
+                <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1",
+                  a.status === "completed" ? "bg-ok" : a.status === "needs_review" ? "bg-warn" : a.status === "failed" ? "bg-bad" : "bg-gradient-to-b from-primary to-violet")} />
                 <Link href={`/app/runs/${a.id}`} className="flex min-w-0 flex-1 items-center gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="line-clamp-2 break-words font-semibold [overflow-wrap:anywhere]" title={a.question}>{a.question}</div>

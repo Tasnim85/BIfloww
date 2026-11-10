@@ -22,12 +22,12 @@ export function Navbar({ signedIn, overDark = false }: { signedIn: boolean; over
     return () => window.removeEventListener("scroll", on);
   }, []);
   return (
-    <header className={cn("sticky top-0 z-50 transition", scrolled ? "border-b border-line bg-bg/80 backdrop-blur-xl" : overDark && !open ? "dark bg-bg text-ink" : "bg-transparent")}>
+    <header className={cn("sticky top-0 z-50 transition", scrolled ? "border-b border-line/60 bg-bg/60 backdrop-blur-2xl" : overDark && !open ? "dark bg-bg text-ink" : "bg-transparent")}>
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/" aria-label="Askboard"><Logo variant="lockup" size={34} /></Link>
         <div className="hidden items-center gap-1 lg:flex">
           {LINKS.map((l) => (
-            <a key={l} href={`#${l}`} className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:text-ink">{t(`landing.nav.${l}`)}</a>
+            <a key={l} href={`#${l}`} className="rounded-full px-3.5 py-2 text-sm font-medium text-muted transition hover:bg-surface-2/60 hover:text-ink">{t(`landing.nav.${l}`)}</a>
           ))}
         </div>
         <div className="hidden items-center gap-2 md:flex">

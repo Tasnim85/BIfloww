@@ -185,7 +185,7 @@
   },
   "side": {
    "title": "Every number, with its proof.",
-   "text": "Live: all 13 agents of the team, from your CSV files to the audited dashboard."
+   "text": "Live: the 6 agents and the orchestrator, from your CSV files to the audited dashboard."
   },
   "status": {
    "running": "Running",
@@ -337,7 +337,7 @@
    "title": "New analysis",
    "subtitle": "Three steps: your file, the data to answer on, your question.",
    "s1_title": "Your files",
-   "s1_text": "Optional: drop your own CSV files. The 13 agents will prepare them and answer your question.",
+   "s1_text": "Optional: drop your own CSV files. The 6 agents will prepare them and answer your question.",
    "drop": "Drop your CSV files here",
    "drop_hint": "One or more .csv files · up to 150 MB each",
    "browse": "Choose a file",
@@ -564,19 +564,40 @@
     "completed": "Your analysis is ready",
     "needs_review": "Your analysis needs your decision",
     "failed": "Your analysis failed"
-   }
+   },
+   "desc": {
+    "completed": "The answer, the dashboard and the audit are ready to read.",
+    "needs_review": "A comparison could be misleading. Choose how to fix it to see the result.",
+    "failed": "An agent stopped on an error. Open the analysis to see which one."
+   },
+   "action": {
+    "completed": "See the answer",
+    "needs_review": "Make the decision",
+    "failed": "See what happened"
+   },
+   "group_new": "New",
+   "group_earlier": "Earlier",
+   "about": "About"
   },
   "rail": {
    "label": "The agents of the pipeline",
    "title": "Behind the answer",
-   "subtitle": "{live} of the {total} agents show their real output. Click one to see what it did.",
+   "subtitle": "{live} of the {total} tasks show their real output. Click a task to see what its agent did.",
    "working": "Working: {name}…",
    "phases": {
-    "intake": "Intake",
-    "prepare": "Preparation",
-    "answer": "Answer",
-    "audit": "Audit"
-   }
+    "orchestrator": "Orchestrator",
+    "profiler": "Data Profiler · Quality & Cleaning",
+    "etl": "ETL · Data Engineering",
+    "semantic": "BI Semantic & KPI",
+    "analyst": "BI Analyst",
+    "dashboard": "Dashboard Generator",
+    "auditor": "BI Auditor · XAI"
+   },
+   "progress": "{done}/{total} tasks done",
+   "agent_n": "Agent {n}",
+   "tasks": "{count, plural, one {# task} other {# tasks}}",
+   "alert": "Needs your attention",
+   "coordinator": "Coordinates"
   },
   "state": {
    "live": "Live",
@@ -594,7 +615,7 @@
    "v_kept": "Kept as asked despite the warning",
    "v_warning": "Fair, with warnings",
    "v_fair": "Fair comparison",
-   "agents": "{live}/{total} agents live",
+   "agents": "{live}/{total} tasks live",
    "why": "Ask why",
    "no_number": "No computed value for this analysis (created before the analyst was connected).",
    "computing": "The agents are computing the answer…",

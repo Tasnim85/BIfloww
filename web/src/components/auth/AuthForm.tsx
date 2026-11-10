@@ -69,7 +69,7 @@ export function AuthForm({ mode, google, siteKey, captchaOff, initialError, call
 
   return (
     <div>
-      <h1 className="text-3xl font-bold">{t(mode === "signin" ? "signin_title" : "signup_title")}</h1>
+      <h1 className="text-gradient text-3xl font-extrabold">{t(mode === "signin" ? "signin_title" : "signup_title")}</h1>
       <p className="mt-2 text-muted">{t(mode === "signin" ? "signin_subtitle" : "signup_subtitle")}</p>
 
       <button type="button" disabled={!google || busy} onClick={() => signIn("google", { callbackUrl })}

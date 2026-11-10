@@ -3,14 +3,14 @@ import { AlertTriangle, CheckCircle2, CircleDashed, Clock3, XCircle } from "luci
 import { cn } from "@/lib/cn";
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-xl bg-surface-2", className)} aria-hidden />;
+  return <div className={cn("animate-pulse rounded-xl bg-gradient-to-r from-surface-2 via-primary-soft/60 to-surface-2", className)} aria-hidden />;
 }
 
 export function Empty({ icon: Icon, title, text, action }:
   { icon: React.ComponentType<{ className?: string }>; title: string; text?: string; action?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line px-6 py-14 text-center">
-      <div className="grid h-12 w-12 place-items-center rounded-full bg-primary-soft text-primary"><Icon className="h-6 w-6" /></div>
+      <div className="icon-tile h-14 w-14 rounded-2xl animate-[floaty_4s_ease-in-out_infinite]"><Icon className="h-6 w-6" /></div>
       <h3 className="mt-4 font-semibold">{title}</h3>
       {text && <p className="mt-1 max-w-sm text-sm text-muted">{text}</p>}
       {action && <div className="mt-5">{action}</div>}

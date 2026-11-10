@@ -22,7 +22,7 @@ export function Monitoring() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">{t("title")}</h1>
+        <h1 className="text-gradient rise text-3xl font-extrabold leading-tight sm:text-4xl">{t("title")}</h1>
         <p className="mt-1 max-w-3xl text-muted">{t("subtitle")}</p>
       </div>
       <section>
@@ -33,9 +33,9 @@ export function Monitoring() {
             const c = checks[j.id];
             const ok = c ? c.ok : j.intact;
             return (
-              <div key={j.id} className="card p-5">
+              <div key={j.id} className="card card-hover glow-ring rise p-5">
                 <div className="flex items-center gap-3">
-                  <div className={cn("grid h-10 w-10 place-items-center rounded-xl", ok ? "bg-ok-soft text-ok" : "bg-bad-soft text-bad")}><Lock className="h-5 w-5" /></div>
+                  <div className={cn("grid h-11 w-11 place-items-center rounded-2xl text-white shadow-lg bg-gradient-to-br", ok ? "from-[#059669] to-[#22D3EE]" : "from-[#DC2626] to-[#F97316]")}><Lock className="h-5 w-5" /></div>
                   <div className="min-w-0"><div className="truncate font-semibold">{t(`names.${j.id}`)}</div>
                     <div className="text-xs text-muted">{t("meta", { n: j.entries, runs: j.runs.length })}</div></div>
                 </div>

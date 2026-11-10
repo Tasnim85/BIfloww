@@ -8,7 +8,9 @@
  * Texts are in messages/en.json and fr.json under "app.stages.<id>"; panels in src/components/run/StagePanels.tsx.
  */
 export type StageMode = "live" | "demo";
-export type Phase = "intake" | "prepare" | "answer" | "audit";
+/** The 6 agents of BIFlow + the orchestrator. Each task (Stage) belongs to ONE agent; the rail shows
+ *  the agents in pipeline order, each with its tasks underneath. */
+export type Phase = "orchestrator" | "profiler" | "etl" | "semantic" | "analyst" | "dashboard" | "auditor";
 
 export type Stage = {
   id: string;           // = the step name in contracts/pipeline.py
@@ -22,22 +24,22 @@ export type Stage = {
 };
 
 export const STAGES: Stage[] = [
-  { id: "upload", step: "0", owner: "Samar", bo: ["BO1"], mode: "live", scope: "dataset", phase: "intake", icon: "upload" },
-  { id: "similarity", step: "0", owner: "Malek", bo: ["BO1"], mode: "live", scope: "dataset", phase: "intake", icon: "copy" },
-  { id: "column_types", step: "1a", owner: "Malek", bo: ["BO1"], mode: "live", scope: "dataset", phase: "intake", icon: "tags" },
-  { id: "pii", step: "1b", owner: "Ikbel", bo: ["BO2"], mode: "live", scope: "dataset", phase: "intake", icon: "shield" },
-  { id: "profiling", step: "2", owner: "Ahmed", bo: ["BO2"], mode: "live", scope: "dataset", phase: "prepare", icon: "scan" },
-  { id: "cleaning", step: "2b", owner: "Ikbel", bo: ["BO1", "BO2"], mode: "live", scope: "dataset", phase: "prepare", icon: "sparkles" },
-  { id: "etl", step: "3", owner: "Ahmed", bo: ["BO1"], mode: "live", scope: "dataset", phase: "prepare", icon: "database" },
-  { id: "lineage", step: "3b", owner: "Ahmed", bo: ["BO2"], mode: "live", scope: "dataset", phase: "prepare", icon: "git" },
-  { id: "request", step: "4", owner: "Malek", bo: ["BO3", "BO4"], mode: "live", scope: "question", phase: "answer", icon: "message" },
-  { id: "analysis", step: "5", owner: "Rabeb", bo: ["BO1"], mode: "live", scope: "question", phase: "answer", icon: "chart" },
-  { id: "comparisons", step: "6", owner: "Tasnim", bo: ["BO4"], mode: "live", scope: "question", phase: "answer", icon: "scale" },
-  { id: "dashboard", step: "6b", owner: "Samar", bo: ["BO4"], mode: "live", scope: "question", phase: "answer", icon: "layout" },
-  { id: "auditor", step: "7", owner: "Tasnim", bo: ["BO3"], mode: "live", scope: "question", phase: "audit", icon: "badge" },
+  { id: "upload", step: "0", owner: "Samar", bo: ["BO1"], mode: "live", scope: "dataset", phase: "orchestrator", icon: "upload" },
+  { id: "similarity", step: "0", owner: "Malek", bo: ["BO1"], mode: "live", scope: "dataset", phase: "orchestrator", icon: "copy" },
+  { id: "column_types", step: "1a", owner: "Malek", bo: ["BO1"], mode: "live", scope: "dataset", phase: "profiler", icon: "tags" },
+  { id: "pii", step: "1b", owner: "Ikbel", bo: ["BO2"], mode: "live", scope: "dataset", phase: "profiler", icon: "shield" },
+  { id: "profiling", step: "2", owner: "Ahmed", bo: ["BO2"], mode: "live", scope: "dataset", phase: "profiler", icon: "scan" },
+  { id: "cleaning", step: "2b", owner: "Ikbel", bo: ["BO1", "BO2"], mode: "live", scope: "dataset", phase: "profiler", icon: "sparkles" },
+  { id: "etl", step: "3", owner: "Ahmed", bo: ["BO1"], mode: "live", scope: "dataset", phase: "etl", icon: "database" },
+  { id: "lineage", step: "3b", owner: "Ahmed", bo: ["BO2"], mode: "live", scope: "dataset", phase: "etl", icon: "git" },
+  { id: "request", step: "4", owner: "Malek", bo: ["BO3", "BO4"], mode: "live", scope: "question", phase: "semantic", icon: "message" },
+  { id: "analysis", step: "5", owner: "Rabeb", bo: ["BO1"], mode: "live", scope: "question", phase: "analyst", icon: "chart" },
+  { id: "comparisons", step: "6", owner: "Tasnim", bo: ["BO4"], mode: "live", scope: "question", phase: "dashboard", icon: "scale" },
+  { id: "dashboard", step: "6b", owner: "Samar", bo: ["BO4"], mode: "live", scope: "question", phase: "dashboard", icon: "layout" },
+  { id: "auditor", step: "7", owner: "Tasnim", bo: ["BO3"], mode: "live", scope: "question", phase: "auditor", icon: "badge" },
 ];
 
-export const PHASES: Phase[] = ["intake", "prepare", "answer", "audit"];
+export const PHASES: Phase[] = ["orchestrator", "profiler", "etl", "semantic", "analyst", "dashboard", "auditor"];
 
 /** What a stage really is FOR THIS RUN:
  *  live    the agent's own output is shown;

@@ -17,7 +17,7 @@ export function LocaleSwitch({ className }: { className?: string }) {
   };
   return (
     <div role="radiogroup" aria-label={t("common.language")}
-         className={cn("inline-flex items-center rounded-full border border-line bg-surface p-0.5", pending && "opacity-60", className)}>
+         className={cn("inline-flex items-center rounded-full border border-line/70 bg-surface/60 p-0.5 backdrop-blur", pending && "opacity-60", className)}>
       {LOCALES.map(({ id, label }) => (
         <button key={id} type="button" role="radio" aria-checked={locale === id} onClick={() => choose(id)}
                 aria-label={t(`common.lang_${id}`)}

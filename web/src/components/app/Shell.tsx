@@ -1,10 +1,12 @@
 "use client";
+import { motion } from "framer-motion";
 import { History, LayoutGrid, LogOut, Menu, PlusCircle, ShieldCheck, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { Aurora } from "@/components/ui/Aurora";
 import { Logo } from "@/components/ui/Logo";
 import { NotificationBell } from "@/components/app/Notifications";
 import { LocaleSwitch } from "@/components/ui/LocaleSwitch";
@@ -30,9 +32,13 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         const active = href === "/app" ? path === "/app" : path.startsWith(href);
         return (
           <Link key={href} href={href} onClick={onNavigate} aria-current={active ? "page" : undefined}
-                className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-                  active ? "bg-primary text-primary-fg shadow-card" : "text-muted hover:bg-surface-2 hover:text-ink")}>
-            <Icon className="h-[18px] w-[18px]" aria-hidden />{t(key)}
+                className={cn("group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                  active ? "text-white" : "text-muted hover:bg-surface-2/70 hover:text-ink")}>
+            {active && <motion.span layoutId={onNavigate ? "nav-pill-m" : "nav-pill"} aria-hidden
+                                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-violet shadow-[0_10px_24px_-10px_rgb(var(--violet)/0.7)]"
+                                    transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+            <Icon className={cn("relative h-[18px] w-[18px] transition", !active && "group-hover:scale-110 group-hover:text-primary")} aria-hidden />
+            <span className="relative">{t(key)}</span>
           </Link>
         );
       })}
@@ -43,7 +49,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 function Status({ health }: { health: Health }) {
   const t = useTranslations("app.status");
   return (
-    <div className="rounded-xl border border-line bg-surface-2/60 p-3 text-xs">
+    <div className="rounded-2xl border border-line/70 bg-surface-2/50 p-3 text-xs">
       <div className="flex items-center gap-2 font-semibold">
         <span className={cn("h-2 w-2 rounded-full", health.ok ? "bg-ok" : "bg-bad")} />
         {health.ok ? t("api_ok") : t("api_down")}
@@ -79,9 +85,9 @@ function UserMenu({ user }: { user: User }) {
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-haspopup="menu"
-              className="flex items-center gap-2 rounded-full border border-line bg-surface p-1 pr-3 transition hover:bg-surface-2">
+              className="flex items-center gap-2 rounded-full border border-line/70 bg-surface/60 p-1 pr-3 transition hover:bg-surface-2">
         {user.image ? <img src={user.image} alt="" className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" />
-          : <span className="grid h-8 w-8 place-items-center rounded-full bg-accent text-xs font-bold text-accent-fg">{initials}</span>}
+          : <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-accent to-[#FB923C] text-xs font-bold text-[#0F2A3D]">{initials}</span>}
         <span className="hidden max-w-[140px] truncate text-sm font-medium sm:block">{user.name ?? user.email}</span>
       </button>
       {open && (
@@ -106,23 +112,28 @@ export function Shell({ user, health, children }: { user: User; health: Health; 
   const path = usePathname();
   useEffect(() => setDrawer(false), [path]);
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="sticky top-0 hidden h-dvh flex-col gap-6 border-r border-line bg-surface p-5 lg:flex">
-        <Link href="/" aria-label="Askboard"><Logo variant="lockup" size={34} /></Link>
+    <div className="min-h-dvh lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+      <Aurora />
+      <aside className="sticky top-0 hidden h-dvh p-3 lg:block">
+        <div className="card flex h-full flex-col gap-7 rounded-3xl p-5">
+        <Link href="/" aria-label="Askboard" className="transition hover:opacity-80"><Logo variant="lockup" size={34} /></Link>
         <NavLinks />
         <div className="mt-auto space-y-3">
-          <div className="rounded-xl bg-navy p-4 text-white">
-            <div className="text-sm font-semibold">{t("side.title")}</div>
-            <p className="mt-1 text-xs text-white/70">{t("side.text")}</p>
+          <div className="relative overflow-hidden rounded-2xl bg-navy p-4 text-white">
+            <span aria-hidden className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-violet/60 blur-2xl" />
+            <span aria-hidden className="absolute -bottom-10 left-0 h-24 w-24 rounded-full bg-primary/60 blur-2xl" />
+            <div className="relative text-sm font-semibold">{t("side.title")}</div>
+            <p className="relative mt-1 text-xs text-white/70">{t("side.text")}</p>
           </div>
           <Status health={health} />
+        </div>
         </div>
       </aside>
 
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <button type="button" aria-label={t("nav.close")} className="absolute inset-0 bg-navy/50" onClick={() => setDrawer(false)} />
-          <div className="absolute inset-y-0 left-0 flex w-72 flex-col gap-6 bg-surface p-5 shadow-lift">
+          <button type="button" aria-label={t("nav.close")} className="absolute inset-0 bg-navy/40 backdrop-blur-sm" onClick={() => setDrawer(false)} />
+          <div className="card absolute inset-y-2 left-2 flex w-72 flex-col gap-6 rounded-3xl p-5 shadow-lift">
             <div className="flex items-center justify-between">
               <Logo variant="lockup" size={30} />
               <button type="button" className="btn-ghost h-9 w-9 p-0" onClick={() => setDrawer(false)} aria-label={t("nav.close")}><X className="h-5 w-5" /></button>
@@ -134,7 +145,8 @@ export function Shell({ user, health, children }: { user: User; health: Health; 
       )}
 
       <div className="flex min-w-0 flex-col">
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-3 border-b border-line bg-bg/80 px-4 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-40 px-3 pt-3 sm:px-4">
+          <div className="card flex h-14 items-center justify-between gap-3 rounded-2xl px-3 sm:px-4">
           <button type="button" className="btn-ghost h-10 w-10 p-0 lg:hidden" onClick={() => setDrawer(true)} aria-label={t("nav.open")}>
             <Menu className="h-5 w-5" />
           </button>
@@ -143,6 +155,7 @@ export function Shell({ user, health, children }: { user: User; health: Health; 
             <div className="hidden sm:flex sm:items-center sm:gap-2"><LocaleSwitch /><ThemeToggle /></div>
             <NotificationBell />
             <UserMenu user={user} />
+          </div>
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:py-8">{children}</main>
