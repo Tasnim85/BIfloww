@@ -10,7 +10,7 @@ import { type ChartView, type DashboardView, useApi } from "@/lib/client";
 import { cn } from "@/lib/cn";
 
 const SERIES = ["rgb(var(--primary))", "rgb(var(--accent))", "rgb(var(--muted) / 0.55)", "rgb(var(--ok))", "rgb(var(--warn))", "rgb(var(--navy))"];
-const tip = { background: "rgb(var(--surface))", border: "1px solid rgb(var(--line))", borderRadius: 12, color: "rgb(var(--ink))" };
+const tip = { background: "rgb(var(--glass) / 0.85)", backdropFilter: "blur(12px)", boxShadow: "0 12px 30px -12px rgb(15 42 61 / 0.3)", border: "1px solid rgb(var(--line))", borderRadius: 12, color: "rgb(var(--ink))" };
 const axis = { fill: "rgb(var(--muted))", fontSize: 12 };
 
 export function DashboardCharts({ runId, version, unit, onEmpty }:
@@ -98,6 +98,15 @@ function ChartCard({ c, unit }: { c: ChartView; unit: string }) {
     chart = (
       <ResponsiveContainer width="100%" height="100%">
         <Chart data={rows} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <defs>
+            {/* Aurora: gradient fills for the first two series (same ids in every chart = same definition) */}
+            <linearGradient id="aurora-bar-0" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgb(var(--violet))" /><stop offset="100%" stopColor="rgb(var(--primary))" />
+            </linearGradient>
+            <linearGradient id="aurora-bar-1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FB923C" /><stop offset="100%" stopColor="rgb(var(--accent))" />
+            </linearGradient>
+          </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--line))" vertical={false} />
           <XAxis dataKey={x} tick={axis} axisLine={false} tickLine={false} interval={rows.length > 8 ? 0 : "preserveStartEnd"}
                  angle={rows.length > 8 ? -35 : 0} textAnchor={rows.length > 8 ? "end" : "middle"} height={rows.length > 8 ? 70 : 30} />
@@ -105,7 +114,7 @@ function ChartCard({ c, unit }: { c: ChartView; unit: string }) {
           <Tooltip contentStyle={tip} itemStyle={{ color: "rgb(var(--ink))" }} cursor={{ fill: "rgb(var(--surface-2))" }} formatter={(v: number) => fmt(v)} />
           {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
           {series.map((s, i) => c.chart_type === "bar"
-            ? <Bar key={s} dataKey={s} name={s === "value" ? c.title : s} fill={SERIES[i % SERIES.length]} radius={[6, 6, 0, 0]} />
+            ? <Bar key={s} dataKey={s} name={s === "value" ? c.title : s} fill={i < 2 ? `url(#aurora-bar-${i})` : SERIES[i % SERIES.length]} radius={[10, 10, 2, 2]} animationDuration={900} />
             : <Line key={s} dataKey={s} name={s === "value" ? c.title : s} stroke={SERIES[i % SERIES.length]} strokeWidth={2.5} dot={false} type="monotone" />)}
         </Chart>
       </ResponsiveContainer>

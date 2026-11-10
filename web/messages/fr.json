@@ -185,7 +185,7 @@
   },
   "side": {
    "title": "Chaque chiffre, avec sa preuve.",
-   "text": "Réels : les 13 agents de l’équipe, de vos fichiers CSV au tableau de bord audité."
+   "text": "Réels : les 6 agents et l’orchestrateur, de vos fichiers CSV au tableau de bord audité."
   },
   "status": {
    "running": "En cours",
@@ -337,7 +337,7 @@
    "title": "Nouvelle analyse",
    "subtitle": "Trois étapes : votre fichier, les données qui répondent, votre question.",
    "s1_title": "Vos fichiers",
-   "s1_text": "Facultatif : déposez vos propres fichiers CSV. Les 13 agents les préparent et répondent à votre question.",
+   "s1_text": "Facultatif : déposez vos propres fichiers CSV. Les 6 agents les préparent et répondent à votre question.",
    "drop": "Déposez vos fichiers CSV ici",
    "drop_hint": "Un ou plusieurs fichiers .csv · jusqu’à 150 Mo chacun",
    "browse": "Choisir un fichier",

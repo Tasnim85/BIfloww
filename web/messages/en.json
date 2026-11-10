@@ -185,7 +185,7 @@
   },
   "side": {
    "title": "Every number, with its proof.",
-   "text": "Live: all 13 agents of the team, from your CSV files to the audited dashboard."
+   "text": "Live: the 6 agents and the orchestrator, from your CSV files to the audited dashboard."
   },
   "status": {
    "running": "Running",
@@ -337,7 +337,7 @@
    "title": "New analysis",
    "subtitle": "Three steps: your file, the data to answer on, your question.",
    "s1_title": "Your files",
-   "s1_text": "Optional: drop your own CSV files. The 13 agents will prepare them and answer your question.",
+   "s1_text": "Optional: drop your own CSV files. The 6 agents will prepare them and answer your question.",
    "drop": "Drop your CSV files here",
    "drop_hint": "One or more .csv files · up to 150 MB each",
    "browse": "Choose a file",
