@@ -1,13 +1,13 @@
 "use client";
-/* The 13 agents of the DAG as a horizontal rail, grouped in 4 phases. Click a stage: the inspector
-   below shows what that agent produced. On a NEW analysis the stages light up one after the other. */
+/* The pipeline as a horizontal rail: the orchestrator + the 6 agents, in DAG order, each with the
+   tasks it performs underneath. Click a task: the inspector below shows what that agent produced. On a NEW analysis the stages light up one after the other. */
 import { motion } from "framer-motion";
 import {
-  BadgeCheck, BarChart3, Copy, Database, GitBranch, LayoutDashboard, Loader2, MessageSquare,
+  BadgeCheck, BarChart3, ChevronRight, Copy, Database, GitBranch, LayoutDashboard, Loader2, MessageSquare,
   Scale, ScanSearch, Shield, Sparkles, Tags, Upload,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { PHASES, STAGES, type Stage, type StageState } from "@/lib/pipeline";
 
@@ -49,21 +49,28 @@ export function PipelineRail({ states, selected, onSelect, progress, alerts, rea
 
   return (
     <div ref={box} className="-mx-1 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
-      <div role="tablist" aria-label={t("rail.label")} className="flex min-w-[980px] gap-2">
-        {PHASES.map((phase) => {
+      <div role="tablist" aria-label={t("rail.label")} className="flex min-w-[1180px] items-stretch gap-1">
+        {PHASES.map((phase, i) => {
           const stages = STAGES.filter((s) => s.phase === phase);
           return (
-            <div key={phase} style={{ flexGrow: stages.length, flexBasis: 0 }} className="min-w-0 rounded-2xl border border-line bg-surface-2/60 px-1.5 pb-2 pt-2.5">
-              <div className="px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-subtle">{t(`rail.phases.${phase}`)}</div>
-              <div className="relative mt-2 flex">
-                {stages.length > 1 && <span aria-hidden className="absolute left-[12%] right-[12%] top-5 h-px bg-line" />}
-                {stages.map((s) => (
-                  <Node key={s.id} stage={s} state={states[s.id] ?? "missing"} selected={!running && selected === s.id}
-                        alert={alerts.includes(s.id)} onSelect={onSelect}
-                        status={statusOf(s)} />
-                ))}
+            <Fragment key={phase}>
+              {i > 0 && <ChevronRight aria-hidden className="h-4 w-4 shrink-0 self-center text-subtle" />}
+              <div style={{ flexGrow: Math.max(stages.length, 1.4), flexBasis: 0 }}
+                   className="flex min-w-0 flex-col rounded-2xl border border-line bg-surface-2/60 px-1.5 pb-2 pt-2.5">
+                <div className="flex min-h-[2.5em] items-start gap-1.5 px-1.5">
+                  <span className="mt-px grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">{i}</span>
+                  <span className="line-clamp-2 text-[10px] font-semibold uppercase leading-tight tracking-[0.08em] text-ink/80">{t(`rail.phases.${phase}`)}</span>
+                </div>
+                <div className="relative mt-2 flex">
+                  {stages.length > 1 && <span aria-hidden className="absolute left-[12%] right-[12%] top-5 h-px bg-line" />}
+                  {stages.map((s) => (
+                    <Node key={s.id} stage={s} state={states[s.id] ?? "missing"} selected={!running && selected === s.id}
+                          alert={alerts.includes(s.id)} onSelect={onSelect}
+                          status={statusOf(s)} />
+                  ))}
+                </div>
               </div>
-            </div>
+            </Fragment>
           );
         })}
       </div>
