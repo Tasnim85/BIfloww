@@ -30,6 +30,7 @@ export default {
       },
       keyframes: {
         flow: { "0%": { strokeDashoffset: "24" }, "100%": { strokeDashoffset: "0" } },
+        bellRing: { "0%,100%": { transform: "rotate(0)" }, "15%": { transform: "rotate(14deg)" }, "30%": { transform: "rotate(-12deg)" }, "45%": { transform: "rotate(8deg)" }, "60%": { transform: "rotate(-4deg)" } },
         pulseRing: { "0%": { transform: "scale(0.9)", opacity: "0.7" }, "100%": { transform: "scale(1.6)", opacity: "0" } },
       },
       animation: { flow: "flow 1s linear infinite", pulseRing: "pulseRing 1.6s ease-out infinite" },

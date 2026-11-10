@@ -564,7 +564,20 @@
     "completed": "Your analysis is ready",
     "needs_review": "Your analysis needs your decision",
     "failed": "Your analysis failed"
-   }
+   },
+   "desc": {
+    "completed": "The answer, the dashboard and the audit are ready to read.",
+    "needs_review": "A comparison could be misleading. Choose how to fix it to see the result.",
+    "failed": "An agent stopped on an error. Open the analysis to see which one."
+   },
+   "action": {
+    "completed": "See the answer",
+    "needs_review": "Make the decision",
+    "failed": "See what happened"
+   },
+   "group_new": "New",
+   "group_earlier": "Earlier",
+   "about": "About"
   },
   "rail": {
    "label": "The agents of the pipeline",
@@ -579,7 +592,12 @@
     "analyst": "BI Analyst",
     "dashboard": "Dashboard Generator",
     "auditor": "BI Auditor · XAI"
-   }
+   },
+   "progress": "{done}/{total} tasks done",
+   "agent_n": "Agent {n}",
+   "tasks": "{count, plural, one {# task} other {# tasks}}",
+   "alert": "Needs your attention",
+   "coordinator": "Coordinates"
   },
   "state": {
    "live": "Live",
