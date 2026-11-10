@@ -564,7 +564,20 @@
     "completed": "Votre analyse est prête",
     "needs_review": "Votre analyse attend votre décision",
     "failed": "Votre analyse a échoué"
-   }
+   },
+   "desc": {
+    "completed": "La réponse, le tableau de bord et l'audit sont prêts.",
+    "needs_review": "Une comparaison risque d'être trompeuse. Choisissez comment la corriger pour voir le résultat.",
+    "failed": "Un agent s'est arrêté sur une erreur. Ouvrez l'analyse pour voir lequel."
+   },
+   "action": {
+    "completed": "Voir la réponse",
+    "needs_review": "Prendre la décision",
+    "failed": "Voir ce qui s'est passé"
+   },
+   "group_new": "Nouvelles",
+   "group_earlier": "Plus tôt",
+   "about": "À propos de"
   },
   "rail": {
    "label": "Les agents du pipeline",
@@ -579,7 +592,12 @@
     "analyst": "BI Analyst",
     "dashboard": "Dashboard Generator",
     "auditor": "BI Auditor · XAI"
-   }
+   },
+   "progress": "{done}/{total} tâches terminées",
+   "agent_n": "Agent {n}",
+   "tasks": "{count, plural, one {# tâche} other {# tâches}}",
+   "alert": "Demande votre attention",
+   "coordinator": "Coordonne"
   },
   "state": {
    "live": "Réel",

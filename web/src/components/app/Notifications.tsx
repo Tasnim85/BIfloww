@@ -5,7 +5,7 @@
  * A new notification also shows a toast, so you can leave the "new analysis" page while it runs.
  */
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bell, CheckCircle2, CircleAlert, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Bell, CheckCircle2, CircleAlert, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -19,6 +19,8 @@ export const NOTIFY_EVENT = "askboard:notifications";
 export const ANALYSES_EVENT = "askboard:analyses-changed";
 const ICONS = { completed: CheckCircle2, needs_review: AlertTriangle, failed: CircleAlert } as const;
 const TONE = { completed: "text-ok bg-ok-soft", needs_review: "text-warn bg-warn-soft", failed: "text-bad bg-bad-soft" } as const;
+const STRIPE = { completed: "bg-ok", needs_review: "bg-warn", failed: "bg-bad" } as const;
+const BTN = { completed: "bg-ok text-white", needs_review: "bg-warn text-white", failed: "bg-bad text-white" } as const;
 
 function ago(iso: string, locale: string) {
   const s = Math.round((new Date(iso).getTime() - Date.now()) / 1000);
@@ -95,7 +97,8 @@ export function NotificationBell() {
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-haspopup="dialog"
               aria-label={feed.unread ? t("bell_unread", { count: feed.unread }) : t("bell")}
               className="relative grid h-10 w-10 place-items-center rounded-full border border-line bg-surface transition hover:bg-surface-2">
-        <Bell className="h-[18px] w-[18px]" />
+        <Bell className={cn("h-[18px] w-[18px]", feed.unread > 0 && "origin-top animate-[bellRing_1.2s_ease-in-out_2]")} />
+        {feed.unread > 0 && <span aria-hidden className="absolute -right-1 -top-1 h-5 w-5 animate-pulseRing rounded-full bg-accent" />}
         {feed.unread > 0 && (
           <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-fg">
             {feed.unread > 9 ? "9+" : feed.unread}
@@ -104,9 +107,12 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div role="dialog" aria-label={t("title")} className="card absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden">
+        <motion.div role="dialog" aria-label={t("title")} initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className="card absolute right-0 top-12 z-50 w-[min(26rem,calc(100vw-2rem))] origin-top-right overflow-hidden shadow-lift">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <h2 className="text-sm font-semibold">{t("title")}</h2>
+            <h2 className="flex items-center gap-2 text-sm font-semibold">{t("title")}
+              {feed.unread > 0 && <span className="rounded-full bg-accent px-1.5 py-px text-[10px] font-bold text-accent-fg">{feed.unread}</span>}
+            </h2>
             {feed.unread > 0 && (
               <button type="button" onClick={() => markRead({ all: true })} className="text-xs font-semibold text-primary hover:underline">
                 {t("mark_all")}
@@ -114,52 +120,85 @@ export function NotificationBell() {
             )}
           </div>
           {feed.items.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted">{t("empty")}</p>
+            <div className="px-6 py-10 text-center">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface-2 text-subtle"><Bell className="h-5 w-5" /></span>
+              <p className="mt-3 text-sm text-muted">{t("empty")}</p>
+            </div>
           ) : (
-            <ul className="max-h-96 overflow-y-auto">
-              {feed.items.map((i) => {
-                const Icon = ICONS[i.kind];
-                return (
-                  <li key={i.id}>
-                    <button type="button" onClick={() => openItem(i)}
-                            className={cn("flex w-full gap-3 px-4 py-3 text-left transition hover:bg-surface-2", !i.read && "bg-primary-soft/40")}>
-                      <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-full", TONE[i.kind])}><Icon className="h-4 w-4" /></span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold">{t(`kind.${i.kind}`)}</span>
-                        {i.question && <span className="mt-0.5 block truncate text-xs text-muted">“{i.question}”</span>}
-                        <span className="mt-0.5 block text-[11px] text-subtle">{ago(i.created_at, locale)}</span>
-                      </span>
-                      {!i.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" aria-label={t("unread")} />}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="max-h-[28rem] overflow-y-auto">
+              {([["group_new", feed.items.filter((i) => !i.read)], ["group_earlier", feed.items.filter((i) => i.read)]] as const)
+                .filter(([, list]) => list.length > 0).map(([label, list]) => (
+                <div key={label}>
+                  <div className="sticky top-0 z-10 bg-surface/95 px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-subtle backdrop-blur">
+                    {t(label)}
+                  </div>
+                  <ul className="space-y-1.5 px-2 pb-2">
+                    {list.map((i) => <li key={i.id}><NotifCard item={i} onOpen={() => openItem(i)} locale={locale} /></li>)}
+                  </ul>
+                </div>
+              ))}
+            </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* toast for a notification that just arrived */}
       <AnimatePresence>
         {toast && (
-          <motion.div role="status" aria-live="polite" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
-                      className="card fixed bottom-5 right-5 z-[60] flex w-[min(24rem,calc(100vw-2.5rem))] items-start gap-3 p-4 shadow-lift">
-            {(() => { const Icon = ICONS[toast.kind]; return <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-full", TONE[toast.kind])}><Icon className="h-[18px] w-[18px]" /></span>; })()}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{t(`kind.${toast.kind}`)}</p>
-              {toast.question && <p className="mt-0.5 truncate text-xs text-muted">“{toast.question}”</p>}
-              {toast.analysis_id && (
-                <button type="button" onClick={() => openItem(toast)} className="mt-2 text-xs font-semibold text-primary hover:underline">
-                  {t("open")}
-                </button>
-              )}
+          <motion.div role="status" aria-live="polite" initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: 40 }} transition={{ type: "spring", stiffness: 300, damping: 26 }}
+                      className="card fixed bottom-5 right-5 z-[60] w-[min(25rem,calc(100vw-2.5rem))] overflow-hidden p-0 shadow-lift">
+            <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", STRIPE[toast.kind])} />
+            <div className="flex items-start gap-3 p-4 pl-5">
+              {(() => { const Icon = ICONS[toast.kind]; return <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", TONE[toast.kind])}><Icon className="h-5 w-5" /></span>; })()}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{t(`kind.${toast.kind}`)}</p>
+                <p className="mt-0.5 text-xs leading-snug text-muted">{t(`desc.${toast.kind}`)}</p>
+                {toast.question && <p className="mt-1.5 truncate rounded-md bg-surface-2 px-2 py-1 text-xs text-ink/80">“{toast.question}”</p>}
+                {toast.analysis_id && (
+                  <button type="button" onClick={() => openItem(toast)}
+                          className={cn("mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition hover:opacity-90", BTN[toast.kind])}>
+                    {t(`action.${toast.kind}`)}<ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <button type="button" onClick={() => setToast(null)} aria-label={t("dismiss")} className="rounded-md p-1 text-subtle hover:bg-surface-2 hover:text-ink">
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <button type="button" onClick={() => setToast(null)} aria-label={t("dismiss")} className="rounded-md p-1 text-subtle hover:text-ink">
-              <X className="h-4 w-4" />
-            </button>
+            {/* time left before it closes by itself */}
+            <motion.span aria-hidden className={cn("absolute bottom-0 left-0 h-0.5", STRIPE[toast.kind])}
+                         initial={{ width: "100%" }} animate={{ width: "0%" }} transition={{ duration: 7, ease: "linear" }} />
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function NotifCard({ item, onOpen, locale }: { item: Item; onOpen: () => void; locale: string }) {
+  const t = useTranslations("app.notifications");
+  const Icon = ICONS[item.kind];
+  return (
+    <button type="button" onClick={onOpen}
+            className={cn("group relative flex w-full gap-3 overflow-hidden rounded-xl border px-3 py-3 pl-4 text-left transition",
+              item.read ? "border-transparent hover:bg-surface-2" : "border-line bg-surface shadow-sm hover:shadow-card")}>
+      <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", STRIPE[item.kind], item.read && "opacity-30")} />
+      <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", TONE[item.kind], item.read && "opacity-70")}><Icon className="h-[18px] w-[18px]" /></span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-start justify-between gap-2">
+          <span className={cn("text-sm", item.read ? "font-medium text-muted" : "font-semibold text-ink")}>{t(`kind.${item.kind}`)}</span>
+          <span className="shrink-0 text-[10px] text-subtle">{ago(item.created_at, locale)}</span>
+        </span>
+        {!item.read && <span className="mt-0.5 block text-xs leading-snug text-muted">{t(`desc.${item.kind}`)}</span>}
+        {item.question && <span className="mt-1 block truncate text-xs text-subtle">{t("about")} “{item.question}”</span>}
+        {!item.read && item.analysis_id && (
+          <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+            {t(`action.${item.kind}`)}<ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+          </span>
+        )}
+      </span>
+      {!item.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" aria-label={t("unread")} />}
+    </button>
   );
 }
