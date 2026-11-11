@@ -166,7 +166,7 @@ Paste the generated value in `.env.local` as `NEXTAUTH_SECRET=`, then:
 npm run dev
 ```
 
-Open <http://localhost:3000> (English by default; French/English and light/dark are in the top-right corner). Google sign-in, reCAPTCHA and the welcome email are optional in development; see `web/README.md` for each key.
+Open <http://localhost:3000> (English by default; French/English and light/dark are in the top-right corner). Google sign-in, reCAPTCHA and the welcome email are optional in development; the commented template `web/.env.example` explains each key.
 
 Run the API (section 5.1) and the web app in two terminals.
 
@@ -240,7 +240,7 @@ All routes are under the `/api` prefix (except `/health`). The OpenAPI descripti
 | Auditor | `GET /runs/{id}/explanations`, `GET /runs/{id}/explanations/{row_key}`, `POST /runs/{id}/why`, `GET /runs/{id}/journal`, `GET /journals`, `GET /journals/{id}/entries`, `GET /journals/{id}/verify`, `GET /runs/{id}/drift`, `GET /drift` |
 | Health | `GET /health` |
 
-Details and examples are in `api/README.md`. The browser never calls the Python API directly: the Next.js server proxy requires a session, allows only a list of routes and checks ownership of each run.
+Open `/docs` on the running API to try each route. The browser never calls the Python API directly: the Next.js server proxy requires a session, allows only a list of routes and checks ownership of each run.
 
 ## 10. Tests and checks
 
@@ -267,14 +267,10 @@ Runs are written to `runs/<run_id>/`, one sub-folder per step, and are ignored b
 
 ## 11. Documentation index
 
-- [`contracts/README.md`](contracts/README.md): the shared contracts
 - [`docs/DATA_CONTRACTS.md`](docs/DATA_CONTRACTS.md): Pydantic v2 schemas
 - [`docs/SEMANTIC_TAXONOMY.md`](docs/SEMANTIC_TAXONOMY.md): semantic column types and privacy hints
 - [`docs/INTEGRATION_GUIDE.md`](docs/INTEGRATION_GUIDE.md): DAG execution flow and team boundaries
 - [`INTEGRATION.md`](INTEGRATION.md): how the agents were integrated, and the fixes made
-- [`api/README.md`](api/README.md): the HTTP API
-- [`web/README.md`](web/README.md): the web application (keys, sign-in, proxy, security)
-- [`README_BO1.md`](README_BO1.md), [`readme_BO2.md`](readme_BO2.md): notes of the BO1 and BO2 agents
 - [`VALIDATION_REPORT.md`](VALIDATION_REPORT.md): validation of the semantic detection
 
 ## 12. Security
